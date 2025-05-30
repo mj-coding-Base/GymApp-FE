@@ -1,57 +1,23 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Customer, CommonResponseDataType } from "@/types/Customer";
+import { IndividualCustomer } from "@/types/Customer";
 import React, { useState } from "react";
 import ViewClientProfile from "./ClientProfile";
 import AddNewMember from "./AddNewMember";
 import { useActions } from "@/hooks/modals/useActions";
-import {deactivateCustomer} from "@/actions/customers"
-import { useSession } from "@/components/providers/SessionProvider";
+import { toggleCustomerStatus } from "@/actions/customers";
 
 interface Props {
-  customer: Customer;
+  customer: IndividualCustomer;
 }
 
 const IndividualCard = ({ customer }: Props) => {
-  const session = useSession();
-  const token = session?.user.token || ""; 
   const [isClientProfileOpen, setIsClientProfileOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { handleAction } = useActions();
 
-  const handleDeactivate = async (): Promise<CommonResponseDataType> => {
-    const response = await deactivateCustomer(customer._id);
-
-    if (typeof response === "string") {
-      return {
-        status: "SUCCESS",
-        message: response,
-        data: null,
-      };
-    }
-    if (typeof response === "object" && response !== null) {
-      if ('status' in response && (response.status === "SUCCESS" || response.status === "FAIL")) {
-        return {
-          status: response.status,
-          message: response.message ?? "",
-          data: 'data' in response ? (response as { data: null }).data : null,
-        };
-      }
-      return {
-        status: "SUCCESS",
-        message: typeof response.message === "string" ? response.message : "",
-        data: 'data' in response ? (response as { data: null }).data : null,
-      };
-    }
-    return {
-      status: "SUCCESS",
-      message: "Operation completed successfully",
-      data: null,
-    };
-  };
-
-  const formatedDate = new Date(customer.createdAt).toISOString().split('T')[0];
+  const formatedDate = new Date(customer.createdAt).toISOString().split("T")[0];
 
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
@@ -70,10 +36,10 @@ const IndividualCard = ({ customer }: Props) => {
               Status
             </p>
             <Badge
-              variant={customer.status === "ACTIVE" ? "success" : "destructive"}
+              variant={customer.isActive ? "success" : "destructive"}
               className="rounded-[15px] text-[11px]/[13px] font-semibold"
             >
-              {customer.status === "ACTIVE" ? "Active" : "Inactive"}
+              {customer.isActive ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
@@ -90,7 +56,7 @@ const IndividualCard = ({ customer }: Props) => {
             Client Name
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.name}
+            {`${customer.first_name} ${customer.last_name}`}
           </p>
         </div>
 
@@ -99,7 +65,7 @@ const IndividualCard = ({ customer }: Props) => {
             Mobile Number
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.mobileNumber}
+            {customer.phone}
           </p>
         </div>
 
@@ -124,13 +90,13 @@ const IndividualCard = ({ customer }: Props) => {
           }}
           className="edit-with-bg w-[36.26px] h-[50px]"
         />
-      <i
-        role="button"
-        tabIndex={0}
-        aria-label="Deactivate customer"
-        onClick={() => {
+        <i
+          role="button"
+          tabIndex={0}
+          aria-label="Deactivate customer"
+          onClick={() => {
             handleAction(
-              handleDeactivate,
+              async () => await toggleCustomerStatus(customer._id),
               `Are you sure you want to deactivate this client?`,
               `The client has been successfully deactivated!`,
               "Deactivate",
@@ -138,43 +104,9 @@ const IndividualCard = ({ customer }: Props) => {
               undefined,
               "red"
             );
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            handleAction(
-              async () => {
-                const response = await deactivateCustomer(customer._id);
-                if (typeof response === "string") {
-                  return {
-                    status: "SUCCESS" as const,
-                    message: response,
-                    data: null,
-                  };
-                }
-                if ('status' in response && (response.status === "SUCCESS" || response.status === "FAIL")) {
-                  return {
-                    status: response.status,
-                    message: response.message ?? "",
-                    data: 'data' in response ? (response ).data : null,
-                  };
-                }
-                return {
-                  status: "SUCCESS" as const,
-                  message: typeof response.message === "string" ? response.message : "",
-                  data: 'data' in response ? (response as { data: null } ).data : null,
-                };
-              },
-              `Are you sure you want to deactivate this client?`,
-              `The client has been successfully deactivated!`,
-              "Deactivate",
-              "Done",
-              undefined,
-              "red"
-            );
-          }
-        }}
-        className="deactivate-customer w-[36.26px] h-[50px]"
-      />
+          }}
+          className="deactivate-customer w-[36.26px] h-[50px]"
+        />
       </div>
 
       <ViewClientProfile

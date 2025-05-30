@@ -1,25 +1,24 @@
 "use client";
 
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 // import MonthSelector from "../MonthSelector";
 import { useCollectPaymentGroupSheet } from "@/hooks/useCollectPaymentGroupSheet";
-import { usePaymentCollectionGroupSheet } from "@/hooks/usePaymentCollectionGroupSheet";
 import { useExtraPaymentCollectionSheet } from "@/hooks/usePaymentCollectionExtra";
+import { usePaymentCollectionGroupSheet } from "@/hooks/usePaymentCollectionGroupSheet";
 import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
 import {
-  CollectGroupPayment,
-  PaymentStatus,
+    CollectGroupPayment,
+    PaymentStatus,
 } from "@/types/CollectGroupPayment";
 
 const CollectPaymentGroup = () => {
@@ -129,7 +128,7 @@ const CollectPaymentGroup = () => {
                         className={`${
                           payment.paymentStatus == PaymentStatus.NOT_PAID
                             ? "bg-[#D32F2F]"
-                            : "bg-[#00BC15]"
+                            : "bg-[#F04237]"
                         } text-[10px]/[100%] font-medium text-[#FFFFFF] w-fit rounded-[15px] px-[10px] py-[5px]`}
                       >
                         {payment.paymentStatus}

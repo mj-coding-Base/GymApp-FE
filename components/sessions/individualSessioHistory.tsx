@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { getAllSessions } from "@/actions/session";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PaymentStatus, getPaymentStatusColor } from "@/types/SessionHistory";
-import { getAllSessions } from "@/actions/session"; 
+import { useEffect, useState } from "react";
 
 interface SessionData {
   date: string;
@@ -106,7 +106,7 @@ export function IndividualSessionHistory({ clientId }: PaymentHistoryProps) {
 
                 {/* Sessions List */}
                 <div className="rounded-lg border border-[#E7E7E7] mb-6 overflow-hidden w-full">
-                  <div className="grid grid-cols-4 bg-[#E3F5E5] py-3 px-4">
+                  <div className="grid grid-cols-4 bg-[#fac1be] py-3 px-4">
                     <div className="text-[#434745] text-[11.5px]">Date</div>
                     <div className="text-[#434745] text-[11.5px]">Start Time</div>
                     <div className="text-[#434745] text-[11.5px]">Session</div>

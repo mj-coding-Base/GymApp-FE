@@ -1,7 +1,7 @@
 import React, { JSX } from "react";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface CustomTabsProps {
@@ -40,7 +40,7 @@ const CustomTabs: React.FC<CustomTabsProps> = ({
               <TabsTrigger
                 value={tab.value}
                 className={cn(
-                  "text-[#424242] text-[13.5px]/[23.4px] font-medium rounded-none h-full data-[state=active]:font-bold data-[state=active]:text-[#00BC15] data-[state=active]:bg-transparent data-[state=active]:border-b-[2px] data-[state=active]:border-b-[#00BC15]",
+                  "text-[#424242] text-[13.5px]/[23.4px] font-medium rounded-none h-full data-[state=active]:font-bold data-[state=active]:text-[#F04237] data-[state=active]:bg-transparent data-[state=active]:border-b-[2px] data-[state=active]:border-b-[#F04237]",
                   tab.className
                 )}
               >

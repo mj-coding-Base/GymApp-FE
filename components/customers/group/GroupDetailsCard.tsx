@@ -1,12 +1,13 @@
+
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
 import { CommonResponseDataType } from "@/types/Common";
-import { GroupMemberData } from "@/types/Group";
+import { GroupCustomer } from "@/types/Customer";
 
 interface Props {
-  groupMember: GroupMemberData;
+  groupMember: GroupCustomer;
 }
 
 const GroupDetailsCard = ({ groupMember }: Props) => {
@@ -39,7 +40,7 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
               Date Registered
             </p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {groupMember.dateRegistered}
+              {groupMember.createdAt}
             </p>
           </div>
           <div className="flex flex-col gap-[5px]">
@@ -48,11 +49,11 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
             </p>
             <Badge
               variant={
-                groupMember.status === "active" ? "success" : "destructive"
+                groupMember.status === "ACTIVE" ? "success" : "destructive"
               }
               className="rounded-[15px] text-[11px]/[13px] font-semibold"
             >
-              {groupMember.status === "active" ? "Active" : "Inactive"}
+              {groupMember.status === "ACTIVE" ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
@@ -69,7 +70,7 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
             Member
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {groupMember.member}
+            {`${groupMember.first_name} ${groupMember.last_name}`}
           </p>
         </div>
 
@@ -79,7 +80,7 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
               Mobile Number
             </p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {groupMember.mobileNumber}
+              {groupMember.phone}
             </p>
           </div>
 
@@ -88,7 +89,9 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
               Relationship
             </p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {groupMember.relationship}
+              {groupMember.isPrimaryMember
+                ? "Primary Member"
+                : groupMember.relationToPrimaryMember}
             </p>
           </div>
         </div>
@@ -98,12 +101,10 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
             Payment Status
           </p>
           <Badge
-            variant={
-              groupMember.paymentStatus === "paid" ? "success" : "destructive"
-            }
+            variant={groupMember.isPaid ? "success" : "destructive"}
             className="rounded-[15px] text-[11px]/[13px] font-semibold"
           >
-            {groupMember.paymentStatus === "paid" ? "Paid" : "Not Paid"}
+            {groupMember.isPaid ? "Paid" : "Not Paid"}
           </Badge>
         </div>
       </div>

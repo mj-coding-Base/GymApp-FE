@@ -1,5 +1,6 @@
 "use client";
 
+import { getUserById } from "@/actions/customers";
 import {
   Sheet,
   SheetClose,
@@ -7,16 +8,35 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Customer } from "@/types/Customer";
-import React from "react";
+import { CustomerView, IndividualCustomer } from "@/types/Customer";
+import React, { useEffect, useState } from "react";
 
 interface ViewClientProfileProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
-  customer: Customer;
+  customer: IndividualCustomer;
 }
 
-const ViewClientProfile = ({ isOpen, setIsOpen, customer }: ViewClientProfileProps) => {
+const ViewClientProfile = ({
+  isOpen,
+  setIsOpen,
+  customer,
+}: ViewClientProfileProps) => {
+  const [paymentData, setPaymentData] = useState<CustomerView | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setLoading(true);
+
+    getUserById(customer._id)
+      .then((response) => {
+        setPaymentData(response);
+      })
+      .finally(() => setLoading(false));
+  }, [customer._id, isOpen]);
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetContent
@@ -44,7 +64,7 @@ const ViewClientProfile = ({ isOpen, setIsOpen, customer }: ViewClientProfilePro
                   Name
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.name}
+                  {`${customer.first_name} ${customer.last_name}`}
                 </p>
               </div>
               <div className="flex-[50%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
@@ -70,7 +90,7 @@ const ViewClientProfile = ({ isOpen, setIsOpen, customer }: ViewClientProfilePro
                   Current Session
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.currentSession}
+                  {customer.attendedSessionCount}
                 </p>
               </div>
               <div className="flex-[30%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
@@ -78,43 +98,88 @@ const ViewClientProfile = ({ isOpen, setIsOpen, customer }: ViewClientProfilePro
                   Mobile
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.mobileNumber}
+                  {customer.phone}
                 </p>
               </div>
             </div>
           </div>
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
-            Package Information
+            Payment History
           </p>
-          <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
-            <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
-              <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
-                Payment Date
-              </p>
-              <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
-                Package
-              </p>
-              <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
-                Amount
-              </p>
+          {loading ? (
+            <div className="min-h-[500px] flex items-center justify-center">
+              <i className="size-[45px] animate-spin loading-icon" />
             </div>
-            {[1, 2, 3].map((item) => (
-              <div
-                key={item}
-                className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
-              >
-                <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                  04/03/25
+          ) : (
+            <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
+              <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
+                <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Payment Date
                 </p>
-                <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                  Boxfit Extreme
+                <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Package
                 </p>
-                <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                  LKR 3000
+                <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Amount
                 </p>
               </div>
-            ))}
-          </div>
+              {paymentData?.paymentHistory.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
+                >
+                  <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.createdAt}
+                  </p>
+                  <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.package.package_name}
+                  </p>
+                  <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    LKR {item.amount}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
+            Package History
+          </p>
+          {loading ? (
+            <div className="min-h-[500px] flex items-center justify-center">
+              <i className="size-[45px] animate-spin loading-icon" />
+            </div>
+          ) : (
+            <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
+              <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
+                <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Payment Date
+                </p>
+                <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Package
+                </p>
+                <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Amount
+                </p>
+              </div>
+              {paymentData?.packageHistory.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
+                >
+                  <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.createdAt}
+                  </p>
+                  <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.package.package_name}
+                  </p>
+                  <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    LKR {item.amount}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>

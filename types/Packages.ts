@@ -1,6 +1,6 @@
 export type Package = {
   packageId: string;         // corresponds to "_id"
-  packageName: string;       // corresponds to "name"
+  package_name: string;       // corresponds to "name"
   description: string;
   sessionCount: number;      // corresponds to "sessions"
   createdAt: string;
@@ -12,7 +12,7 @@ export type Package = {
 export interface PackageData {
   id: string;
   dateCreated: string;
-  packageName: string;
+  package_name: string;
   sessions: number;
   members: number;
 }

@@ -18,8 +18,8 @@ const Logo = ({
         src="/images/logo.png"
         alt="Logo"
         width={500}
-        height={300}
-        className={cn("w-auto h-auto", className)}
+        height={500}
+        className={cn("w-auto h-auto", className) }
       />
     </Link>
   );

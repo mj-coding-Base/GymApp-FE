@@ -3,18 +3,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
-import React from "react";
 // import MonthSelector from "../MonthSelector";
 import { useCollectPaymentIndividualSheet } from "@/hooks/useCollectPaymentIndividualSheet";
-import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
 import { useExtraPaymentCollectionSheet } from "@/hooks/usePaymentCollectionExtra";
+import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
 
 const CollectPaymentIndividual = () => {
   const {
@@ -96,7 +95,7 @@ const CollectPaymentIndividual = () => {
             </div>
           </div>
           <div className="mt-5 border-[#E7E7E7] border-[1px] rounded-[15px] overflow-hidden">
-            <div className=" flex bg-[#E3F5E5] px-[12px] py-[10px]">
+            <div className=" flex bg-[#fac1be] px-[12px] py-[10px]">
               <p className="flex-1/2 text-center text-[12px] font-medium text-[#454545]">
                 Session Count
               </p>

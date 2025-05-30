@@ -1,16 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import{ FetchedGroupCustomer} from "@/types/Customer";
+import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
+import { GroupCustomer } from "@/types/Customer";
 interface Props {
-  group: FetchedGroupCustomer;
+  group: GroupCustomer;
 }
 
 const GroupCard = ({ group }: Props) => {
   const { setOpenViewGroupDetails } = useViewGroupDetails();
-  const formattedDate = group.createdAt
-    ? new Date(group.createdAt).toISOString().split('T')[0]
-    : "N/A";
+  const { setSelectedGroupData } = useGroupDetailsStore();
 
+  const formattedDate = group.createdAt
+    ? new Date(group.createdAt).toISOString().split("T")[0]
+    : "N/A";
 
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
@@ -77,6 +79,7 @@ const GroupCard = ({ group }: Props) => {
       <div className="absolute right-0 inset-y-0 flex flex-col gap-[10px] items-center justify-center">
         <i
           onClick={() => {
+            setSelectedGroupData(group);
             setOpenViewGroupDetails(true);
           }}
           className="view-details w-[40px] h-[50px]"

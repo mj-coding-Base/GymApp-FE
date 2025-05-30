@@ -1,26 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { getTrainerSessions } from "@/actions/trainers";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Type } from "@/types/TrainerDetails";
 import {
-  PaymentStatus,
-  getPaymentStatusColor,
-  getClientTypeColor,
+    ClientType,
+    PaymentStatus,
+    Session,
+    getClientTypeColor,
+    getPaymentStatusColor,
 } from "@/types/SessionHistory";
-import { getTrainerSessions } from "@/actions/trainers";
+import { Type } from "@/types/TrainerDetails";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Session, ClientType } from "@/types/SessionHistory";
 
 interface SessionHistoryProps {
   trainerType: string;
@@ -203,7 +204,7 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
 
                   {/* Sessions list */}
                   <div className="bg-[#F7F7F8] rounded-lg overflow-hidden w-full">
-                    <div className="grid grid-cols-3 bg-[#E3F5E5] py-3 px-4">
+                    <div className="grid grid-cols-3 bg-[#fac1be] py-3 px-4">
                       <div className="text-[#454545] text-[11px]">Date</div>
                       <div className="text-[#454545] text-[11px]">Session</div>
                       <div className="text-[#454545] text-[11px]">
@@ -303,7 +304,7 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
 
                   {/* Sessions list */}
                   <div className="bg-[#F7F7F8] rounded-lg overflow-hidden w-full">
-                    <div className="grid grid-cols-3 bg-[#E3F5E5] py-3 px-4">
+                    <div className="grid grid-cols-3 bg-[#fac1be] py-3 px-4">
                       <div className="text-[#454545] text-[11px]">Date</div>
                       <div className="text-[#454545] text-[11px]">Session</div>
                       <div className="text-[#454545] text-[11px]">

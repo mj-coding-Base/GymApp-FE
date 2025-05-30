@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from "react";
+import { fetchGroupPaymentDetails } from "@/actions/clientPayment";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
-import MonthSelector from "../MonthSelector";
-import { useCollectPaymentSuccessGroupSheet } from "@/hooks/useCollectPaymentSuccessGroupSheet";
-import { fetchGroupPaymentDetails } from "@/actions/clientPayment";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCollectPaymentSuccessGroupSheet } from "@/hooks/useCollectPaymentSuccessGroupSheet";
+import { useEffect, useState } from "react";
+import MonthSelector from "../MonthSelector";
 
 interface GroupMember {
   id: string;
@@ -103,7 +103,7 @@ const CollectPaymentSuccessGroup = () => {
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
-      case 'PAID': return 'bg-[#00BC15] text-white';
+      case 'PAID': return 'bg-[#F04237] text-white';
       case 'PENDING': return 'bg-[#FFC107] text-black';
       case 'OVERDUE': return 'bg-[#F44336] text-white';
       default: return 'bg-gray-300 text-black';

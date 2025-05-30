@@ -1,8 +1,8 @@
 import React from "react";
-import WhiteCard from "./WhiteCard";
-import TotalEarningChart from "./TotalEarningsChart";
 import CollectPayment from "./CollectPayment";
 import MarkAttendance from "./MarkAttendance";
+import TotalEarningChart from "./TotalEarningsChart";
+import WhiteCard from "./WhiteCard";
 
 // Define types for the backend data
 type DashboardData = {
@@ -61,19 +61,19 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
             </h1>
           </div>
           <div className="grid grid-cols-2 gap-[12px] w-full">
-            <div className="flex flex-col items-center justify-center bg-[#E3F5E5] rounded-[15px] h-[76px] gap-[6px]">
+            <div className="flex flex-col items-center justify-center bg-[#fac1be] rounded-[15px] h-[76px] gap-[6px]">
               <p className="text-[14px]/[18px] font-normal text-[#454545]">
                 Group
               </p>
-              <p className="text-[24px]/[18px] font-bold text-[#00BC15]">
+              <p className="text-[24px]/[18px] font-bold text-[#F04237]">
                 {client.group}
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center bg-[#E3F5E5] rounded-[15px] h-[76px] gap-[6px]">
+            <div className="flex flex-col items-center justify-center bg-[#fac1be] rounded-[15px] h-[76px] gap-[6px]">
               <p className="text-[14px]/[18px] font-normal text-[#454545]">
                 Individual
               </p>
-              <p className="text-[24px]/[18px] font-bold text-[#00BC15]">
+              <p className="text-[24px]/[18px] font-bold text-[#F04237]">
                 {client.individual}
               </p>
             </div>
@@ -87,7 +87,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
             <h1 className="text-[12px] font-medium text-[#3D3D3D]">Trainers</h1>
           </div>
           <div className="grid grid-cols-2 gap-[12px] w-full">
-            <div className="flex flex-col items-center justify-center bg-[#F3FAF4] rounded-[15px] h-[76px] gap-[6px]">
+            <div className="flex flex-col items-center justify-center bg-[#fac1be] rounded-[15px] h-[76px] gap-[6px]">
               <p className="text-[14px]/[18px] font-normal text-[#454545]">
                 Part Time
               </p>
@@ -95,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
                 {trainer.partTime}
               </p>
             </div>
-            <div className="flex flex-col items-center justify-center bg-[#F3FAF4] rounded-[15px] h-[76px] gap-[6px]">
+            <div className="flex flex-col items-center justify-center bg-[#fac1be] rounded-[15px] h-[76px] gap-[6px]">
               <p className="text-[14px]/[18px] font-normal text-[#454545]">
                 Full Time
               </p>

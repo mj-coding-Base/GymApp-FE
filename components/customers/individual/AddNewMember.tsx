@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Customer } from "@/types/Customer";
+import { IndividualCustomer } from "@/types/Customer";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,9 +33,10 @@ import {
 } from "@/components/ui/select";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { createIndividualCustomer, updateCustomer } from "@/actions/customers";
-import { fetchAllPackages } from "@/actions/package";
 import { Package } from "@/types/Packages";
 import { toast } from "sonner";
+import { fetchAllPackages } from "@/actions/package";
+import { ErrorToast } from "@/components/common/toast";
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -49,7 +52,10 @@ const formSchema = z.object({
     .regex(/^[a-zA-Z\s]+$/, "Only alphabets and spaces allowed"),
   mobileNumber: z
     .string({ required_error: "Mobile number is required" })
-    .regex(/^\+?\d{10,12}$/, "Invalid mobile number format (e.g., +94771234567)"),
+    .regex(
+      /^\+?\d{10,12}$/,
+      "Invalid mobile number format (e.g., +94771234567)"
+    ),
   nic: z
     .string({ required_error: "NIC is required" })
     .min(10, "NIC too short")
@@ -71,7 +77,7 @@ const formSchema = z.object({
 interface AddNewMemberProps {
   readonly open: boolean;
   readonly setOpen: (value: boolean) => void;
-  readonly data: Customer | null;
+  readonly data: IndividualCustomer | null;
 }
 
 function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
@@ -97,7 +103,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     try {
       setLoadingPackages(true);
       const res = await fetchAllPackages();
-      setPackages(Array.isArray(res) ? res : []);
+      setPackages(res);
     } catch (error) {
       console.error("Failed to fetch packages:", error);
       toast.error("Failed to load packages. Please try again.");
@@ -114,28 +120,27 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         form.reset();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
     if (open && data) {
-      // Extract first and last names from full name
-      const nameParts = data.name?.split(" ") || ["", ""];
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
       form.reset({
-        firstName,
-        lastName,
-        mobileNumber: data.mobileNumber || "",
-        email: data.email || "",
-        nic: data.nic || "",
-        programFee: 0, // Consider adding fee to Customer type if needed
-        package: data.packageId || "",
+        firstName: data.first_name,
+        lastName: data.last_name,
+        mobileNumber: data.phone,
+        email: data.email,
+        nic: data.nic,
+        programFee: data.fee,
+        package: data.package_id,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    let response;
+
     setIsSubmitting(true);
     try {
       const customerData = {
@@ -150,33 +155,29 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
       if (data) {
         // Update existing customer
-        await updateCustomer(data._id, customerData);
-        setSuccessData({
-          title: "Client Updated!",
-          description: `${customerData.first_name}'s details have been successfully updated!`,
-          backButtonText: "Done",
-          function: () => setOpen(false),
-        });
+        response = await updateCustomer(data._id, customerData);
       } else {
         // Create new customer
-        await createIndividualCustomer(customerData);
-        setSuccessData({
-          title: "Registration Successful!",
-          description: `${customerData.first_name} has been successfully registered!`,
-          backButtonText: "Done",
-          function: () => setOpen(false),
-        });
+        response = await createIndividualCustomer(customerData);
       }
 
-      setOpenSuccessModal(true);
-      form.reset();
-    } catch (error: unknown) {
+      if (response.status === "SUCCESS") {
+        form.reset();
+        setOpen(false);
+        setSuccessData({
+          title: !data ? "Registration Successful!" : "Client Updated!",
+          description: !data
+            ? `${customerData.first_name} has been successfully registered!`
+            : `${customerData.first_name}'s details have been successfully updated!`,
+          backButtonText: "Done",
+          function: () => {},
+        });
+        setOpenSuccessModal(true);
+      } else {
+      }
+    } catch (error: any) {
       console.error("Operation failed:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Operation failed. Please try again."
-      );
+      ErrorToast(error);
     } finally {
       setIsSubmitting(false);
     }
@@ -331,7 +332,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                       disabled={loadingPackages || isSubmitting}
                     >
                       <FormControl>
-                        <SelectTrigger className="rounded-[10px] h-[41px]">
+                        <SelectTrigger className="rounded-[10px] h-[41px] w-full">
                           <SelectValue placeholder="Select Package" />
                         </SelectTrigger>
                       </FormControl>
@@ -343,12 +344,14 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                           </div>
                         ) : packages.length > 0 ? (
                           packages.map((pkg) => (
-                            <SelectItem key={pkg.packageId} value={pkg.packageId}>
-                              {pkg.packageName} 
+                            <SelectItem key={pkg._id} value={pkg._id}>
+                              {pkg.package_name}
                             </SelectItem>
                           ))
                         ) : (
-                          <div className="p-2 text-center">No packages available</div>
+                          <div className="p-2 text-center">
+                            No packages available
+                          </div>
                         )}
                       </SelectContent>
                     </Select>
@@ -375,8 +378,10 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : data ? (
+                    "Update Client"
                   ) : (
-                    data ? "Update Client" : "Register Client"
+                    "Register Client"
                   )}
                 </Button>
               </div>

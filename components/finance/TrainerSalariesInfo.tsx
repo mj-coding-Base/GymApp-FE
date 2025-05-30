@@ -1,7 +1,7 @@
-import React from "react";
+import { getTrainerSalaries } from "@/actions/finances";
 import { Badge } from "@/components/ui/badge";
 import { ClientType, Status } from "@/types/TrainerSalaries";
-import { getTrainerSalaries } from "@/actions/finances";
+import React from "react";
 
 export const TrainerSalariesInfo: React.FC = async () => {
   const result = await getTrainerSalaries();
@@ -60,7 +60,7 @@ export const TrainerSalariesInfo: React.FC = async () => {
                 <Badge
                   className={`mt-1 px-3 py-1 ${
                     salary.status === Status.PAID
-                      ? "bg-[#00BC15] text-[#FFFFFF] w-[44px] h-[18px]"
+                      ? "bg-[#F04237] text-[#FFFFFF] w-[44px] h-[18px]"
                       : "bg-[#D32F2F] text-[#FFFFFF] w-[65px] h-[18px]"
                   } rounded-[15px] text-[11px] font-[600]`}
                 >

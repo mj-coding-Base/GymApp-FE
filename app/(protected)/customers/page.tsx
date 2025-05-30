@@ -3,15 +3,14 @@ import {
   fetchGroupCustomers,
 } from "@/actions/customers";
 import Customers from "@/components/customers/Customers";
-import { Customer, FetchedCustomer } from "@/types/Customer";
+import { GroupCustomer, IndividualCustomer } from "@/types/Customer";
 import React from "react";
 
 interface Props {
   searchParams: Promise<{
     page?: string;
-    items?: string;
+    size?: string;
     search?: string;
-    isActive?: string;
     type?: string;
   }>;
 }
@@ -19,55 +18,39 @@ interface Props {
 export default async function Page({ searchParams }: Props) {
   const searchparams = await searchParams;
 
-  try {
-    const { data: individualData } = await fetchIndividualCustomers();
-    const individuals: Customer[] = individualData.map(
-      (customer: FetchedCustomer) => ({
-        _id: customer._id,
-        name: `${customer.first_name ?? ""} ${customer.last_name ?? ""}`,
-        nic: customer.nic ?? "",
-        email: customer.email ?? "",
-        mobileNumber: customer.phone ?? "",
-        packageId: customer.package_id ?? "",
-        status: customer.status ?? "",
-        isActive: customer.isActive ?? false,
-        createdAt: customer.createdAt ?? "",
-        updatedAt: customer.updatedAt ?? "",
-        isPaid: customer.isPaid ?? false,
-        packageName: "",
-        groupMembersNames: [],
-        type: "individual",
-      })
-    );
+  const type = searchparams.type;
 
-    const { data: groups } = await fetchGroupCustomers();
+  let individualCustomers: {
+    results: IndividualCustomer[];
+    totalResults: number;
+  } = { results: [], totalResults: 0 };
 
-    return (
-      <Customers
-        individuals={individuals}
-        groups={groups}
-        searchParams={{
-          page:
-            typeof searchparams?.page === "string"
-              ? searchparams.page
-              : undefined,
-          items:
-            typeof searchparams?.items === "string"
-              ? searchparams.items
-              : undefined,
-          search:
-            typeof searchparams?.search === "string"
-              ? searchparams.search
-              : undefined,
-          type:
-            typeof searchparams?.type === "string"
-              ? searchparams.type
-              : undefined,
-        }}
-      />
+  let groupCustomers: { results: GroupCustomer[]; totalResults: number } = {
+    results: [],
+    totalResults: 0,
+  };
+
+  if (type === "group") {
+    groupCustomers = await fetchGroupCustomers(
+      searchparams.page ?? "1",
+      "10",
+      searchparams.search,
+      undefined,
+      true
     );
-  } catch (error) {
-    console.error("Page fetch error:", error);
-    return <div>Error loading customers</div>;
+  } else {
+    individualCustomers = await fetchIndividualCustomers(
+      searchparams.page ?? "1",
+      "10",
+      searchparams.search
+    );
   }
+
+  return (
+    <Customers
+      individuals={individualCustomers}
+      groups={groupCustomers}
+      searchParams={searchparams}
+    />
+  );
 }

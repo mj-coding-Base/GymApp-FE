@@ -1,23 +1,22 @@
 "use client";
-import * as React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import { Button } from "@/components/ui/button";
+import { getPackageMembers, getPackages } from "@/actions/package";
+import CustomPagination from "@/components/common/CustomPagination";
 import AddNewPackage from "@/components/packages/AddNewPackage";
 import UpdatePackage from "@/components/packages/UpdatePackage";
-import CustomPagination from "@/components/common/CustomPagination";
-import { getPackages, getPackageMembers } from "@/actions/package";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+} from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
+import { MemberData, PackageData } from "@/types/Packages";
 import { Loader2 } from "lucide-react";
-import { PackageData } from "@/types/Packages";
-import { MemberData } from "@/types/Packages";
+import * as React from "react";
 
 export default function PackagePage() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
@@ -112,7 +111,7 @@ export default function PackagePage() {
                       <div>
                         <p className="text-[11px] text-gray-500">Package Name</p>
                         <p className="text-[12px] font-medium">
-                          {pkg.packageName}
+                          {pkg.package_name}
                         </p>
                       </div>
                     </div>

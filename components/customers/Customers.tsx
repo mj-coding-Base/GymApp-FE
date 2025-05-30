@@ -3,17 +3,17 @@ import React from "react";
 import CustomTabs from "../common/CustomTabs";
 import Individual from "./individual/Individual";
 import Group from "./group/Group";
-import { Customer,FetchedGroupCustomer } from "@/types/Customer";
+import { GroupCustomer, IndividualCustomer } from "@/types/Customer";
 
 interface Props {
   searchParams: {
     page?: string;
-    items?: string;
+    size?: string;
     search?: string;
     type?: string;
   };
-  individuals: Customer[];
-  groups: FetchedGroupCustomer[];
+  individuals: { results: IndividualCustomer[]; totalResults: number };
+  groups: { results: GroupCustomer[]; totalResults: number };
 }
 
 const Customers = ({ searchParams, individuals, groups }: Props) => {
@@ -22,7 +22,7 @@ const Customers = ({ searchParams, individuals, groups }: Props) => {
       title: "Individual",
       value: "individual",
       path: "/customers",
-      content: () => <Individual initialCustomers={individuals} />,
+      content: () => <Individual individualCustomers={individuals} />,
       className: "w-[110px] lg:w-[112.5px] 3xl:w-[150px]",
     },
     {

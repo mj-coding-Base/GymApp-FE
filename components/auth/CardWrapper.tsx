@@ -35,15 +35,15 @@ const CardWrapper = ({
   return (
     <div
       className={cn(
-        `flex flex-col shadow-none w-full mx-auto px-[4px] md:px-[20px] lg:px-[20px] py-[40px] h-[507px] my-auto border-none`,
+        `flex flex-col items-center justify-center shadow-none w-full mx-auto px-[4px] md:px-[20px] lg:px-[20px] py-[40px] h-[507px] my-auto border-none`,
         className
       )}
     >
-      <Logo className={`w-[136.66px] h-[57.66px] ${logo ? "" : "hidden"}`} />
+      <Logo className={`w-[300.66px] h-[300.66px] items-center justify-center ${logo ? "" : "hidden"}`} />
 
       <div
         className={cn(
-          `w-full flex gap-[10px] flex-col ${logo ? "mt-[45px]" : ""}`,
+          `w-full items-center justify-center flex gap-[10px] flex-col ${logo ? "mt-[15px]" : ""}`,
           headerTexts
         )}
       >

@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { getTrainers } from "@/actions/trainers";
 import { Badge } from "@/components/ui/badge";
-import { Type, Status, Trainer } from "@/types/TrainerDetails";
-import { TrainerRegistrationCard } from "./UpdateTrainer";
+import { Status, Trainer, Type } from "@/types/TrainerDetails";
+import { Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { PaymentHistory } from "./PaymentHistory";
 import { SessionHistory } from "./SessionHistory";
+import { TrainerRegistrationCard } from "./UpdateTrainer";
 import { UserCancel } from "./UserCancel";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { getTrainers } from "@/actions/trainers";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
 const TrainerList: React.FC = () => {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -89,7 +89,7 @@ const TrainerList: React.FC = () => {
                 <Badge
                   className={`p-2 text-[11px] ${
                     trainer.status === Status.ACTIVE
-                      ? "bg-[#00BC15] text-[#FFFFFF] rounded-[15px] w-[54px] h-[18px]"
+                      ? "bg-[#F04237] text-[#FFFFFF] rounded-[15px] w-[54px] h-[18px]"
                       : "bg-[#D32F2F] text-[#FFFFFF] rounded-[15px] w-[63px] h-[19px]"
                   }`}
                 >

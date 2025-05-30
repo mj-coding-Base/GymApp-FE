@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
 
-import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-import { cn } from "@/lib/utils";
 import { sidebarData } from "@/data/sidebar";
+import { cn } from "@/lib/utils";
 
 const MobileSidebar = () => {
   const pathname = usePathname();
@@ -20,7 +19,7 @@ const MobileSidebar = () => {
           className={cn(
             "size-full w-1/6 min-h-[60px] group shrink-0 h-full flex flex-col justify-center items-center gap-0.5",
             pathname.split("/")[1] === item.url.split("/")[1]
-              ? "text-[#FFFFFF] text-[9px] font-[500px] bg-[#00BC15]"
+              ? "text-[#FFFFFF] text-[9px] font-[500px] bg-[#F04237]"
               : "text-[#4C4E64] text-[9px] font-[400px]"
           )}
           prefetch={false}

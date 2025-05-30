@@ -1,35 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { createNewPackage, packageSchema } from "@/actions/package";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
-  Drawer,
-  DrawerTrigger,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
-import { createNewPackage, packageSchema } from "@/actions/package";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 interface AddNewPackageProps {
@@ -43,7 +43,7 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
   const form = useForm({
     resolver: zodResolver(packageSchema),
     defaultValues: {
-      packageName: "",
+      package_name: "",
       sessionsAllocated: undefined,
     },
   });
@@ -105,7 +105,7 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
             >
               <FormField
                 control={form.control}
-                name="packageName"
+                name="package_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">

@@ -1,21 +1,21 @@
 "use client";
 
+import { markMultipleAttendances, searchCustomers } from "@/actions/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { useMarkAttendanceIndividualSheet } from "@/hooks/useMarkAttendanceIndividualSheet";
-import React, { useState } from "react";
-import { searchCustomers, markMultipleAttendances } from "@/actions/session";
-import { Customer,FetchedCustomer } from "@/types/Customer";
+import { Customer, FetchedCustomer } from "@/types/Customer";
+import { useState } from "react";
 import { toast } from "sonner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const MarkAttendanceIndividual = () => {
   const {
@@ -46,7 +46,7 @@ const MarkAttendanceIndividual = () => {
                       email: c.email ?? "",
                       mobileNumber: c.phone ?? "",
                       packageId: c.package_id ?? "",
-                      packageName: c.package_id ?? "",
+                      package_name: c.package_id ?? "",
                       status: c.status ?? "",
                       isActive: c.isActive ?? false,
                       createdAt: c.createdAt ?? "",

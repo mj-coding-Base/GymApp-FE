@@ -1,19 +1,19 @@
 "use client";
 
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
+import { forgotPassword } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { forgotPassword } from "@/actions/auth";
 import Loading from "./Loading";
 
 const formSchema = z.object({
@@ -93,7 +93,7 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
         <Button
           disabled={form.formState.isSubmitting}
           type="submit"
-          className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#00BC15]"
+          className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#F04237]"
         >
           Next
         </Button>

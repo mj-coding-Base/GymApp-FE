@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
+import { getAllSessions } from "@/actions/session";
+import { CalendarForm } from "@/components/common/CalendarForm";
+import { useSession } from "@/components/providers/SessionProvider";
+import GroupSessions from "@/components/sessions/group";
+import IndividualSessions from "@/components/sessions/individual";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import IndividualSessions from "@/components/sessions/individual";
-import GroupSessions from "@/components/sessions/group";
 import {
   Dialog,
   DialogContent,
@@ -14,11 +14,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { CalendarForm } from "@/components/common/CalendarForm";
-import { Customer, FetchedGroupCustomer } from "@/types/Customer";
-import { useSession } from "@/components/providers/SessionProvider";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getAllSessions } from "@/actions/session";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Customer } from "@/types/Customer";
+import React, { useState } from "react";
 
 // Dummy data generators
 
@@ -88,7 +88,7 @@ const SessionsPage = () => {
               value="individual"
               className={`flex-1 py-2 rounded-none w-[110px] ${
                 activeTab === "individual"
-                  ? "text-[13.5px] text-[#00BC15] border-b-2 border-b-[#00BC15]  data-[state=active]:bg-transparent data-[state=active]:text-[#00BC15] data-[state=active]:shadow-none"
+                  ? "text-[13.5px] text-[#F04237] border-b-2 border-b-[#F04237]  data-[state=active]:bg-transparent data-[state=active]:text-[#F04237] data-[state=active]:shadow-none"
                   : "text-[#424242] data-[state=active]:bg-transparent"
               }`}
             >
@@ -98,7 +98,7 @@ const SessionsPage = () => {
               value="group"
               className={`flex-1 py-2 rounded-none w-[87px] ${
                 activeTab === "group"
-                  ? "text-[13.5px] text-[#00BC15] border-b-2 border-b-[#00BC15]  data-[state=active]:bg-transparent data-[state=active]:text-[#00BC15] data-[state=active]:shadow-none"
+                  ? "text-[13.5px] text-[#F04237] border-b-2 border-b-[#F04237]  data-[state=active]:bg-transparent data-[state=active]:text-[#F04237] data-[state=active]:shadow-none"
                   : "text-[#424242] data-[state=active]:bg-transparent"
               }`}
             >

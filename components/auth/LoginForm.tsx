@@ -1,28 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useSecureCredentials } from "@/hooks/useSecureCredentials";
 import { login } from "@/lib/authentication";
+import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
 
@@ -169,7 +169,7 @@ const LoginForm = () => {
               </label>
             </div>
 
-            <Link href="/reset-password" className="text-sm text-[#00BC15]">
+            <Link href="/reset-password" className="text-sm text-[#F04237]">
               Forgot Password?
             </Link>
           </div>
@@ -177,7 +177,7 @@ const LoginForm = () => {
         <Button
           type="submit"
           disabled={loading || !form.watch().email || !form.watch().password}
-          className="w-full rounded-[10px] font-semibold text-lg h-[42px] bg-[#00BC15] text-white"
+          className="w-full rounded-[10px] font-semibold text-lg h-[42px] bg-[#F04237] text-white"
         >
           Login
         </Button>

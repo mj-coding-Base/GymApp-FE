@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
+import type { ChartConfig } from "@/components/ui/chart";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
@@ -10,12 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ChartConfig } from "@/components/ui/chart";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { useState } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 const chartConfig = {
   earnings: {
@@ -75,12 +75,12 @@ console.log("Chart Data:", formattedChartData);
                 <linearGradient id="fillEarnings" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
-                    stopColor="var(--color-earnings)"
+                    stopColor="#fac1be"
                     stopOpacity={0.8}
                   />
                   <stop
                     offset="95%"
-                    stopColor="var(--color-earnings)"
+                    stopColor="#fac1be"
                     stopOpacity={0.1}
                   />
                 </linearGradient>
@@ -110,7 +110,7 @@ console.log("Chart Data:", formattedChartData);
                 dataKey="earnings"
                 type="monotone"
                 fill="url(#fillEarnings)"
-                stroke="var(--color-earnings)"
+                stroke="#fac1be"
                 stackId="a"
               />
             </AreaChart>

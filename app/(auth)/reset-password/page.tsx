@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import CardWrapper from "@/components/auth/CardWrapper";
 import CheckEmail from "@/components/auth/CheckEmail";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
-import { Button } from "@/components/ui/button";
 import Loading from "@/components/auth/Loading";
+import { Button } from "@/components/ui/button";
 
 const ResetPassword = () => {
   const [showCheckEmail, setShowCheckEmail] = useState(false);
@@ -50,7 +50,7 @@ const ResetPassword = () => {
             <Button
               disabled={loading}
               onClick={handleResend}
-              className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#00BC15]"
+              className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#F04237]"
             >
               Resend
             </Button>

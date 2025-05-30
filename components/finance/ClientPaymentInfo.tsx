@@ -1,6 +1,6 @@
-import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Payment } from "@/types/ClientPayment";
+import React from "react";
 
 export const ClientPaymentInfo: React.FC = () => {
   const payments: Payment[] = [
@@ -116,7 +116,7 @@ export const ClientPaymentInfo: React.FC = () => {
             <div className="flex-1">
               <div className="text-[13px] text-[#6D6D6D]">Status</div>
               <div>
-                <Badge className="mt-1 bg-[#00BC15] text-white rounded-full px-3 py-1 w-[44px] h-[18px] text-[12px]">
+                <Badge className="mt-1 bg-[#F04237] text-white rounded-full px-3 py-1 w-[44px] h-[18px] text-[12px]">
                   {payment.status}
                 </Badge>
               </div>

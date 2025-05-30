@@ -3,19 +3,22 @@ import LoginForm from "@/components/auth/LoginForm";
 
 const LoginPage = () => {
   return (
-    <CardWrapper
-      logo={true}
-      label=""
-      title="Admin Login"
-      backButtonTitle=""
-      backButtonHref=""
-      backButtonLabel=""
-      titleClass=" text-[18px] font-600"
-      headerTexts=""
-      className=""
-    >
-      <LoginForm />
-    </CardWrapper>
+    <div className="items-center justify-center w-full">
+      <CardWrapper
+        logo={true}
+        label=""
+        title="Admin Login"
+        backButtonTitle=""
+        backButtonHref=""
+        backButtonLabel=""
+        titleClass=" text-[18px] font-600"
+        headerTexts=""
+        className="items-center justify-center"
+      >
+        <LoginForm />
+      </CardWrapper>
+    </div>
+
   );
 };
 

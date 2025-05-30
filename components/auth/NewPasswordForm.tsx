@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-import { cn } from "@/lib/utils";
 import { resetPassword } from "@/actions/auth";
+import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
@@ -263,7 +263,7 @@ const NewPasswordForm = () => {
             !form.getValues().confirmPassword
           }
           type="submit"
-          className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#00BC15]"
+          className="w-full rounded-[10px] font-semibold text-lg h-[42px] text-white bg-[#F04237]"
         >
           Next
         </Button>

@@ -58,18 +58,16 @@ export async function login(data: {
     return res;
   }
 
-const user = {
-  id: res.data?._id,
-  name: `${res.data?.firstName} ${res.data?.lastName}`,
-  email: res.data?.email,
-  token: res.data?.idToken, // assuming `idToken` is your JWT
-};
-
-
-
-// Then create encrypted session cookie as before...
-
-// Then create encrypted session cookie as before...
+  const user = {
+    id: res.data?._id,
+    name: `${res.data?.firstName} ${res.data?.lastName}`,
+    email: res.data?.email,
+    token: res.data?.idToken,
+    refreshToken: res.data?.refreshToken,
+    // -TODO
+    // adminType: res.data?.adminType,
+    // profilePicture: res.data?.profilePicture,
+  };
 
   // Create the session
   const expires = res.data?.refreshToken

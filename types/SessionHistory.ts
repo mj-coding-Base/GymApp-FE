@@ -11,11 +11,11 @@ export enum ClientType {
 export const getPaymentStatusColor = (status: PaymentStatus): { bg: string; text: string } => {
   switch (status) {
     case PaymentStatus.PAID:
-      return { bg: "#E3F5E5", text: "#1B5E20" }
+      return { bg: "#fac1be", text: "#1B5E20" }
     case PaymentStatus.NOT_PAID:
       return { bg: "#D32F2F", text: "white" }
     default:
-      return { bg: "#E3F5E5", text: "#1B5E20" }
+      return { bg: "#fac1be", text: "#1B5E20" }
   }
 }
 

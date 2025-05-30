@@ -1,9 +1,7 @@
 import axios from "@/utils/axios";
 import { z } from "zod";
 // src/actions/packages.ts
-import { Package } from "@/types/Packages";
-import { PackageData } from "@/types/Packages";
-import { MemberData } from "@/types/Packages";
+import { MemberData, Package, PackageData } from "@/types/Packages";
 
 export const fetchAllPackages = async (): Promise<Package[]> => {
   try {
@@ -12,7 +10,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
 
     const packages: Package[] = rawData.map((item: any) => ({
       packageId: item._id,
-      packageName: item.name,
+      package_name: item.name,
       description: item.description || "",
       sessionCount: item.sessions,
       createdAt: item.createdAt,
@@ -28,7 +26,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
     const dummyPackages: Package[] = [
       {
         packageId: "6830a79f752e9e2af9e82d07",
-        packageName: "Basic Package",
+        package_name: "Basic Package",
         description: "Introductory sessions for beginners.",
         sessionCount: 5,
         createdAt: "2024-01-01",
@@ -38,7 +36,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       },
       {
         packageId: "6830a9002d012bd53631011e",
-        packageName: "Premium Package",
+        package_name: "Premium Package",
         description: "Advanced training sessions.",
         sessionCount: 10,
         createdAt: "2024-01-10",
@@ -56,7 +54,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
 
 
 export const packageSchema = z.object({
-  packageName: z.string().min(1, "Package name is required"),
+  package_name: z.string().min(1, "Package name is required"),
   sessionsAllocated: z.number().min(1, "Must allocate at least 1 session"),
 });
 
@@ -69,7 +67,7 @@ export async function createNewPackage(data: PackageFormData): Promise<{
 }> {
   try {
     const response = await axios.post("/packages", {
-      name: data.packageName,
+      name: data.package_name,
       sessionCount: data.sessionsAllocated,
     });
 
@@ -123,7 +121,7 @@ export async function getPackages(): Promise<PackageData[]> {
     return response.data.map((pkg: any) => ({
       id: pkg._id,
       dateCreated: new Date(pkg.createdAt).toLocaleDateString('en-GB'),
-      packageName: pkg.name,
+      package_name: pkg.name,
       sessions: pkg.sessionCount,
       members: pkg.memberCount,
     }));
@@ -134,7 +132,7 @@ export async function getPackages(): Promise<PackageData[]> {
       {
         id: "1",
         dateCreated: "06/03/25",
-        packageName: "BoxFit Extreme",
+        package_name: "BoxFit Extreme",
         sessions: 15,
         members: 120,
       },
@@ -145,7 +143,7 @@ export async function getPackages(): Promise<PackageData[]> {
 
 
 export const updatePackageSchema = z.object({
-  packageName: z.string().min(1),
+  package_name: z.string().min(1),
   sessions: z.number().min(1),
 });
 
@@ -160,7 +158,7 @@ export async function updatePackage(
 }> {
   try {
     await axios.put(`/packages/${packageId}`, {
-      name: data.packageName,
+      name: data.package_name,
       sessionCount: data.sessions,
     });
 

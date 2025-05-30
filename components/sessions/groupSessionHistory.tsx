@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { getAllSessions } from "@/actions/session";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { GroupSessionHistoryProps, Session, SessionSummary, } from "@/types/SessionHistory";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {SessionSummary, Session, GroupSessionHistoryProps,  } from "@/types/SessionHistory"
-import { getAllSessions } from "@/actions/session";
 
 export function GroupSessionHistory({ groupId }: Readonly<GroupSessionHistoryProps>) {
   const [open, setOpen] = useState(false);
@@ -155,7 +155,7 @@ export function GroupSessionHistory({ groupId }: Readonly<GroupSessionHistoryPro
                         <span
                           className="flex px-4 rounded-full text-[12px] text-center justify-center items-center w-[46px] h-[25px]"
                           style={{
-                            backgroundColor: summary.paymentStatus === "paid" ? "#00BC15" : "#D32F2F",
+                            backgroundColor: summary.paymentStatus === "paid" ? "#F04237" : "#D32F2F",
                             color: "#FFFFFF",
                           }}
                         >
@@ -187,7 +187,7 @@ export function GroupSessionHistory({ groupId }: Readonly<GroupSessionHistoryPro
                 </div>
 
                 <div className="rounded-lg border border-[#E7E7E7] mb-6 overflow-hidden w-full">
-                  <div className="grid grid-cols-4 bg-[#E3F5E5] py-3 px-4">
+                  <div className="grid grid-cols-4 bg-[#fac1be] py-3 px-4">
                     <div className="text-[#434745] text-[11.5px]">Date</div>
                     <div className="text-[#434745] text-[11.5px]">
                       Start Time

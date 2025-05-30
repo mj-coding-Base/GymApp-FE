@@ -1,0 +1,4 @@
+BASE_URL=https://dev-bixfit-backend-new-407792198674.asia-southeast1.run.app/api/v1
+# https://bixfit-backend-dev-407792198674.asia-southeast1.run.app/api/v1
+NEXT_PUBLIC_API_URL=https://dev-bixfit-backend-new-407792198674.asia-southeast1.run.app/
+JWT_SECRET=secret123

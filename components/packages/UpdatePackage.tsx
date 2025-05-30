@@ -1,36 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
+import { updatePackage, updatePackageSchema } from "@/actions/package";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { updatePackage, updatePackageSchema } from "@/actions/package";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 interface UpdatePackageProps {
   packageId: string;
   initialData?: {
-    packageName: string;
+    package_name: string;
     sessions: number;
   };
   onPackageUpdated?: () => void;
@@ -44,7 +44,7 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
   const form = useForm({
     resolver: zodResolver(updatePackageSchema),
     defaultValues: {
-      packageName: initialData?.packageName || "",
+      package_name: initialData?.package_name || "",
       sessions: initialData?.sessions ?? 0,
     },
   });
@@ -53,7 +53,7 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
     setIsSubmitting(true);
     try {
       const result = await updatePackage(packageId, {
-        packageName: values.packageName,
+        package_name: values.package_name,
         sessions: Number(values.sessions),
       });
 
@@ -105,7 +105,7 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
             >
               <FormField
                 control={form.control}
-                name="packageName"
+                name="package_name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-medium text-[14px]">
