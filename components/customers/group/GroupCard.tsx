@@ -1,14 +1,11 @@
 import { Badge } from "@/components/ui/badge";
-import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
+
 import { GroupCustomer } from "@/types/Customer";
 interface Props {
   group: GroupCustomer;
 }
 
 const GroupCard = ({ group }: Props) => {
-  const { setOpenViewGroupDetails } = useViewGroupDetails();
-  const { setSelectedGroupData } = useGroupDetailsStore();
 
   const formattedDate = group.createdAt
     ? new Date(group.createdAt).toISOString().split("T")[0]
@@ -77,16 +74,18 @@ const GroupCard = ({ group }: Props) => {
       </div>
 
       <div className="absolute right-0 inset-y-0 flex flex-col gap-[10px] items-center justify-center">
-        <i
-          onClick={() => {
-            setSelectedGroupData(group);
-            setOpenViewGroupDetails(true);
-          }}
-          className="view-details w-[40px] h-[50px]"
-        />
+
       </div>
     </div>
   );
 };
 
 export default GroupCard;
+
+        {/* <i
+          onClick={() => {
+            setSelectedGroupData(group);
+            setOpenViewGroupDetails(true);
+          }}
+          className="view-details w-[40px] h-[50px]"
+        /> */}

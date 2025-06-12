@@ -12,14 +12,13 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-    ClientType,
+    // ClientType,
     PaymentStatus,
     Session,
-    getClientTypeColor,
+    // getClientTypeColor,
     getPaymentStatusColor,
 } from "@/types/SessionHistory";
 import { Type } from "@/types/TrainerDetails";
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -40,7 +39,8 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
       fetchSessions();
     }
   }, [open]);
-
+console.log(sessions);
+console.log(isLoading);
   const fetchSessions = async () => {
     setIsLoading(true);
     try {
@@ -59,35 +59,8 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
   };
 
   const paymentStatusStyle = getPaymentStatusColor(paymentStatus);
-
-  const renderSessionItem = (item: Session, index: number) => {
-    const clientTypeStyle = getClientTypeColor(item.clientType ?? ("DEFAULT_CLIENT_TYPE" as ClientType));
-    return (
-      <div
-        key={item.id}
-        className={`grid grid-cols-3 py-3 px-4 ${
-          index < sessions.length - 1 ? "border-b border-gray-200" : ""
-        }`}
-      >
-        <div className="text-[#434745] text-[11.5px]">{item.date}</div>
-        <div className="text-[#434745] text-[11.5px]">{item.session}</div>
-        <div>
-          <span
-            className="px-4 py-1 rounded-full text-[11px]"
-            style={{
-              backgroundColor: clientTypeStyle.bg,
-              color: clientTypeStyle.text,
-            }}
-          >
-            {item.clientType}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <>
+    <div>
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <div className="absolute right-0 top-35">
@@ -212,7 +185,7 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
                       </div>
                     </div>
 
-                    {isLoading ? (
+                    {/* {isLoading ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -221,16 +194,16 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
                         .map((item, index) =>
                           renderSessionItem(
                             {
-                              id: item.id ?? "",
-                              date: item.date ?? "",
-                              session: item.session ?? "",
-                              clientType: item.clientType ?? ("DEFAULT_CLIENT_TYPE" as ClientType),
+                              id: item._id ?? "",
+                              date: item.createdAt ?? "",
+                              session: item.current_session ?? "",
+                              clientType: item. ?? ("DEFAULT_CLIENT_TYPE" as ClientType),
                               // add other required Session fields with defaults if needed
                             } as Session,
                             index
                           )
                         )
-                    )}
+                    )} */}
                   </div>
                 </div>
               ) : (
@@ -312,7 +285,7 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
                       </div>
                     </div>
 
-                    {isLoading ? (
+                    {/* {isLoading ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -329,7 +302,7 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
                           index
                         )
                       )
-                    )}
+                    )} */}
                   </div>
                 </div>
               )}
@@ -337,6 +310,6 @@ export function SessionHistory({ trainerType, trainerId }: Readonly<SessionHisto
           </ScrollArea>
         </DrawerContent>
       </Drawer>
-    </>
+    </div>
   );
 }

@@ -11,44 +11,17 @@ import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import React, { useEffect, useState } from "react";
 import GroupDetailsCard from "./GroupDetailsCard";
 import { GroupCustomer } from "@/types/Customer";
-import { fetchGroupCustomers } from "@/actions/customers";
-import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
-import { ErrorToast } from "@/components/common/toast";
 import { Loader2 } from "lucide-react";
 
 const ViewGroupDetails = () => {
-  const [loadingData, setLoadingData] = useState(false);
-  const [customers, setCustomers] = useState<GroupCustomer[]>([]);
+  const [loadingData] = useState(false);
+  const [customers] = useState<GroupCustomer[]>([]);
 
   const { openViewGroupDetails, setOpenViewGroupDetails } =
     useViewGroupDetails();
-  const { selectedGroupData } = useGroupDetailsStore();
-
-  const fetchPackages = async () => {
-    try {
-      setLoadingData(true);
-      const res = await fetchGroupCustomers(
-        "1",
-        "10",
-        undefined,
-        selectedGroupData?.group_id,
-        undefined
-      );
-      console.log(res);
-      setCustomers(res.results);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      ErrorToast("Failed to fetch data");
-    } finally {
-      setLoadingData(false);
-    }
-  };
 
   useEffect(() => {
-    if (openViewGroupDetails) {
-      fetchPackages();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [openViewGroupDetails]);
 
   return (
@@ -83,15 +56,14 @@ const ViewGroupDetails = () => {
                 Package
               </p>
               <p className="text-[#3D3D3D] text-[11.44px]/[14px] font-semibold">
-                {selectedGroupData?.package_name}
               </p>
             </div>
 
             <div className="flex-1 overflow-y-auto">
               <div className="border-[#E0E0E0] border-[1px] rounded-[15px] overflow-hidden w-full">
                 {customers.length > 0 ? (
-                  customers.map((group, index) => (
-                    <GroupDetailsCard key={index} groupMember={group} />
+                  customers.map((group) => (
+                    <GroupDetailsCard key={group._id} groupMember={group} />
                   ))
                 ) : (
                   <div>no data</div>

@@ -344,7 +344,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                           </div>
                         ) : packages.length > 0 ? (
                           packages.map((pkg) => (
-                            <SelectItem key={pkg._id} value={pkg._id}>
+                            <SelectItem key={pkg.packageId} value={pkg.packageId}>
                               {pkg.package_name}
                             </SelectItem>
                           ))

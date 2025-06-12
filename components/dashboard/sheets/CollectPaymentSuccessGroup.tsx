@@ -7,7 +7,6 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCollectPaymentSuccessGroupSheet } from "@/hooks/useCollectPaymentSuccessGroupSheet";
 import { useEffect, useState } from "react";
 import MonthSelector from "../MonthSelector";
@@ -29,6 +28,7 @@ const CollectPaymentSuccessGroup = () => {
 
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
+  console.log(loading);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -94,20 +94,6 @@ const CollectPaymentSuccessGroup = () => {
   const handleMonthChange = (month: number, year: number) => {
     setSelectedMonth(month);
     setSelectedYear(year);
-  };
-
-  const filteredMembers = members.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.nic.includes(searchTerm)
-  );
-
-  const getPaymentStatusColor = (status: string) => {
-    switch (status) {
-      case 'PAID': return 'bg-[#F04237] text-white';
-      case 'PENDING': return 'bg-[#FFC107] text-black';
-      case 'OVERDUE': return 'bg-[#F44336] text-white';
-      default: return 'bg-gray-300 text-black';
-    }
   };
 
   return (
@@ -183,53 +169,6 @@ const CollectPaymentSuccessGroup = () => {
           </div>
 
           <div className="mt-5 border-[#E7E7E7] border-[1px] rounded-[15px] overflow-hidden">
-            {loading ? (
-              Array(3).fill(0).map((_, index) => (
-                <div key={index} className="border-t-[#E7E7E7] border-t-[1px] p-4">
-                  <Skeleton className="h-6 w-full mb-2" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-              ))
-            ) : filteredMembers.length > 0 ? (
-              filteredMembers.map((member, index) => (
-                <div key={member.id} className="border-t-[#E7E7E7] border-t-[1px]">
-                  <div className="flex px-[12px] py-[10px]">
-                    <div className="flex-2/5 shrink-0 flex flex-col">
-                      <p className="text-[11px] font-medium text-[#5D5D5D]">
-                        # Name
-                      </p>
-                      <p className="text-[13px] font-medium text-[#434745]">
-                        {index + 1} {member.name}
-                      </p>
-                      <p className="mt-[10px] text-[11px] font-medium text-[#5D5D5D]">
-                        Current Session
-                      </p>
-                      <p className="text-[13px] font-medium text-[#434745]">
-                        {member.currentSession}
-                      </p>
-                    </div>
-                    <div className="flex-3/5 shrink-0 flex flex-col">
-                      <p className="text-[11px] font-medium text-[#5D5D5D]">
-                        NIC
-                      </p>
-                      <p className="text-[13px] font-medium text-[#434745]">
-                        {member.nic}
-                      </p>
-                      <p className="mt-[10px] text-[11px] font-medium text-[#5D5D5D]">
-                        Payment Status
-                      </p>
-                      <p className={`text-[10px] font-medium w-fit rounded-[15px] px-[10px] py-[5px] ${getPaymentStatusColor(member.paymentStatus)}`}>
-                        {member.paymentStatus}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-gray-500">
-                No members found matching your search
-              </div>
-            )}
           </div>
         </div>
       </SheetContent>

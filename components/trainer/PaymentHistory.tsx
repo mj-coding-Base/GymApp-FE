@@ -107,7 +107,7 @@ export function PaymentHistory({ trainerType, trainerId }: Readonly<PaymentHisto
         setShowConfirmationDialog(true);
         fetchPayments(); // Refresh payment data
       } else {
-        toast.error(result.message || "Payment settlement failed");
+        toast.error(result.message ?? "Payment settlement failed");
       }
     } catch (error) {
       console.error("Error settling payment:", error);

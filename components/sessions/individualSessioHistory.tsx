@@ -1,6 +1,6 @@
 "use client";
 
-import { getAllSessions } from "@/actions/session";
+// import { getAllSessions } from "@/actions/session";
 import { Button } from "@/components/ui/button";
 import {
     Drawer,
@@ -30,10 +30,10 @@ export function IndividualSessionHistory({ clientId }: PaymentHistoryProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionData, setSessionData] = useState<SessionData[]>([]);
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.NOT_PAID);
+  const [sessionData] = useState<SessionData[]>([]);
+  const [paymentStatus] = useState<PaymentStatus>(PaymentStatus.NOT_PAID);
   // const [currentMonth, setCurrentMonth] = useState("");
-
+console.log(clientId);
   useEffect(() => {
     if (open) {
       fetchSessionData();
@@ -46,9 +46,9 @@ export function IndividualSessionHistory({ clientId }: PaymentHistoryProps) {
       setError(null);
       
       // Call your API action
-    const response = await getAllSessions({
-    customer_type: 'individual'
-  });
+  //   const response = await getAllSessions({
+  //   customer_type: 'individual'
+  // });
 
       // if (response.status === "SUCCESS") {
       //   setSessionData(response.data.push.);

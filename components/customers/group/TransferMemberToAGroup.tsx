@@ -13,8 +13,6 @@ import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/actions/customers";
 import { Customer } from "@/types/Customer";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const TransferMemberToAGroup = () => {
@@ -27,9 +25,12 @@ const TransferMemberToAGroup = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [clients, setClients] = useState<Customer[]>([]);
+  console.log(clients)
   const [loading, setLoading] = useState(false);
+  console.log(loading);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  console.log(error);
+  const [selectedClient] = useState<string | null>(null);
 
   useEffect(() => {
     if (openTransferMemberToAGroup) {
@@ -51,11 +52,6 @@ const TransferMemberToAGroup = () => {
       setLoading(false);
     }
   };
-
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.nic?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleTransferToExisting = () => {
     if (!selectedClient) {
@@ -117,44 +113,7 @@ const TransferMemberToAGroup = () => {
         </div>
         
         <div className="overflow-y-auto flex-1">
-          {loading ? (
-            <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center text-red-500 py-4">{error}</div>
-          ) : filteredClients.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">
-              {searchTerm ? "No matching clients found" : "No clients available"}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filteredClients.map((client) => (
-                <div 
-                  key={client._id}
-                  className={`p-3 rounded-lg border ${selectedClient === client._id ? 'border-[#363636] bg-gray-50' : 'border-transparent'}`}
-                  onClick={() => setSelectedClient(client._id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox 
-                      checked={selectedClient === client._id}
-                      onCheckedChange={() => setSelectedClient(client._id)}
-                    />
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-[#363636]">
-                        {client.name}
-                      </p>
-                      <p className="text-[11px] text-[#6D6D6D]">
-                        NIC: {client.nic || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+
         </div>
         
         <div className="grid grid-cols-2 gap-[15px] mb-5">

@@ -69,7 +69,7 @@ const NewPasswordForm = () => {
   const router = useRouter();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const token = searchparams.get("token");
+    const token = searchparams?.get("token");
 
     if (!token) {
       form.setError("password", {
@@ -129,13 +129,17 @@ const NewPasswordForm = () => {
                           />
                         </FormControl>
                       </span>
-                      <i
+                      <button
+                        type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        tabIndex={0}
                         className={cn(
-                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer",
+                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer bg-transparent border-none p-0",
                           showPassword && "password-show"
                         )}
-                      />
+                      >
+                      </button>
                     </div>
                   </div>
                 </FormItem>
@@ -161,15 +165,17 @@ const NewPasswordForm = () => {
                           />
                         </FormControl>
                       </span>
-                      <i
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                        tabIndex={0}
                         className={cn(
-                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer",
+                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer bg-transparent border-none p-0",
                           showConfirmPassword && "password-show"
                         )}
-                      />
+                      >
+                      </button>
                     </div>
                   </div>
                   <FormMessage />
@@ -232,7 +238,7 @@ const NewPasswordForm = () => {
                   className={cn(
                     "round-check size-[17px] text-[#999999]",
                     form.watch().password &&
-                      /[0-9]/.test(form.watch().password) &&
+                      /\d/.test(form.watch().password) &&
                       "text-[#34C759]"
                   )}
                 />

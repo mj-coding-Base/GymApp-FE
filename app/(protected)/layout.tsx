@@ -1,5 +1,5 @@
 import Navbar from "@/components/common/navbar/Navbar";
-import MobileSidebar from "@/components/common/sidebar/MobileSidebar";
+// import MobileSidebar from "@/components/common/sidebar/MobileSidebar";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { sampleNotifications } from "@/data/notifications";
 import { getSession } from "@/lib/authentication";
@@ -34,7 +34,7 @@ export default async function RootLayout({
       <div className="flex w-full h-screen overflow-y-auto overflow-x-hidden z-0">
         <div className="flex flex-col w-full bg-[#F2F3F6] overflow-y-auto">
           <Navbar />
-          <MobileSidebar />
+          {/* <MobileSidebar /> */}
           <div className="px-4 py-[8.44px] lg:px-6 lg:py-[17.5px] 3xl:px-8 3xl:py-[23.5px] w-full h-full">
             {children}
           </div>

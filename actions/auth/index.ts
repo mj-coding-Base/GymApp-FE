@@ -29,10 +29,10 @@ export const signIn = async (
 ): Promise<SignInResponseDataType> => {
   try {
 
-    const res = await axios.post("/admin/trainer-management/login", {
+    const res = await axios.post("/admin/admin-management/login", {
       email: data.email,
       password: data.password,
-      // rememberMe: true,
+      rememberMe: true,
     }); 
 
 
@@ -42,51 +42,6 @@ export const signIn = async (
   }
 };
 
-// TODO-
-// export const refreshToken = async (
-//   refreshToken: string
-// ): Promise<SignInResponseDataType> => {
-//   try {
-//     const res = await axios.post(
-//       "/api/v1/admin/user-management/members/refresh-token",
-//       { refreshToken }
-//     );
-
-//     return res.data;
-//   } catch (error) {
-//     return error as SignInResponseDataType;
-//   }
-// };
-
-// export const updateProfileImage = async (
-//   data: FormData
-// ): Promise<CommonResponseDataType> => {
-//   try {
-//     const imageRes = await uploadImage(data);
-
-//     if (imageRes.status === "FAIL") {
-//       return imageRes;
-//     }
-
-//     const res = await axios.patch(`/api/admin/upload-profile-picture`, {
-//       imageUrl: imageRes.data[0],
-//     });
-
-//     await updateProfilePictureInSession(imageRes.data[0]);
-
-//     return res.data;
-//   } catch (error) {
-//     console.error(error);
-
-//     return {
-//       status: "FAIL",
-//       message:
-//         (error as any)?.message ??
-//         "Something went wrong. Please try again later.",
-//       data: null,
-//     };q
-//   }
-// };
 
 export const forgotPassword = async (
   email: string

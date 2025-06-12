@@ -25,12 +25,12 @@ import React, { useState } from "react";
 
 const SessionsPage = () => {
   const session = useSession();
-  const [groups, setGroups] = React.useState<Customer[]>([]);
-  const [individuals, setIndividuals] = React.useState<Customer[]>([]);
+  const [groups] = React.useState<Customer[]>([]);
+  const [individuals] = React.useState<Customer[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("individual");
-  const [usingDummyData, setUsingDummyData] = React.useState(false);
+  const [usingDummyData] = React.useState(false);
 
   React.useEffect(() => {
     const fetchData = async () => {
