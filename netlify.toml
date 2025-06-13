@@ -1,14 +1,13 @@
 # netlify.toml
 
 [build]
-  command = "yarn install --frozen-lockfile && yarn build"
+  command = "yarn install --immutable && yarn build"
   publish = ".next"
-  functions = "src/functions"  # Optional: if you have Netlify Functions
 
 [build.environment]
-  NODE_VERSION = "20.17.0"  # Use a stable LTS version compatible with Next.js
-  NPM_NODEJS_VERSION = "20"  # Optional: force npm to use correct Node version
-  NEXT_PUBLIC_SITE_URL = "https://gymapp-khetech.netlify.app"   # Optional: useful for auth, etc.
+  NODE_VERSION = "20.17.0"
+  NPM_CONFIG_SCRIPT_TIMEOUT = "600000"
+  NEXT_PUBLIC_SITE_URL = "https://your-site.netlify.app" 
 
 [dev]
   command = "yarn dev"
