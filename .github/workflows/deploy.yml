@@ -29,22 +29,22 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
+        ssh-keyscan -H ec2-54-242-76-70.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
         rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
           --exclude='.git' \
           --exclude='node_modules' \
           .next package.json package-lock.json public \
-          ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
+          ubuntu@ec2-54-242-76-70.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
 
     - name: Deploy on VPS
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
+        ssh-keyscan -H ec2-54-242-76-70.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
-        ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com << 'EOF'
+        ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-54-242-76-70.compute-1.amazonaws.com << 'EOF'
           cd /home/ubuntu/apps/frontend
           npm install --production
 
