@@ -3,7 +3,7 @@ name: Build & Deploy to VPS
 on:
   push:
     branches:
-      - DevBranch  # Only trigger on push to 'production' branch
+      - deploytest  # Only trigger on push to 'production' branch
 
 jobs:
   deploy:
