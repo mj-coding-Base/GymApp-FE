@@ -3,17 +3,21 @@ name: Build & Deploy to VPS
 on:
   push:
     branches:
-      - deploytest  # Only trigger on push to 'production' branch
+      - deploytest
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
+
+    outputs:
+      node-version: ${{ steps.node.outputs.version }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
     - name: Set up Node.js
+      id: node
       uses: actions/setup-node@v4
       with:
         node-version: '20'
@@ -24,14 +28,24 @@ jobs:
     - name: Build the app
       run: npm run build
 
-    - name: Upload build to VPS using rsync
+    - name: Archive production build
       run: |
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
-          --exclude='.git' \
-          --exclude='node_modules' \
-          .next package.json package-lock.json public \
-          ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
+        mkdir deploy
+        cp -r .next package.json package-lock.json public deploy/
+        cd deploy
+        tar -czf ../app.tar.gz .
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-build
+        path: app.tar.gz
+
+  upload:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
@@ -39,14 +53,34 @@ jobs:
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: app-build
+        path: .
+
     - name: Upload build to VPS
       run: |
-        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend
+        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
+
+  deploy:
+    needs: upload
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+        ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
     - name: Deploy on VPS
       run: |
         ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com << 'EOF'
           cd /home/ubuntu/apps/frontend
+          tar -xzf app.tar.gz
+          rm app.tar.gz
           npm install --production
 
           if pm2 list | grep -q "frontend"; then
