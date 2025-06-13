@@ -27,7 +27,7 @@ jobs:
     - name: Archive production build
       run: |
         mkdir deploy
-        cp -r .next package.json npm.lock public deploy/
+        cp -r .next package.json package-lock.json public deploy/
         cd deploy
         tar -czf ../app.tar.gz .
 
@@ -45,7 +45,7 @@ jobs:
     - name: Deploy on VPS
       run: |
         ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com << 'EOF'
-          cd /var/www/your-app
+          cd /home/ubuntu/apps/frontend
           rm -rf .next public node_modules
           tar -xzf app.tar.gz
           rm app.tar.gz
