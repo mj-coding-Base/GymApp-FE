@@ -24,12 +24,13 @@ jobs:
     - name: Build the app
       run: npm run build
 
-    - name: Archive production build
+    - name: Upload build to VPS using rsync
       run: |
-        mkdir deploy
-        cp -r .next package.json package-lock.json public deploy/
-        cd deploy
-        tar -czf ../app.tar.gz .
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
+          --exclude='.git' \
+          --exclude='node_modules' \
+          .next package.json package-lock.json public \
+          ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
 
     - name: Setup SSH
       run: |
@@ -46,9 +47,6 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com << 'EOF'
           cd /home/ubuntu/apps/frontend
-          rm -rf .next public node_modules
-          tar -xzf app.tar.gz
-          rm app.tar.gz
           npm install --production
 
           if pm2 list | grep -q "frontend"; then
