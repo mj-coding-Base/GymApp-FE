@@ -30,22 +30,22 @@ jobs:
           --exclude='.git' \
           --exclude='node_modules' \
           .next package.json package-lock.json public \
-          ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
+          ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
 
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ec2-3-89-123-27.compute-1.amazonaws.com >> ~/.ssh/known_hosts
+        ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
     - name: Upload build to VPS
       run: |
-        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com:/home/ubuntu/apps/frontend
+        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend
 
     - name: Deploy on VPS
       run: |
-        ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-3-89-123-27.compute-1.amazonaws.com << 'EOF'
+        ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com << 'EOF'
           cd /home/ubuntu/apps/frontend
           npm install --production
 
