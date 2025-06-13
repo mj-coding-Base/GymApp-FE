@@ -3,7 +3,7 @@ name: Build & Deploy to VPS
 on:
   push:
     branches:
-      - deploytest  # Only trigger on push to 'production' branch
+      - deploytest  # Only trigger on push to 'deploytest' branch
 
 jobs:
   deploy:
@@ -24,14 +24,6 @@ jobs:
     - name: Build the app
       run: npm run build
 
-    - name: Upload build to VPS using rsync
-      run: |
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
-          --exclude='.git' \
-          --exclude='node_modules' \
-          .next package.json package-lock.json public \
-          ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
-
     - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
@@ -39,9 +31,13 @@ jobs:
         chmod 600 ~/.ssh/id_ed25519
         ssh-keyscan -H ec2-54-89-62-199.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
-    - name: Upload build to VPS
+    - name: Upload build to VPS using rsync
       run: |
-        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend
+        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
+          --exclude='.git' \
+          --exclude='node_modules' \
+          .next package.json package-lock.json public \
+          ubuntu@ec2-54-89-62-199.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
 
     - name: Deploy on VPS
       run: |
