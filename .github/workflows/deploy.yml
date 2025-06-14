@@ -27,7 +27,7 @@ jobs:
     - name: Archive production build
       run: |
         mkdir deploy
-        cp -r .next package.json npm.lock public deploy/
+        cp -r .next package.json package-lock.json public deploy/
         cd deploy
         tar -czf ../app.tar.gz .
 
