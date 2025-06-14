@@ -22,7 +22,7 @@ jobs:
       run: npm install
 
     - name: Build the app
-      run: npm build
+      run: npm run build
 
     - name: Archive production build
       run: |
@@ -45,10 +45,19 @@ jobs:
     - name: Deploy on VPS
       run: |
         ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-35-170-191-44.compute-1.amazonaws.com << 'EOF'
-          cd /var/www/your-app
+          cd /home/ubuntu/apps/frontend
           rm -rf .next public node_modules
           tar -xzf app.tar.gz
           rm app.tar.gz
           npm install --production
-          npx pm2 restart frontend
+
+          if pm2 list | grep -q "frontend"; then
+            echo "Restarting existing PM2 process: frontend"
+            pm2 restart frontend
+          else
+            echo "Starting new PM2 process: frontend"
+            pm2 start npm --name frontend -- start
+          fi
+
+          pm2 save
         EOF
