@@ -3,7 +3,7 @@ name: Build & Deploy to VPS
 on:
   push:
     branches:
-      - deploytest
+      - DevBranch  # Only trigger on push to 'production' branch
 
 jobs:
   deploy:
@@ -22,34 +22,33 @@ jobs:
       run: npm install
 
     - name: Build the app
-      run: npm run build
+      run: npm build
 
-    - name: Setup SSH and upload build using rsync
+    - name: Archive production build
+      run: |
+        mkdir deploy
+        cp -r .next package.json npm.lock public deploy/
+        cd deploy
+        tar -czf ../app.tar.gz .
+
+    - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-        ssh-keyscan -H ec2-54-242-76-70.compute-1.amazonaws.com >> ~/.ssh/known_hosts
+        ssh-keyscan -H ec2-35-170-191-44.compute-1.amazonaws.com >> ~/.ssh/known_hosts
 
-        rsync -avz -e "ssh -i ~/.ssh/id_ed25519" \
-          --exclude='.git' \
-          --exclude='node_modules' \
-          .next package.json package-lock.json public \
-          ubuntu@ec2-54-242-76-70.compute-1.amazonaws.com:/home/ubuntu/apps/frontend/
+    - name: Upload build to VPS
+      run: |
+        scp -i ~/.ssh/id_ed25519 app.tar.gz ubuntu@ec2-35-170-191-44.compute-1.amazonaws.com:/home/ubuntu/apps/frontend
 
     - name: Deploy on VPS
       run: |
-        ssh -i ~/.ssh/id_ed25519 ubuntu@http://ec2-35-170-191-44.compute-1.amazonaws.com << 'EOF'
-          cd /home/ubuntu/apps/frontend
+        ssh -i ~/.ssh/id_ed25519 ubuntu@ec2-35-170-191-44.compute-1.amazonaws.com << 'EOF'
+          cd /var/www/your-app
+          rm -rf .next public node_modules
+          tar -xzf app.tar.gz
+          rm app.tar.gz
           npm install --production
-
-          if pm2 list | grep -q "frontend"; then
-            echo "Restarting existing PM2 process: frontend"
-            pm2 restart frontend
-          else
-            echo "Starting new PM2 process: frontend"
-            pm2 start npm --name frontend -- start
-          fi
-
-          pm2 save
+          npx pm2 restart frontend
         EOF
