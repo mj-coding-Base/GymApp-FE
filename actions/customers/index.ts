@@ -6,7 +6,8 @@ import axios from "@/utils/axios";
 import {
   Customer,
   CustomerView,
-  GroupCustomer,
+  GroupShort,
+  GroupFull,
   IndividualCustomer,
 } from "@/types/Customer";
 import { CommonResponseDataType } from "@/types/Common";
@@ -28,18 +29,56 @@ export const fetchIndividualCustomers = async (
   searchTerm?: string
 ): Promise<{ results: IndividualCustomer[]; totalResults: number }> => {
   try {
-    const response = await axios.get(
-      "/admin/customer-management/get-all?customer_type=individual",
+    const response = await axios.get("/customers/get-all?customer_type=individual", {
+      params: { page, size, searchTerm },
+    });
+
+    // Correct path based on your response
+    const rawData = response.data?.data?.data;
+    const results = Array.isArray(rawData?.results) ? rawData.results : [];
+    // const resultJSON = rawData.results
+    const totalResults = rawData?.totalResults ?? 0;
+
+    console.log("print as ROW JSON:",totalResults);
+    console.log("print as array:", results);
+
+    return {
+      results,
+      totalResults,
+    };
+  } catch (error) {
+    console.error("Error fetching individual customers:", error);
+    return { results: [], totalResults: 0 };
+  }
+};
+
+
+
+
+export const fetchGroups = async (
+  page?: string,
+  size?: string,
+  searchTerm?: string,
+  group_id?: string,
+  isPrimaryMembersOnly?: boolean
+): Promise<{ results: GroupShort[]; totalResults: number }> => {
+  try {
+    const response = await axios.get("/customers/get-all?customer_type=group",
       {
         params: {
           page,
           size,
           searchTerm,
+          group_id,
+          isPrimaryMembersOnly,
         },
       }
     );
-
-    return response.data.data;
+  console.log("API Response:", response.data.data);
+      return {
+    results: response.data?.data ?? [],
+    totalResults: response?.data?.totalResults ?? 0,
+  };
   } catch (error) {
     console.error(error);
 
@@ -56,10 +95,9 @@ export const fetchGroupCustomers = async (
   searchTerm?: string,
   group_id?: string,
   isPrimaryMembersOnly?: boolean
-): Promise<{ results: GroupCustomer[]; totalResults: number }> => {
+): Promise<{ results: GroupFull }> => {
   try {
-    const response = await axios.get(
-      "/admin/customer-management/get-all?customer_type=group",
+    const response = await axios.get("/customers/get-all?customer_type=group",
       {
         params: {
           page,
@@ -70,14 +108,15 @@ export const fetchGroupCustomers = async (
         },
       }
     );
-
-    return response.data.data;
+  console.log("API Response:", response.data.data);
+      return {
+    results: response.data.data ,
+  };
   } catch (error) {
     console.error(error);
 
     return {
-      results: [],
-      totalResults: 0,
+      results: {} as GroupFull,
     };
   }
 };

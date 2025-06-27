@@ -1,3 +1,4 @@
+"use server";
 import  { isAxiosError } from 'axios'; // Adjust path if needed
 import {
   CreateExtraSessionDto,
@@ -182,7 +183,8 @@ export const getAllSessions = async (
     // Debug: Log the final query params
     console.log('Final query params:', queryParams);
 
-    const response = await axios.get('/admin/session-management',
+    const response = 
+    await axios.get('/admin/session-management',
       {
         params: queryParams,
       }

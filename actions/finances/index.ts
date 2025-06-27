@@ -1,3 +1,4 @@
+"use server";
 import axios from "@/utils/axios";
 import { Salaries } from "@/types/TrainerSalaries";
 

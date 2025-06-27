@@ -1,3 +1,4 @@
+"use server";
 import axios from "@/utils/axios";
 import { z } from "zod";
 import { Type, Status } from "@/types/TrainerDetails";

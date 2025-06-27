@@ -1,3 +1,4 @@
+"use server";
 import axios from "@/utils/axios";
 
 type DashboardData = {

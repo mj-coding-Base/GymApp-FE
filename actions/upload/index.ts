@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client";
+"use server";
 
 import axios from "axios";
 

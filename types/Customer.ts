@@ -91,6 +91,27 @@ export type IndividualCustomer = {
   attendedSessionCount: number;
 };
 
+export type GroupShort ={
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  primaryMember: string;
+  number_of_members: number;
+  package_name: string;
+  status: string;
+
+}
+export type GroupFull ={
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  primaryMember: string;
+  number_of_members: number;
+  package_name: string;
+  status: string;
+  members: GroupCustomer[];
+
+}
 export type GroupCustomer = {
   _id: string;
   createdAt: string;

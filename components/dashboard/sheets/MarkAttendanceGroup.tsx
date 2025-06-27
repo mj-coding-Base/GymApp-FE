@@ -57,7 +57,7 @@ const MarkAttendanceGroup = () => {
   React.useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const sessions = await getAllSessions();
+        // const sessions = await getAllSessions();
         setItems(sessions.data.map(session => ({
           id: session._id ?? "",
           name: `Session ${new Date(session.createdAt ?? "").toLocaleDateString()}`,

@@ -29,10 +29,10 @@ export const signIn = async (
 ): Promise<SignInResponseDataType> => {
   try {
 
-    const res = await axios.post("/admin/trainer-management/login", {
+    const res = await axios.post("/admin/admin-management/login", {
       email: data.email,
       password: data.password,
-      // rememberMe: true,
+      rememberMe: true,
     }); 
 
 

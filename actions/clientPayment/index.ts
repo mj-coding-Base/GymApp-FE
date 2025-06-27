@@ -1,3 +1,4 @@
+"use server";
 import axios from "@/utils/axios";
 
 export const submitPaymentReal = async (data: { amount: number; reference?: string; clientId: string }) => {

@@ -1,9 +1,9 @@
 import {
   fetchIndividualCustomers,
-  fetchGroupCustomers,
+  fetchGroups,
 } from "@/actions/customers";
 import Customers from "@/components/customers/Customers";
-import { GroupCustomer, IndividualCustomer } from "@/types/Customer";
+import { GroupShort, IndividualCustomer } from "@/types/Customer";
 import React from "react";
 
 interface Props {
@@ -25,13 +25,14 @@ export default async function Page({ searchParams }: Props) {
     totalResults: number;
   } = { results: [], totalResults: 0 };
 
-  let groupCustomers: { results: GroupCustomer[]; totalResults: number } = {
+  let groupCustomers: { results: GroupShort[]; totalResults: number } = {
     results: [],
     totalResults: 0,
   };
 
   if (type === "group") {
-    groupCustomers = await fetchGroupCustomers(
+    console.log("fetching group customers++++++++++++")
+    groupCustomers = await fetchGroups(
       searchparams.page ?? "1",
       "10",
       searchparams.search,
@@ -39,11 +40,13 @@ export default async function Page({ searchParams }: Props) {
       true
     );
   } else {
+    console.log("fetching individual customers++++++++++++")
     individualCustomers = await fetchIndividualCustomers(
       searchparams.page ?? "1",
       "10",
       searchparams.search
     );
+      // console.log("fuck ",individualCustomers.results );
   }
 
   return (

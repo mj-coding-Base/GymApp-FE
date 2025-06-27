@@ -5,13 +5,13 @@ import CommonSearch from "@/components/common/Search";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import { GroupCustomer } from "@/types/Customer";
+import { GroupShort } from "@/types/Customer";
 import GroupCard from "./GroupCard";
 
 const Group = ({
   groups,
 }: {
-  groups: { results: GroupCustomer[]; totalResults: number };
+  groups: { results: GroupShort[]; totalResults: number };
 }) => {
   const { setOpenAddNewGroup, setOpenTransferMemberToAGroup } =
     useViewGroupDetails();
