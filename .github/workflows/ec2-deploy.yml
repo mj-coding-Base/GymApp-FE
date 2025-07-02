@@ -1,0 +1,80 @@
+name: Deploy NestJS App with PM2
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  EC2_HOST: "ec2-54-166-148-104.compute-1.amazonaws.com"
+  EC2_USER: "ec2-user"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22'
+
+    - name: Cache npm dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-npm-
+
+    - name: Install dev dependencies
+      run: npm install
+
+    - name: Add .env file
+      run: echo "${{ secrets.DEPLOY_ENV }}" > .env
+
+    - name: Build application
+      run: npm run build
+
+    - name: Stop running service
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.SSH_EC2_PRIVATE_KEY }}
+        script: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          pm2 stop gymapp-frontend || true
+
+
+    - name: Rsync Project to Server
+      uses: Burnett01/rsync-deployments@5.2
+      with:
+        switches: -avz --delete
+        path: ./
+        remote_path: /home/ec2-user/apps/frontend
+        remote_host: ${{ env.EC2_HOST }}
+        remote_user: ${{ env.EC2_USER }}
+        remote_key: ${{ secrets.SSH_EC2_PRIVATE_KEY }}
+
+    - name: Run or Restart PM2 on VPS
+      uses: appleboy/ssh-action@v0.1.8
+      with:
+        host: ${{ env.EC2_HOST }}
+        username: ${{ env.EC2_USER }}
+        key: ${{ secrets.SSH_EC2_PRIVATE_KEY }}
+        script: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          cd /home/ec2-user/apps/frontend
+          npm install
+          if pm2 list | grep -q gymapp-frontend; then
+            pm2 restart gymapp-frontend
+          else
+            pm2 start dist/main.js --name gymapp-frontend
+          fi
+          pm2 save
