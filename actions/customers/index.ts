@@ -29,18 +29,28 @@ export const fetchIndividualCustomers = async (
   searchTerm?: string
 ): Promise<{ results: IndividualCustomer[]; totalResults: number }> => {
   try {
-    const response = await axios.get("/customers/get-all?customer_type=individual", {
-      params: { page, size, searchTerm },
+    const response = await axios.get("/customers/get-all", {
+      params: {
+        page: page || "1",
+        size: size || "10",
+        searchTerm: searchTerm || undefined,
+      },
     });
 
-    // Correct path based on your response
-    const rawData = response.data?.data?.data;
-    const results = Array.isArray(rawData?.results) ? rawData.results : [];
-    // const resultJSON = rawData.results
-    const totalResults = rawData?.totalResults ?? 0;
+    // 🔍 Debug raw response
+    // console.log("Raw API Response:",response.data?.data?.data?.results);
 
-    console.log("print as ROW JSON:",totalResults);
-    console.log("print as array:", results);
+    // Safely extract results
+    const results = response.data?.data?.data?.results;
+
+    // Safely extract totalResults
+    const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
+    const returnData = response.data?.data?.data;
+
+    // If no results found, log structure again
+    if (!results.length && totalResults === 0) {
+      console.warn("No data returned. Full response:", response.data);
+    }
 
     return {
       results,
@@ -128,18 +138,29 @@ export const fetchAllCustomers = async (
   total?: number;
 }> => {
   try {
-    // Ensure we only fetch individual customers
+    // Filter out undefined values to avoid sending null/undefined in query params
+    const safeParams: Record<string, any> = {};
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'ids' && Array.isArray(value)) {
+            // Convert array of IDs to comma-separated string
+            safeParams[key] = value.join(',');
+          } else {
+            safeParams[key] = value;
+          }
+        }
+      });
+    }
+
     const res = await axios.get("/admin/customer-management/get-all", {
-      params: {
-        ...params,
-        // Convert array to comma-separated string if needed
-        ids: params?.ids?.join(","),
-      },
+      params: safeParams,
     });
 
     return {
       data: Array.isArray(res.data?.data) ? res.data.data : [],
-      total: res.data?.total,
+      total: res.data?.total || 0,
     };
   } catch (error) {
     console.error("Fetch customers error:", error);

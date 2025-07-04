@@ -18,7 +18,8 @@ const IndividualCard = ({ customer }: Props) => {
   const { handleAction } = useActions();
 
   const formatedDate = new Date(customer.createdAt).toISOString().split("T")[0];
-
+ 
+  console.log(customer);
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
       <div className="flex flex-col gap-[15px]">

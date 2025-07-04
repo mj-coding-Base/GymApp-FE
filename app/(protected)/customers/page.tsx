@@ -46,7 +46,7 @@ export default async function Page({ searchParams }: Props) {
       "10",
       searchparams.search
     );
-      // console.log("fuck ",individualCustomers.results );
+      console.log("fuck ",individualCustomers.totalResults );
   }
 
   return (
