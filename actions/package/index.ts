@@ -1,4 +1,4 @@
-
+'use server'
 import axios from "@/utils/axios";
 import { z } from "zod";
 // src/actions/packages.ts
@@ -20,6 +20,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       status: item.status || "active",
     }));
 
+        console.log(packages);
     return packages;
   } catch (error: unknown) {
     console.error("Failed to fetch packages. Using dummy data instead.", error);
@@ -47,6 +48,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       },
     ];
 
+        console.log(dummyPackages);
     return dummyPackages;
   }
 };
@@ -54,37 +56,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
 
 
 
-export const packageSchema = z.object({
-  package_name: z.string().min(1, "Package name is required"),
-  sessionsAllocated: z.number().min(1, "Must allocate at least 1 session"),
-});
 
-export type PackageFormData = z.infer<typeof packageSchema>;
-
-export async function createNewPackage(data: PackageFormData): Promise<{
-  status: "SUCCESS" | "FAIL";
-  message?: string;
-  data?: any;
-}> {
-  try {
-    const response = await axios.post("/packages", {
-      name: data.package_name,
-      sessionCount: data.sessionsAllocated,
-    });
-
-    return {
-      status: "SUCCESS",
-      message: "Package created successfully",
-      data: response.data,
-    };
-  } catch (error: any) {
-    console.error("Failed to create package:", error);
-    return {
-      status: "FAIL",
-      message: error.response?.data?.message || "Failed to create package",
-    };
-  }
-}
 
 export async function getPackageMembers(packageId: string): Promise<MemberData[]> {
   try {
@@ -142,36 +114,3 @@ export async function getPackages(): Promise<PackageData[]> {
   }
 }
 
-
-export const updatePackageSchema = z.object({
-  package_name: z.string().min(1),
-  sessions: z.number().min(1),
-});
-
-export type UpdatePackageData = z.infer<typeof updatePackageSchema>;
-
-export async function updatePackage(
-  packageId: string,
-  data: UpdatePackageData
-): Promise<{
-  status: "SUCCESS" | "FAIL";
-  message?: string;
-}> {
-  try {
-    await axios.put(`/packages/${packageId}`, {
-      name: data.package_name,
-      sessionCount: data.sessions,
-    });
-
-    return {
-      status: "SUCCESS",
-      message: "Package updated successfully",
-    };
-  } catch (error: any) {
-    console.error("Failed to update package:", error);
-    return {
-      status: "FAIL",
-      message: error.response?.data?.message || "Failed to update package",
-    };
-  }
-}

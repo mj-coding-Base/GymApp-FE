@@ -4,7 +4,7 @@
 import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
-  CustomerView,
+  PaymemtnHistory,
   GroupFull,
   GroupShort,
   IndividualCustomer,
@@ -172,13 +172,13 @@ export const fetchAllCustomers = async (
   }
 };
 
-export const getUserById = async (id: string): Promise<CustomerView | null> => {
+export const getUserPaymentsId = async (id: string): Promise<PaymemtnHistory[] | null> => {
   try {
     const response = await axios.get(
-      `/admin/customer-management/profile-view/${id}`
+      `/clientsPayment/userPayments/${id}`
     );
 
-    console.log(response.data);
+    console.log("`/clientsPayment/userPayments/${id}`",response.data);
 
     return response.data.data;
   } catch (error) {

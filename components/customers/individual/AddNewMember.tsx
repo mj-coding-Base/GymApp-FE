@@ -323,42 +323,51 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
               <FormField
                 control={form.control}
                 name="package"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Package*</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={loadingPackages || isSubmitting}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="rounded-[10px] h-[41px] w-full">
-                          <SelectValue placeholder="Select Package" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {loadingPackages ? (
-                          <div className="p-2 text-center">
-                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                            Loading packages...
-                          </div>
-                        ) : packages.length > 0 ? (
-                          packages.map((pkg) => (
-                            <SelectItem key={pkg._id} value={pkg._id}>
-                              {pkg.package_name}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="p-2 text-center">
-                            No packages available
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selectedPackage = packages.find((pkg) => pkg.packageId === field.value);
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Package*</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={loadingPackages || isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px] w-full">
+                            <SelectValue
+                              placeholder={
+                                selectedPackage
+                                  ? selectedPackage.package_name
+                                  : "Select Package"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {loadingPackages ? (
+                            <div className="p-2 text-center">
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                              Loading packages...
+                            </div>
+                          ) : packages.length > 0 ? (
+                            packages.map((pkg) => (
+                              <SelectItem key={pkg.packageId} value={pkg.packageId}>
+                                {pkg.package_name}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="p-2 text-center">No packages available</div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
+
 
               <div className="grid grid-cols-2 gap-[15px] pt-4">
                 <SheetClose asChild>

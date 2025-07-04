@@ -55,8 +55,9 @@ export interface FetchedGroupCustomer {
   group_id?: string;
   number_of_members?: number;
   package_name?: string;
+  clientld: string;
+  groupId?: string;
   availableSessionQuota?: number;
-  type?: "individual" | "group";
 
   groupMembersNames?: string[];
 }
@@ -89,6 +90,8 @@ export type IndividualCustomer = {
   isPaid: boolean;
   package_name: string;
   availableSessionQuota: number;
+  clientld: string;
+  groupId?: string;
 };
 
 export type GroupShort ={
@@ -132,6 +135,8 @@ export type GroupCustomer = {
   number_of_members: number;
   package_name: string;
   availableSessionQuota: number;
+  clientld: string;
+  groupId?: string;
 };
 
 export type CustomerView = {
@@ -154,24 +159,16 @@ export type CustomerView = {
   packageHistory: PackageHistory[];
 };
 
-type PaymemtnHistory = {
+export type PaymemtnHistory = {
   _id: string;
   createdAt: string;
   updatedAt: string;
   status: string;
-  customerOrGroupId: string;
+  month: string;
   amount: number;
-  paymentFor: string;
-  type: string;
-  packageId: string;
-  package: {
-    _id: string;
-    createdAt: string;
-    updatedAt: string;
-    status: string;
-    sessions_allocated: number;
-    package_name: string;
-  };
+  paidFor: string;
+  isExtra: string;
+  paymentId:string;
 };
 
 type PackageHistory = {
