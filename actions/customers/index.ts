@@ -1,16 +1,16 @@
 
 "use server";
 
-import { isAxiosError } from "axios";
-import axios from "@/utils/axios";
+import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
   CustomerView,
-  GroupShort,
   GroupFull,
+  GroupShort,
   IndividualCustomer,
 } from "@/types/Customer";
-import { CommonResponseDataType } from "@/types/Common";
+import axios from "@/utils/axios";
+import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
 
 interface FetchCustomersParams {
@@ -190,12 +190,12 @@ export const getUserById = async (id: string): Promise<CustomerView | null> => {
 
 // Create a customer
 export interface CustomerRegistrationData {
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   nic: string;
-  phone: string;
-  package_id: string;
+  mobileNumber: string;
+  packageId: string;
   fee: number;
 }
 

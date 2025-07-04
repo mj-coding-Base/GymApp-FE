@@ -9,7 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { CustomerView, IndividualCustomer } from "@/types/Customer";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ViewClientProfileProps {
   isOpen: boolean;
@@ -59,15 +59,23 @@ const ViewClientProfile = ({
         <div className="overflow-y-auto">
           <div className="mt-[16px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
             <div className="flex border-b-[1px] border-b-[#000000]">
-              <div className="flex-[50%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-l-[1px]  content-center flex flex-col gap-[9px]">
+                <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                  Package ID
+                </p>
+                <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
+                  {customer.packageId}
+                </p>
+              </div>
+              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Name
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {`${customer.first_name} ${customer.last_name}`}
+                  {`${customer.firstName} ${customer.lastName}`}
                 </p>
               </div>
-              <div className="flex-[50%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
+              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Email
                 </p>
@@ -90,7 +98,7 @@ const ViewClientProfile = ({
                   Current Session
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.attendedSessionCount}
+                  {customer.availableSessionQuota}
                 </p>
               </div>
               <div className="flex-[30%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
@@ -98,7 +106,7 @@ const ViewClientProfile = ({
                   Mobile
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.phone}
+                  {customer.mobileNumber}
                 </p>
               </div>
             </div>
@@ -143,7 +151,7 @@ const ViewClientProfile = ({
           )}
 
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
-            Package History
+            Attendance History
           </p>
           {loading ? (
             <div className="min-h-[500px] flex items-center justify-center">
@@ -152,14 +160,11 @@ const ViewClientProfile = ({
           ) : (
             <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
               <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
-                <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Payment Date
+                <p className="w-[50.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Date
                 </p>
-                <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Package
-                </p>
-                <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Amount
+                <p className="w-[49.3%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Time
                 </p>
               </div>
               {paymentData?.packageHistory.map((item) => (

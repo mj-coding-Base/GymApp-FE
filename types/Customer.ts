@@ -23,12 +23,12 @@ export interface FetchedCustomer {
   createdAt?: string;
   updatedAt?: string;
   status?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   nic?: string;
-  phone?: string;
-  package_id?: string;
+  mobileNumber?: string;
+  packageId?: string;
   fee?: number;
   isActive?: boolean;
   isPaid?: boolean;
@@ -40,12 +40,12 @@ export interface FetchedGroupCustomer {
   createdAt?: string;
   updatedAt?: string;
   status?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   nic?: string;
-  phone?: string;
-  package_id?: string;
+  mobileNumber?: string;
+  packageId?: string;
   fee?: number;
   isActive?: boolean;
   isPaid?: boolean;
@@ -55,7 +55,7 @@ export interface FetchedGroupCustomer {
   group_id?: string;
   number_of_members?: number;
   package_name?: string;
-  attendedSessionCount?: number;
+  availableSessionQuota?: number;
   type?: "individual" | "group";
 
   groupMembersNames?: string[];
@@ -78,17 +78,17 @@ export type IndividualCustomer = {
   createdAt: string;
   updatedAt: string;
   status: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   nic: string;
-  phone: string;
-  package_id: string;
+  mobileNumber: string;
+  packageId: string;
   fee: number;
   isActive: boolean;
   isPaid: boolean;
   package_name: string;
-  attendedSessionCount: number;
+  availableSessionQuota: number;
 };
 
 export type GroupShort ={
@@ -117,21 +117,21 @@ export type GroupCustomer = {
   createdAt: string;
   updatedAt: string;
   status: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   nic: string;
-  phone: string;
+  mobileNumber: string;
   relationToPrimaryMember: string;
   isPrimaryMember: boolean;
-  package_id: string;
+  packageId: string;
   fee: number;
   isActive: boolean;
   isPaid: boolean;
   group_id: string;
   number_of_members: number;
   package_name: string;
-  attendedSessionCount: number;
+  availableSessionQuota: number;
 };
 
 export type CustomerView = {
@@ -140,12 +140,12 @@ export type CustomerView = {
     createdAt: string;
     updatedAt: string;
     status: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
+    firstName: string;
+    lastName: string;
+    mobileNumber: string;
     email: string;
     nic: string;
-    package_id: string;
+    packageId: string;
     fee: number;
     isActive: boolean;
     isPaid: boolean;
@@ -163,7 +163,7 @@ type PaymemtnHistory = {
   amount: number;
   paymentFor: string;
   type: string;
-  package_id: string;
+  packageId: string;
   package: {
     _id: string;
     createdAt: string;
@@ -183,7 +183,7 @@ type PackageHistory = {
   amount: number;
   paymentFor: string;
   type: string;
-  package_id: string;
+  packageId: string;
   totalPayments: number;
   package: {
     _id: string;

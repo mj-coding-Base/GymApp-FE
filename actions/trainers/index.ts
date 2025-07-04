@@ -1,7 +1,8 @@
 "use server";
+import { ClientType } from "@/types/SessionHistory";
+import { Status, Type } from "@/types/TrainerDetails";
 import axios from "@/utils/axios";
 import { z } from "zod";
-import { Type, Status } from "@/types/TrainerDetails";
 
 export interface Trainer {
   id: string;
@@ -75,9 +76,9 @@ export async function registerTrainer(data: TrainerFormData): Promise<{
 }> {
   try {
     const response = await axios.post("/api/v1/admin/trainer-management", {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      phone: data.mobileNumber,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      mobileNumber: data.mobileNumber,
       email: data.email,
       nic: data.nic,
       type: data.type,
@@ -180,7 +181,6 @@ export async function settlePayment(
     };
   }
 }
-import { ClientType } from "@/types/SessionHistory";
 
 export interface SessionData {
   id: string;

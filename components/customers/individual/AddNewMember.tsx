@@ -1,42 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { IndividualCustomer } from "@/types/Customer";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { createIndividualCustomer, updateCustomer } from "@/actions/customers";
-import { Package } from "@/types/Packages";
-import { toast } from "sonner";
 import { fetchAllPackages } from "@/actions/package";
 import { ErrorToast } from "@/components/common/toast";
+import { Button } from "@/components/ui/button";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
+import { IndividualCustomer } from "@/types/Customer";
+import { Package } from "@/types/Packages";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -126,13 +126,13 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   useEffect(() => {
     if (open && data) {
       form.reset({
-        firstName: data.first_name,
-        lastName: data.last_name,
-        mobileNumber: data.phone,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        mobileNumber: data.mobileNumber,
         email: data.email,
         nic: data.nic,
         programFee: data.fee,
-        package: data.package_id,
+        package: data.packageId,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,12 +144,12 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     setIsSubmitting(true);
     try {
       const customerData = {
-        first_name: values.firstName.trim(),
-        last_name: values.lastName.trim(),
-        phone: values.mobileNumber,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        mobileNumber: values.mobileNumber,
         email: values.email.toLowerCase().trim(),
         nic: values.nic.toUpperCase(),
-        package_id: values.package,
+        packageId: values.package,
         fee: values.programFee,
       };
 
@@ -167,8 +167,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         setSuccessData({
           title: !data ? "Registration Successful!" : "Client Updated!",
           description: !data
-            ? `${customerData.first_name} has been successfully registered!`
-            : `${customerData.first_name}'s details have been successfully updated!`,
+            ? `${customerData.firstName} has been successfully registered!`
+            : `${customerData.firstName}'s details have been successfully updated!`,
           backButtonText: "Done",
           function: () => {},
         });

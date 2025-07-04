@@ -21,6 +21,7 @@ type SignInResponseDataType = {
     email: string;
     idToken: string;
     refreshToken: string;
+    isAdmin: boolean;
   } | null;
 };
 
@@ -34,7 +35,6 @@ export const signIn = async (
       password: data.password,
       rememberMe: true,
     }); 
-
 
     return res.data;
   } catch (error) {

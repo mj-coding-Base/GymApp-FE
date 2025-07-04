@@ -1,12 +1,12 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { IndividualCustomer } from "@/types/Customer";
-import React, { useState } from "react";
-import ViewClientProfile from "./ClientProfile";
-import AddNewMember from "./AddNewMember";
-import { useActions } from "@/hooks/modals/useActions";
 import { toggleCustomerStatus } from "@/actions/customers";
+import { Badge } from "@/components/ui/badge";
+import { useActions } from "@/hooks/modals/useActions";
+import { IndividualCustomer } from "@/types/Customer";
+import { useState } from "react";
+import AddNewMember from "./AddNewMember";
+import ViewClientProfile from "./ClientProfile";
 
 interface Props {
   customer: IndividualCustomer;
@@ -57,7 +57,7 @@ const IndividualCard = ({ customer }: Props) => {
             Client Name
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {`${customer.first_name} ${customer.last_name}`}
+            {`${customer.firstName} ${customer.lastName}`}
           </p>
         </div>
 
@@ -66,7 +66,7 @@ const IndividualCard = ({ customer }: Props) => {
             Mobile Number
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.phone}
+            {customer.mobileNumber}
           </p>
         </div>
 

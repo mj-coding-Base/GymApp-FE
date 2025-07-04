@@ -1,5 +1,6 @@
 import Dashboard from "@/components/dashboard/Dashboard";
 import { fetchDashboardData } from "@/actions/dashboard";
+import { getSession } from "@/lib/authentication";
 
 export default async function DashboardWrapper() {
   try {
@@ -9,6 +10,10 @@ export default async function DashboardWrapper() {
       console.error("Received empty response from server");
       return <div>No data available</div>;
     }
+    const userData = await getSession();
+    console.log( "Print user name",userData?.user.name);
+    console.log( "Print user email",userData?.user.email);
+    console.log( "Print user id",userData?.user.id);
 
     console.log("API response received:", {
       hasTrainerData: !!data.trainer,
@@ -19,7 +24,7 @@ export default async function DashboardWrapper() {
     return (
       <Dashboard 
         data={data} 
-        userName="User"  
+        userName={userData?.user.name ?? ""}
       />
     );
 

@@ -60,12 +60,14 @@ export async function login(data: {
 
   const user = {
     id: res.data?._id,
-    name: `${res.data?.firstName} ${res.data?.lastName}`,
+    name: res.data?.firstName && res.data?.lastName
+      ? `${res.data.firstName} ${res.data.lastName}`
+      : res.data?.email ?? "Unnamed User",
     email: res.data?.email,
     token: res.data?.idToken,
     refreshToken: res.data?.refreshToken,
     // -TODO
-    // adminType: res.data?.adminType,
+    isAdmin: res.data?.isAdmin,
     // profilePicture: res.data?.profilePicture,
   };
 
@@ -78,14 +80,14 @@ export async function login(data: {
   const session = await encrypt({ user, expires, createdAt });
 
   // Save the session in a cookie
-  (await cookies()).set("session-boxfit-admin", session, { expires });
+  (await cookies()).set("session-gymapp-admin", session, { expires });
 
   return res;
 }
 
 export async function logout() {
   // Destroy the session
-  (await cookies()).set("session-boxfit-admin", "", { expires: new Date(0) });
+  (await cookies()).set("session-gymapp-admin", "", { expires: new Date(0) });
 }
 
 // Session type
@@ -93,6 +95,7 @@ export type Session = {
   user: {
     id: string;
     name: string;
+    isAdmin: boolean;
     email: string;
     token: string;
     refreshToken: string | null;
@@ -103,18 +106,19 @@ export type Session = {
 
 // Get the session
 export async function getSession(): Promise<Session | null> {
-  const sessionCookie = (await cookies()).get("session-boxfit-admin")?.value;
+  const sessionCookie = (await cookies()).get("session-gymapp-admin")?.value;
 
   if (!sessionCookie) return null;
 
   const decrypted = await decrypt(sessionCookie);
 
+  
   return decrypted;
 }
 
 // Update the session
 export async function updateSession(request: NextRequest) {
-  const session = request.cookies.get("session-boxfit-admin")?.value;
+  const session = request.cookies.get("session-gymapp-admin")?.value;
 
   if (!session) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
@@ -163,9 +167,8 @@ export const updateAccessTokenInSession = async (accessToken: string) => {
   const expires = new Date(session.expires);
   const newSession = await encrypt(session);
 
-  (await cookies()).set("session-boxfit-admin", newSession, { expires });
+  (await cookies()).set("session-gymapp-admin", newSession, { expires });
 
-  console.log("Access token updated");
 
   return session;
 };

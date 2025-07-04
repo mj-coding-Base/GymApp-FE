@@ -70,7 +70,7 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
             Member
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {`${groupMember.first_name} ${groupMember.last_name}`}
+            {`${groupMember.firstName} ${groupMember.lastName}`}
           </p>
         </div>
 
@@ -80,7 +80,7 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
               Mobile Number
             </p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {groupMember.phone}
+              {groupMember.mobileNumber}
             </p>
           </div>
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import AddNewMember from "./AddNewMember";
 import CustomPagination from "@/components/common/CustomPagination";
 import CommonSearch from "@/components/common/Search";
+import { getSession } from "@/lib/authentication";
 
 const Individual = ({
   individualCustomers,
