@@ -28,8 +28,9 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
-import { IndividualCustomer } from "@/types/Customer";
+import { NewIndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -67,17 +68,51 @@ const formSchema = z.object({
   email: z
     .string({ required_error: "Email is required" })
     .email("Invalid email format"),
-  programFee: z.coerce
-    .number({ required_error: "Program fee is required" })
-    .min(0, "Fee cannot be negative")
-    .max(1000000, "Fee too large"),
-  package: z.string({ required_error: "Package is required" }),
+  addressLine1: z
+    .string({ required_error: "Address Line 1 is required" })
+    .min(1, "Address Line 1 is required")
+    .max(200, "Address too long"),
+  addressLine2: z
+    .string()
+    .max(200, "Address too long")
+    .optional(),
+  packageId: z.string({ required_error: "Package is required" }),
+  isMale: z.boolean({
+    required_error: "Gender selection is required",
+  }),
+  isMarried: z.boolean({
+    required_error: "Marital status is required",
+  }),
+  dob: z.object({
+    year: z.string({ required_error: "Year is required" }),
+    month: z.string({ required_error: "Month is required" }),
+    day: z.string({ required_error: "Day is required" }),
+  }),
+  whyJoin: z.enum([
+    "Bulking", 
+    "Strength", 
+    "Fatloss", 
+    "Regular Fitness", 
+    "Extreme Training", 
+    "Athletic"
+  ], {
+    required_error: "Please select why you're joining",
+  }),
+  profession: z
+    .string({ required_error: "Profession is required" })
+    .min(1, "Profession is required")
+    .max(100, "Profession too long"),
 });
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 100 }, (_, i) => currentYear - i).map(String);
+const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 interface AddNewMemberProps {
   readonly open: boolean;
   readonly setOpen: (value: boolean) => void;
-  readonly data: IndividualCustomer | null;
+  readonly data: NewIndividualCustomer | null;
 }
 
 function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
@@ -91,11 +126,21 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     defaultValues: {
       firstName: "",
       lastName: "",
-      mobileNumber: "",
+      mobileNumber: "+94",
       email: "",
       nic: "",
-      programFee: 0,
-      package: "",
+      addressLine1: "",
+      addressLine2: "",
+      packageId: "",
+      isMale: true,
+      isMarried: false,
+      dob: {
+        year: "",
+        month: "",
+        day: "",
+      },
+      whyJoin: "Regular Fitness",
+      profession: "",
     },
   });
 
@@ -131,8 +176,18 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         mobileNumber: data.mobileNumber,
         email: data.email,
         nic: data.nic,
-        programFee: data.fee,
-        package: data.packageId,
+        addressLine1: data.addressLine1 || "",
+        addressLine2: data.addressLine2 || "",
+        packageId: data.packageId,
+        isMale: data.isMale,
+        isMarried: data.isMarried,
+        dob: {
+          year: data.dob ? new Date(data.dob).getFullYear().toString() : "",
+          month: data.dob ? (new Date(data.dob).getMonth() + 1).toString().padStart(2, '0') : "",
+          day: data.dob ? new Date(data.dob).getDate().toString().padStart(2, '0') : "",
+        },
+        whyJoin: data.whyJoin as any,
+        profession: data.profession || "",
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,13 +199,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     setIsSubmitting(true);
     try {
       const customerData = {
-        firstName: values.firstName.trim(),
-        lastName: values.lastName.trim(),
-        mobileNumber: values.mobileNumber,
-        email: values.email.toLowerCase().trim(),
-        nic: values.nic.toUpperCase(),
-        packageId: values.package,
-        fee: values.programFee,
+        ...values,
+        dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
       };
 
       if (data) {
@@ -174,6 +224,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         });
         setOpenSuccessModal(true);
       } else {
+        toast.error(response.message || "Operation failed");
       }
     } catch (error: any) {
       console.error("Operation failed:", error);
@@ -302,15 +353,14 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
               <FormField
                 control={form.control}
-                name="programFee"
+                name="addressLine1"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Program Fee (LKR)*</FormLabel>
+                    <FormLabel>Address Line 1*</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        type="number"
-                        placeholder="0.00"
+                        placeholder="Street address, P.O. Box, etc."
                         className="rounded-[10px] h-[41px]"
                         disabled={isSubmitting}
                       />
@@ -322,7 +372,202 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
               <FormField
                 control={form.control}
-                name="package"
+                name="addressLine2"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address Line 2</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Apartment, suite, unit, etc."
+                        className="rounded-[10px] h-[41px]"
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="isMale"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Gender*</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "male")}
+                          defaultValue={field.value ? "male" : "female"}
+                          className="flex gap-4"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="male" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Male</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="female" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Female</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isMarried"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel>Marital Status*</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={(value) => field.onChange(value === "married")}
+                          defaultValue={field.value ? "married" : "single"}
+                          className="flex gap-4"
+                        >
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="married" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Married</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="single" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Single</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date of Birth*</FormLabel>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, year: value })}
+                        value={field.value.year}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {years.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, month: value })}
+                        value={field.value.month}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Month" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {months.map((month) => (
+                            <SelectItem key={month} value={month}>
+                              {month}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, day: value })}
+                        value={field.value.day}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Day" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {days.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="whyJoin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Why are you joining?*</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="rounded-[10px] h-[41px]">
+                          <SelectValue placeholder="Select a reason" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Bulking">Bulking</SelectItem>
+                        <SelectItem value="Strength">Strength</SelectItem>
+                        <SelectItem value="Fatloss">Fatloss</SelectItem>
+                        <SelectItem value="Regular Fitness">Regular Fitness</SelectItem>
+                        <SelectItem value="Extreme Training">Extreme Training</SelectItem>
+                        <SelectItem value="Athletic">Athletic</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="profession"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profession*</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Your profession"
+                        className="rounded-[10px] h-[41px]"
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="packageId"
                 render={({ field }) => {
                   const selectedPackage = packages.find((pkg) => pkg.packageId === field.value);
 
@@ -367,7 +612,6 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                   );
                 }}
               />
-
 
               <div className="grid grid-cols-2 gap-[15px] pt-4">
                 <SheetClose asChild>

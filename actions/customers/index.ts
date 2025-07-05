@@ -200,12 +200,12 @@ export interface CustomerRegistrationData {
 }
 
 export const createIndividualCustomer = async (
-  customerData: CustomerRegistrationData
+  NewIndividualCustomer: CustomerRegistrationData
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.post(
-      "/admin/customer-management/individual",
-      customerData
+      "/customers/add-customer",
+      NewIndividualCustomer
     );
 
     revalidatePath(`/customers`);
@@ -225,7 +225,7 @@ export const updateCustomer = async (
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      `/admin/customer-management/${customerId}`,
+      `/customers/${customerId}`,
       updatedData
     );
 

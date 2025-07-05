@@ -62,6 +62,12 @@ export interface FetchSessionsParams {
   size?: number;
 }
 
+export interface Attendance{
+  id: string;
+  userId: string;
+  date: string;
+}
+
 export interface SessionsResponse {
   status: 'SUCCESS' | 'FAIL';
   message: string | null;

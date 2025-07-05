@@ -152,6 +152,25 @@ export const findTrainerSessions = async (
   }
 };
 
+export const getUserAttendance = async (
+  customerId: string,
+  page = 1,
+  size = 50 // or any default
+) => {
+  try {
+    const res = await axios.get(`/Attendances/get-all`, {
+      params: {
+        page,
+        size,
+        searchTerm: customerId,
+      },
+    });
+
+    return res.data.data.customers; // access the array directly
+  } catch (error) {
+    handleApiError(error, "fetching user attendance");
+  }
+};
 
 
 export const getAllSessions = async (

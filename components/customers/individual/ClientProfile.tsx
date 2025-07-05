@@ -1,6 +1,7 @@
 "use client";
 
 import { getUserPaymentsId } from "@/actions/customers";
+import { getUserAttendance } from "@/actions/session";
 import {
   Sheet,
   SheetClose,
@@ -8,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { PaymemtnHistory, IndividualCustomer } from "@/types/Customer";
+import { PaymemtnHistory,AttendanceHistory, IndividualCustomer } from "@/types/Customer";
 import { useEffect, useState } from "react";
 
 interface ViewClientProfileProps {
@@ -23,6 +24,7 @@ const ViewClientProfile = ({
   customer,
 }: ViewClientProfileProps) => {
   const [paymentData, setPaymentData] = useState<PaymemtnHistory[] | null>(null);
+  const [attendanceData, setAttendance] = useState<AttendanceHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,18 @@ const ViewClientProfile = ({
     getUserPaymentsId(customer._id)
       .then((response) => {
         setPaymentData(response);
+      })
+      .finally(() => setLoading(false));
+  }, [customer._id, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setLoading(true);
+
+    getUserAttendance(customer._id)
+      .then((response) => {
+        setAttendance(response);
       })
       .finally(() => setLoading(false));
   }, [customer._id, isOpen]);
@@ -166,26 +180,35 @@ const ViewClientProfile = ({
           ) : (
             <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
               <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
-                <p className="w-[50.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Date
                 </p>
-                <p className="w-[49.3%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[33.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Day
+                </p>
+                <p className="w-[33.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Time
                 </p>
               </div>
-              {paymentData?.map((item) => (
+              {attendanceData?.map((item) => (
                 <div
                   key={item._id}
                   className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
                 >
                   <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.createdAt}
+                    {item.attendedDateTime.slice(0,10)}
                   </p>
-                  <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.month}
+                  <p className="w-[33.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {new Date(item.attendedDateTime).toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
                   </p>
-                  <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    LKR {item.amount}
+                  <p className="w-[33.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {new Date(item.attendedDateTime).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
                   </p>
                 </div>
               ))}

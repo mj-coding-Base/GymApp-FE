@@ -14,6 +14,7 @@ import {
 import { useCollectPaymentIndividualSheet } from "@/hooks/useCollectPaymentIndividualSheet";
 import { useExtraPaymentCollectionSheet } from "@/hooks/usePaymentCollectionExtra";
 import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
+import CommonSearch from "@/components/common/Search";
 
 const CollectPaymentIndividual = () => {
   const {
@@ -41,12 +42,7 @@ const CollectPaymentIndividual = () => {
             Collect Payment
           </SheetTitle>
           <SheetDescription className="relative w-full max-w-sm">
-            <i className="search-icon  w-[16.54px] h-[18.9px] text-[#000000] absolute left-3 top-1/2 -translate-y-1/2" />
-            <Input
-              type="search"
-              placeholder="Search by Full name/ NIC"
-              className="pl-10 text-[11px] font-normal text-[#4F4F4F]"
-            />
+            <CommonSearch />
           </SheetDescription>
         </SheetHeader>
         <div className="px-4 overflow-y-auto">

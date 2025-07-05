@@ -14,7 +14,7 @@ export interface Customer {
   package_name: string;
   groupMembersNames: any[];
   currentSession?: number;
-  type?: "individual" | "group";
+  // type?: "individual" | "group";
   groupMembers?: { _id: string; name: string }[];
 }
 
@@ -32,7 +32,7 @@ export interface FetchedCustomer {
   fee?: number;
   isActive?: boolean;
   isPaid?: boolean;
-  type?: "individual" | "group";
+  // type?: "individual" | "group";
 }
 
 export interface FetchedGroupCustomer {
@@ -81,6 +81,8 @@ export type IndividualCustomer = {
   status: string;
   firstName: string;
   lastName: string;
+  addressLine1 :  string ,
+  addressLine2 :  string ,
   email: string;
   nic: string;
   mobileNumber: string;
@@ -92,7 +94,29 @@ export type IndividualCustomer = {
   availableSessionQuota: number;
   clientld: string;
   groupId?: string;
+  whyJoin: string;
+  profession: string;
+  dob: string;
+  isMale : true,
+  isMarried : true,
 };
+
+export type NewIndividualCustomer ={
+  _id: string;
+  firstName :  string ,
+  lastName :  string ,
+  nic :  string ,
+  addressLine1 :  string ,
+  addressLine2 :  string ,
+  email :  string ,
+  mobileNumber :  string ,
+  packageId :  string ,
+  isMale : true,
+  dob :  string ,
+  isMarried : true,
+  whyJoin :  string ,
+  profession :  string
+}
 
 export type GroupShort ={
   _id: string;
@@ -169,6 +193,11 @@ export type PaymemtnHistory = {
   paidFor: string;
   isExtra: string;
   paymentId:string;
+};
+
+export type AttendanceHistory = {
+  _id: string;
+  attendedDateTime: string;
 };
 
 type PackageHistory = {
