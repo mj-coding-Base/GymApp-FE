@@ -73,7 +73,7 @@ const formSchema = z.object({
     .min(1, "Address Line 1 is required")
     .max(200, "Address too long"),
   addressLine2: z
-    .string()
+    .string({ required_error: "Address Line 1 is required" })
     .max(200, "Address too long")
     .optional(),
   packageId: z.string({ required_error: "Package is required" }),
@@ -176,8 +176,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         mobileNumber: data.mobileNumber,
         email: data.email,
         nic: data.nic,
-        addressLine1: data.addressLine1 || "",
-        addressLine2: data.addressLine2 || "",
+        addressLine1: data.addressLine1 ,
+        addressLine2: data.addressLine2 ,
         packageId: data.packageId,
         isMale: data.isMale,
         isMarried: data.isMarried,
@@ -201,6 +201,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       const customerData = {
         ...values,
         dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
+        addressLine2: values.addressLine2 ?? "",
       };
 
       if (data) {
@@ -584,7 +585,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                             <SelectValue
                               placeholder={
                                 selectedPackage
-                                  ? selectedPackage.package_name
+                                  ? selectedPackage.name
                                   : "Select Package"
                               }
                             />
@@ -599,7 +600,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                           ) : packages.length > 0 ? (
                             packages.map((pkg) => (
                               <SelectItem key={pkg.packageId} value={pkg.packageId}>
-                                {pkg.package_name}
+                                {pkg.name}
                               </SelectItem>
                             ))
                           ) : (

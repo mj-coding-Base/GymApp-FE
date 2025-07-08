@@ -88,6 +88,7 @@ export async function login(data: {
 export async function logout() {
   // Destroy the session
   (await cookies()).set("session-gymapp-admin", "", { expires: new Date(0) });
+  
 }
 
 // Session type

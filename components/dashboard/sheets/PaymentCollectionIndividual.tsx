@@ -21,7 +21,7 @@ const paymentSchema = z.object({
   reference: z.string().optional(),
 });
 
-const PaymentCollectionIndividual = (clientId: string) => {
+const PaymentCollectionIndividual = ({ clientId }: { clientId: string | null }) => {
   const {
     openPaymentCollectionIndividualSheet,
     setOpenPaymentCollectionIndividualSheet,
@@ -48,6 +48,10 @@ const PaymentCollectionIndividual = (clientId: string) => {
   };
 
   const handleSubmit = async () => {
+    if (!clientId) {
+      toast.error("Client ID is missing. Cannot process payment.");
+      return;
+    }
     try {
       setIsSubmitting(true);
       
@@ -55,7 +59,6 @@ const PaymentCollectionIndividual = (clientId: string) => {
       const validatedData = paymentSchema.parse({
         amount: Number(formData.amount),
         reference: formData.reference,
-        clientId:clientId
       });
 
       // Simulate API call with dummy data

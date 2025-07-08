@@ -4,7 +4,7 @@
 import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
-  PaymemtnHistory,
+  PaymentHistory,
   GroupFull,
   GroupShort,
   IndividualCustomer,
@@ -12,6 +12,7 @@ import {
 import axios from "@/utils/axios";
 import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
+const cacheBuster = Date.now();
 
 interface FetchCustomersParams {
   searchTerm?: string;
@@ -34,6 +35,7 @@ export const fetchIndividualCustomers = async (
         page: page || "1",
         size: size || "10",
         searchTerm: searchTerm || undefined,
+    _: cacheBuster,
       },
     });
 
@@ -45,7 +47,6 @@ export const fetchIndividualCustomers = async (
 
     // Safely extract totalResults
     const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
-    const returnData = response.data?.data?.data;
 
     // If no results found, log structure again
     if (!results.length && totalResults === 0) {
@@ -172,7 +173,7 @@ export const fetchAllCustomers = async (
   }
 };
 
-export const getUserPaymentsId = async (id: string): Promise<PaymemtnHistory[] | null> => {
+export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | null> => {
   try {
     const response = await axios.get(
       `/clientsPayment/userPayments/${id}`
@@ -192,11 +193,17 @@ export const getUserPaymentsId = async (id: string): Promise<PaymemtnHistory[] |
 export interface CustomerRegistrationData {
   firstName: string;
   lastName: string;
+  addressLine1 :  string ,
+  addressLine2 :  string ,
   email: string;
   nic: string;
   mobileNumber: string;
   packageId: string;
-  fee: number;
+  whyJoin: string;
+  profession: string;
+  dob: string;
+  isMale : boolean,
+  isMarried : boolean,
 }
 
 export const createIndividualCustomer = async (
@@ -250,7 +257,7 @@ export const toggleCustomerStatus = async (customerId: string) => {
 
     console.log(res.data);
 
-    return res.data;
+    return (" successfully deactivated");
   } catch (error) {
     console.error(error);
 
@@ -261,20 +268,27 @@ export const toggleCustomerStatus = async (customerId: string) => {
 // deactivate a customer
 export const deactivateCustomer = async (
   customerId: string
-): Promise<{ message: string }> => {
+): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      `/admin/customer-management/${customerId}/toggleStatus`
+      `/customers/${customerId}/deactivate`
     );
-    return res.data;
+
+    return {
+      status: 'SUCCESS',
+      message: 'Customer deactivated',
+      data: res.data.data, // or res.data if needed
+    };
   } catch (error) {
     throw new Error(
       isAxiosError(error)
         ? error.response?.data?.message || error.message
-        : "Failed to delete customer"
+        : "Failed to deactivate customer"
     );
   }
 };
+
+
 
 export const searchCustomers = async (
   searchTerm: string

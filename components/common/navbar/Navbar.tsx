@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useProfileDetailsSheet } from "@/hooks/useProfileSheet";
 import { useResetPasswordSheet } from "@/hooks/useResetPasswordSheet";
 import { logout } from "@/lib/authentication";
+import { useState } from "react";
 
 const Navbar = () => {
   const { setOpenProfileDetailsSheet } = useProfileDetailsSheet();
@@ -27,6 +28,7 @@ const Navbar = () => {
     setOpenResetPasswordSheet(true);
   };
 
+  const [loading, setLoading] = useState(false);
   return (
     <nav className="h-[50.56px] lg:h-[46.5px] 3xl:!h-[67.24px] min-h-[50.56px] lg:min-h-[46.5px] 3xl:!min-h-[67.24px] bg-white px-4 lg:px-6 3xl:px-8 flex items-center justify-between lg:border-b border-[#EBEBEB] sticky top-0 z-50">
       <Logo className="w-[84.93px] h-auto" classLink="" />
@@ -68,6 +70,7 @@ const Navbar = () => {
                 onClick={async () => {
                   await logout();
                   window.location.href = "/sign-in";
+                  setLoading(false);
                 }}
               >
                 <i className="logout-icon w-4 h-4 text-[#424242]" />

@@ -179,11 +179,11 @@ export type CustomerView = {
     isActive: boolean;
     isPaid: boolean;
   };
-  paymentHistory: PaymemtnHistory[];
+  paymentHistory: PaymentHistory[];
   packageHistory: PackageHistory[];
 };
 
-export type PaymemtnHistory = {
+export type PaymentHistory = {
   _id: string;
   createdAt: string;
   updatedAt: string;

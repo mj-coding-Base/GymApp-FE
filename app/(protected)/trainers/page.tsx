@@ -1,4 +1,4 @@
-"use server";
+"use client";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { CalendarForm } from "@/components/common/CalendarForm";
 import TrainerInfo from "@/components/trainer/TrainerInfo";
-import { TrainerRegistration } from "@/components/trainer/TrainerRegistration";
+// import { TrainerRegistration } from "@/components/trainer/TrainerRegistration";
 
 export default function ClientPaymentsPage() {
   return (
@@ -47,7 +47,7 @@ export default function ClientPaymentsPage() {
                 </DialogContent>
               </Dialog>
             </div>
-            <TrainerRegistration />
+            {/* <TrainerRegistration /> */}
             <div className="flex w-full justify-between p-2 mb-1 bg-[#F6F6F6]">
               <div className=" flex items-center justify-center  text-[10.8px] text-[#757575]  ">
                 <i className="edit-new-icon bg-[#44424D] h-[14.4px] w-[14.4px] rounded-full" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { toggleCustomerStatus } from "@/actions/customers";
+import { deactivateCustomer } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import { IndividualCustomer } from "@/types/Customer";
@@ -16,6 +16,7 @@ const IndividualCard = ({ customer }: Props) => {
   const [isClientProfileOpen, setIsClientProfileOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { handleAction } = useActions();
+  const [isActive, setIsActive] = useState(customer.isActive);
 
   const formatedDate = new Date(customer.createdAt).toISOString().split("T")[0];
  
@@ -37,10 +38,10 @@ const IndividualCard = ({ customer }: Props) => {
               Status
             </p>
             <Badge
-              variant={customer.isActive ? "success" : "destructive"}
+              variant={isActive ? "success" : "destructive"}
               className="rounded-[15px] text-[11px]/[13px] font-semibold"
             >
-              {customer.isActive ? "Active" : "Inactive"}
+              {isActive ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
@@ -91,13 +92,16 @@ const IndividualCard = ({ customer }: Props) => {
           }}
           className="edit-with-bg w-[36.26px] h-[50px]"
         />
-        <i
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label="Deactivate customer"
           onClick={() => {
             handleAction(
-              async () => await toggleCustomerStatus(customer._id),
+              async () => {
+                const res = await deactivateCustomer(customer._id);
+                setIsActive(false); // ✅ update state on success
+                return res;
+              },
               `Are you sure you want to deactivate this client?`,
               `The client has been successfully deactivated!`,
               "Deactivate",
@@ -106,8 +110,9 @@ const IndividualCard = ({ customer }: Props) => {
               "red"
             );
           }}
-          className="deactivate-customer w-[36.26px] h-[50px]"
+          className="deactivate-customer w-[36.26px] h-[50px] bg-transparent border-none p-0"
         />
+
       </div>
 
       <ViewClientProfile
