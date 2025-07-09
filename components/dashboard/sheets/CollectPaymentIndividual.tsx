@@ -19,6 +19,7 @@ import { fetchIndividualCustomers } from "@/actions/customers";
 import { PaymentHistory, IndividualCustomer } from "@/types/Customer";
 import { getUserPaymentsId } from "@/actions/customers";
 import PaymentCollectionIndividual from "./PaymentCollectionIndividual";
+import { PaymentCollectionExtra } from "./PaymentCollectionExtra";
 
 
 const CollectPaymentIndividual = () => {
@@ -132,7 +133,7 @@ const CollectPaymentIndividual = () => {
             <div className="mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
               <div className="flex border-b-[1px] border-b-[#000000]">
                 <div className="flex-[35%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Current Session</p>
+                  <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
                   <p className="text-[#3D3D3D] text-[12px] font-semibold">
                     {customer.availableSessionQuota ?? "--"}
                   </p>
@@ -163,10 +164,10 @@ const CollectPaymentIndividual = () => {
                   <p className="text-[#6D6D6D] text-[12px] font-medium">Payment</p>
                   <p
                     className={`bg-${
-                      customer.isPaid ? "[#D32F2F]" : "[#FFA726]"
+                      customer.isPaid == null ?  "[#D32F2F]" : customer.isPaid ? "[#4CAF50]" : "[#D32F2F]"
                     } text-center rounded-[15px] px-[0px] py-[5px] text-[#FFFFFF] text-[12px]/[100%] font-semibold`}
                   >
-                    {customer.isPaid ? "Paid" : "Not Paid"}
+                    {customer.isPaid == null ?  "Not Paid" : customer.isPaid ? "Paid" : "Not Paid"}
                   </p>
                 </div>
               </div>
@@ -253,6 +254,7 @@ const CollectPaymentIndividual = () => {
       </SheetContent>
     </Sheet>
           <PaymentCollectionIndividual clientId={currentCustomerId} />
+          <PaymentCollectionExtra clientId={currentCustomerId}/>
     </>
   );
 };

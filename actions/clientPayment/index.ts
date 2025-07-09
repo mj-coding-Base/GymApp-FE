@@ -1,8 +1,8 @@
 "use server";
 import axios from "@/utils/axios";
 
-export const submitPaymentReal = async (data: { amount: number; reference?: string; clientId: string }) => {
-  const response = await axios.post("/payments/collect", data);
+export const submitPaymentReal = async (data: { amount: number; reference?: string; paidFor: string }) => {
+  const response = await axios.post("/clientsPayment/create", data);
   return response.data;
 };
 
@@ -15,7 +15,7 @@ interface GroupPaymentData {
 
 export const collectGroupPayment = async (data: GroupPaymentData) => {
   try {
-    const response = await axios.post("/payments/group", data);
+    const response = await axios.post("/clientsPayment/create", data);
     
     return {
       status: "SUCCESS",
@@ -54,7 +54,7 @@ export const collectGroupPayment = async (data: GroupPaymentData) => {
 
 
 interface ExtraPaymentData {
-  session: string;
+  sessionQuota: string;
   amount: number;
   clientId?: string; // Optional if you need to associate with a client
 }
