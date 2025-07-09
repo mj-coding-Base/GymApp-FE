@@ -109,15 +109,21 @@ const handleOpenMembersDrawer = async (packageId: string) => {
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex gap-9 mb-3">
+                    <div className="flex gap-7 mb-3">
                       <div>
-                        <p className="text-[11px] text-gray-500">Date Created</p>
+                        <p className="text-[11px] text-gray-500 max-w-[72]">Date Created</p>
                         <p className="text-[12px] font-medium">
                           {pkg.createdAt.slice(0,10)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-500">Package Name</p>
+                        <p className="text-[11px] text-gray-500 max-w-[40]">Package Name</p>
+                        <p className="text-[12px] font-medium">
+                          {pkg.packageId}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-500 ">Package Name</p>
                         <p className="text-[12px] font-medium">
                           {pkg.name}
                         </p>
@@ -134,7 +140,7 @@ const handleOpenMembersDrawer = async (packageId: string) => {
                         <p className="text-[12px] font-medium">{pkg.price}</p>
                       </div>
                       <Button
-                        className="bg-[#6BBD78] px-2 text-black py-2 rounded-[11px] flex items-center w-[160px] h-[35px]"
+                        className="bg-[#6BBD78] px-2 text-black py-2 rounded-[11px] flex items-center w-[120px] h-[35px]"
                         onClick={() => handleOpenMembersDrawer(pkg.packageId)}
                       >
                         <span className="text-[13px] mr-2">Members</span>

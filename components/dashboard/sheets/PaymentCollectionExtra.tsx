@@ -21,7 +21,15 @@ const paymentSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
 });
 
-export const PaymentCollectionExtra = ({ clientId }: { clientId: string | null }) => {
+interface PaymentCollectionExtraProps {
+  clientId: string | null;
+  onPaymentSuccess?: () => void; // Add this prop
+}
+
+export const PaymentCollectionExtra = ({ 
+  clientId, 
+  onPaymentSuccess 
+}: PaymentCollectionExtraProps) => {
   const {
     openExtraPaymentCollectionSheet,
     setOpenExtraPaymentCollectionSheet,
@@ -42,20 +50,32 @@ export const PaymentCollectionExtra = ({ clientId }: { clientId: string | null }
   };
 
   const handleSubmit = async () => {
+    if (!clientId) {
+      toast.error("Client ID is missing. Cannot process payment.");
+      return;
+    }
     try {
       setIsSubmitting(true);
       
       const validatedData = paymentSchema.parse({
+
         sessionQuota: formData.sessionQuota,
         amount: Number(formData.amount)
+
       });
 
-      const result = await collectExtraPayment(validatedData);
+      const paidFor = clientId;
+      const result = await collectExtraPayment({ ...validatedData, paidFor });
       
       if (result.status === "SUCCESS") {
         toast.success(`Extra payment of LKR ${validatedData.amount.toFixed(2)} collected`);
         setOpenExtraPaymentCollectionSheet(false);
         setFormData({ sessionQuota: "", amount: "", clientId: clientId });
+              
+        // Call the success callback if provided
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
+        }
       } else {
         throw new Error(result.message || "Payment collection failed");
       }
@@ -95,10 +115,10 @@ export const PaymentCollectionExtra = ({ clientId }: { clientId: string | null }
               htmlFor="sessionQuota"
               className="text-[12px]/[100%] font-medium text-[#363636]"
             >
-              Session
+              Session count
             </Label>
             <Input
-              placeholder="Enter Session"
+              placeholder="Enter Session count"
               type="text"
               id="sessionQuota"
               value={formData.sessionQuota}

@@ -13,7 +13,7 @@ import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectio
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { submitPaymentReal } from "@/actions/clientPayment";
+import { collectIndividualPayment } from "@/actions/clientPayment";
 import {
   Select,
   SelectContent,
@@ -28,8 +28,16 @@ const paymentSchema = z.object({
   reference: z.string().optional(),
   month: z.string().min(1, "Month is required"),
 });
+interface PaymentCollectionIndividualProps {
+  clientId: string | null;
+  onPaymentSuccess?: () => void; // Add this prop
+}
 
-const PaymentCollectionIndividual = ({ clientId }: { clientId: string | null }) => {
+const PaymentCollectionIndividual = ({ 
+  clientId, 
+  onPaymentSuccess 
+}: PaymentCollectionIndividualProps) => {
+
   const {
     openPaymentCollectionIndividualSheet,
     setOpenPaymentCollectionIndividualSheet,
@@ -95,12 +103,15 @@ const PaymentCollectionIndividual = ({ clientId }: { clientId: string | null }) 
         month: formData.month,
       });
       const paidFor = clientId;
-      await submitPaymentReal({ ...validatedData, paidFor });
+      await collectIndividualPayment({ ...validatedData, paidFor });
       
-      toast.success(`Payment of LKR ${validatedData.amount.toFixed(2)} collected successfully for ${monthOptions.find(m => m.value === validatedData.month)?.label}`);
+      toast.success(`Payment of LKR ${validatedData.amount.toFixed(2)} collected successfully for ${validatedData.month}`);
       setOpenPaymentCollectionIndividualSheet(false);
       setFormData({ amount: "", reference: "", month: monthOptions[1].value }); // Reset to current month
-      
+            // Call the success callback if provided
+      if (onPaymentSuccess) {
+        onPaymentSuccess();
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors = error.errors.reduce((acc, curr) => {

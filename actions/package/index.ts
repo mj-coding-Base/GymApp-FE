@@ -12,7 +12,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
 
     const packages: Package[] = rawData.map((item: any) => ({
       packageId: item._id,
-      package_name: item.name,
+      name: item.name,
       description: item.description || "",
       sessionCount: item.sessions,
       createdAt: item.createdAt,

@@ -108,6 +108,20 @@ const CollectPaymentIndividual = () => {
     loadPaymentHistory();
   }, [currentCustomerId]);
 
+    const refreshPaymentData = async () => {
+    if (!currentCustomerId) return;
+    
+    setLoading(true);
+    try {
+      const response = await getUserPaymentsId(currentCustomerId);
+      setPaymentData(response);
+    } catch (error) {
+      console.error("Failed to refresh payment history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   console.log("Current Customer:", customer);
   console.log("Current Customer ID:", currentCustomerId);
   console.log("Payment Data:", paymentData);
@@ -204,8 +218,11 @@ const CollectPaymentIndividual = () => {
                 paymentData.map((item) => (
                   <div
                     key={item._id}
-                    className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
+                    className={`flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px] ${
+                      item.isExtra ? "bg-[#FFEEA9]" : ""
+                    }`}
                   >
+
                     <p className="w-[40%] text-[12px]/[13.5px] font-normal text-[#212121]">
                       {item.createdAt.slice(0, 10)}
                     </p>
@@ -253,8 +270,8 @@ const CollectPaymentIndividual = () => {
         </SheetFooter>
       </SheetContent>
     </Sheet>
-          <PaymentCollectionIndividual clientId={currentCustomerId} />
-          <PaymentCollectionExtra clientId={currentCustomerId}/>
+          <PaymentCollectionIndividual clientId={currentCustomerId} onPaymentSuccess={refreshPaymentData}/>
+          <PaymentCollectionExtra clientId={currentCustomerId} onPaymentSuccess={refreshPaymentData}/>
     </>
   );
 };
