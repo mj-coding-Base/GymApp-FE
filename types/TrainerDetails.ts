@@ -1,3 +1,5 @@
+import { StringDecoder } from "node:string_decoder"
+
 export enum Type {
   PART_TIME = "Part Time",
   FULL_TIME = "Full Time",
@@ -9,15 +11,18 @@ export enum Status {
 }
 
 export interface Trainer {
-  id: string
-  registeredDate: string
-  type: Type
+  _id: string
+  createdAt: StringDecoder
   status: Status
-  trainerName: string
+  firstName: string
+  lastName: string
   nic: string
   email: string
   mobile: string
   profileImage?: string;
+  isFullTime: boolean
+  isAdmin: boolean
+  isActive: boolean
 }
 
 export enum PaymentStatus {

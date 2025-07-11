@@ -1,7 +1,9 @@
+'use server'
 import axios from "@/utils/axios";
-import { z } from "zod";
 // src/actions/packages.ts
-import { MemberData, Package, PackageData } from "@/types/Packages";
+import { Package } from "@/types/Packages";
+import { CommonResponseDataType } from "@/types/Common";
+import { revalidatePath } from "next/cache";
 
 export const fetchAllPackages = async (): Promise<Package[]> => {
   try {
@@ -10,7 +12,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
 
     const packages: Package[] = rawData.map((item: any) => ({
       packageId: item._id,
-      package_name: item.name,
+      name: item.name,
       description: item.description || "",
       sessionCount: item.sessions,
       createdAt: item.createdAt,
@@ -19,158 +21,68 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       status: item.status || "active",
     }));
 
+        console.log(packages);
     return packages;
   } catch (error: unknown) {
     console.error("Failed to fetch packages. Using dummy data instead.", error);
 
     const dummyPackages: Package[] = [
-      {
-        packageId: "6830a79f752e9e2af9e82d07",
-        package_name: "Basic Package",
-        description: "Introductory sessions for beginners.",
-        sessionCount: 5,
-        createdAt: "2024-01-01",
-        updatedAt: "2024-01-02",
-        isActive: true,
-        status: "active",
-      },
-      {
-        packageId: "6830a9002d012bd53631011e",
-        package_name: "Premium Package",
-        description: "Advanced training sessions.",
-        sessionCount: 10,
-        createdAt: "2024-01-10",
-        updatedAt: "2024-01-11",
-        isActive: true,
-        status: "active",
-      },
     ];
 
+        console.log(dummyPackages);
     return dummyPackages;
+  }
+};
+
+export interface createNewPackage{
+   name :  string,
+   description :  string,
+   sessions : number,
+   durationDays : number,
+   price : number
+}
+
+export async function createNewPackage(Newpackage:createNewPackage) {
+  try {
+    const response = await axios.post("/packages",Newpackage);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch packages:", error);
+    return [];
+  }
+}
+
+export const updatePackage = async (
+  packageId: string,
+  updatedData: Partial<createNewPackage>
+): Promise<CommonResponseDataType> => {
+  try {
+    const res = await axios.patch(
+      `/customers/${packageId}`,
+      updatedData
+    );
+
+    revalidatePath(`/packages`);
+
+    return res.data;
+  } catch (error) {
+    console.error(error);
+
+    return error as CommonResponseDataType;
   }
 };
 
 
 
-
-export const packageSchema = z.object({
-  package_name: z.string().min(1, "Package name is required"),
-  sessionsAllocated: z.number().min(1, "Must allocate at least 1 session"),
-});
-
-export type PackageFormData = z.infer<typeof packageSchema>;
-
-export async function createNewPackage(data: PackageFormData): Promise<{
-  status: "SUCCESS" | "FAIL";
-  message?: string;
-  data?: any;
-}> {
+export async function getPackages(): Promise<Package[]> {
   try {
-    const response = await axios.post("/packages", {
-      name: data.package_name,
-      sessionCount: data.sessionsAllocated,
-    });
-
-    return {
-      status: "SUCCESS",
-      message: "Package created successfully",
-      data: response.data,
-    };
-  } catch (error: any) {
-    console.error("Failed to create package:", error);
-    return {
-      status: "FAIL",
-      message: error.response?.data?.message || "Failed to create package",
-    };
-  }
-}
-
-export async function getPackageMembers(packageId: string): Promise<MemberData[]> {
-  try {
-    const response = await axios.get(`/packages/${packageId}/members`);
-    return response.data.map((member: any) => ({
-      id: member._id,
-      dateRegistered: new Date(member.registeredAt).toLocaleDateString('en-GB'),
-      clientName: `${member.firstName} ${member.lastName}`,
-      currentSession: member.sessionCount,
-      clientType: member.type,
-      nic: member.nic,
-    }));
-  } catch (error) {
-    console.error("Failed to fetch package members:", error);
-    // Return dummy data if API fails
-    return [
-      {
-        id: "1",
-        dateRegistered: "03/03/25",
-        clientName: "Isuru Sampath",
-        currentSession: 11,
-        clientType: "Individual",
-        nic: "123456789",
-      },
-      // Add more dummy members as needed
-    ];
-  }
-}
-
-
-
-export async function getPackages(): Promise<PackageData[]> {
-  try {
-    const response = await axios.get("/packages");
-    return response.data.map((pkg: any) => ({
-      id: pkg._id,
-      dateCreated: new Date(pkg.createdAt).toLocaleDateString('en-GB'),
-      package_name: pkg.name,
-      sessions: pkg.sessionCount,
-      members: pkg.memberCount,
-    }));
+    const response = await axios.get("/packages/get-all");
+    console.log(response.data.data)
+    return response.data.data;
   } catch (error) {
     console.error("Failed to fetch packages:", error);
     // Return dummy data if API fails
-    return [
-      {
-        id: "1",
-        dateCreated: "06/03/25",
-        package_name: "BoxFit Extreme",
-        sessions: 15,
-        members: 120,
-      },
-      
-    ];
+    return [];
   }
 }
 
-
-export const updatePackageSchema = z.object({
-  package_name: z.string().min(1),
-  sessions: z.number().min(1),
-});
-
-export type UpdatePackageData = z.infer<typeof updatePackageSchema>;
-
-export async function updatePackage(
-  packageId: string,
-  data: UpdatePackageData
-): Promise<{
-  status: "SUCCESS" | "FAIL";
-  message?: string;
-}> {
-  try {
-    await axios.put(`/packages/${packageId}`, {
-      name: data.package_name,
-      sessionCount: data.sessions,
-    });
-
-    return {
-      status: "SUCCESS",
-      message: "Package updated successfully",
-    };
-  } catch (error: any) {
-    console.error("Failed to update package:", error);
-    return {
-      status: "FAIL",
-      message: error.response?.data?.message || "Failed to update package",
-    };
-  }
-}

@@ -7,8 +7,8 @@ import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { PaymentHistory } from "./PaymentHistory";
-import { SessionHistory } from "./SessionHistory";
+// import { PaymentHistory } from "./PaymentHistory";
+// import { SessionHistory } from "./SessionHistory";
 import { TrainerRegistrationCard } from "./UpdateTrainer";
 import { UserCancel } from "./UserCancel";
 
@@ -21,7 +21,14 @@ const TrainerList: React.FC = () => {
       setIsLoading(true);
       try {
         const data = await getTrainers();
-        setTrainers(data);
+        // Map or transform the data to match the expected Trainer type
+        const mappedData = data.map((trainer: any) => ({
+          ...trainer,
+          isFullTime: trainer.isFullTime ?? false,
+          isAdmin: trainer.isAdmin ?? false,
+          isActive: trainer.isActive ?? false,
+        }));
+        setTrainers(mappedData);
       } catch (error) {
         if (error instanceof Error) {
           toast.error(`Failed to load trainers: ${error.message}`);
@@ -39,7 +46,7 @@ const TrainerList: React.FC = () => {
 
   const handleTrainerDeactivated = (deactivatedId: string) => {
     setTrainers(prev => prev.map(trainer => 
-      trainer.id === deactivatedId 
+      trainer._id === deactivatedId 
         ? { ...trainer, status: Status.INACTIVE } 
         : trainer
     ));
@@ -57,7 +64,7 @@ const TrainerList: React.FC = () => {
     <div className="flex flex-col w-full max-w-md mx-auto">
       {trainers.map((trainer) => (
         <div
-          key={trainer.id}
+          key={trainer._id}
           className="border-b border-gray-200 p-4 bg-white relative"
         >
           <div className="flex mb-3">
@@ -66,20 +73,21 @@ const TrainerList: React.FC = () => {
                 <div className="text-[11px] text-[#363636] font-medium">
                   Registered Date
                 </div>
-                <div className="text-[12px]">{trainer.registeredDate}</div>
+                <div className="text-[12px]">{String(trainer.createdAt).slice(0, 10)}</div>
               </div>
               <div className="flex-1">
                 <div className="text-[11px] text-[#363636] font-medium">
                   Type
                 </div>
                 <Badge
+                  variant={trainer.isFullTime ? "success" : "destructive"}
                   className={`p-2 text-[11px] ${
-                    trainer.type === Type.PART_TIME
+                    trainer.isFullTime
                       ? "bg-[#FBD8AD] text-[#BC4412] rounded-[15px] w-[71px] h-[18px]"
                       : "bg-[#B2FFB9] text-[#0A7117] rounded-[15px] w-[68px] h-[18px]"
                   }`}
                 >
-                  {trainer.type}
+                  {trainer.isFullTime ? "Full time" : "Part time"}
                 </Badge>
               </div>
               <div className="flex-1">
@@ -87,13 +95,14 @@ const TrainerList: React.FC = () => {
                   Status
                 </div>
                 <Badge
+                  variant={trainer.status ? "success" : "destructive"}
                   className={`p-2 text-[11px] ${
                     trainer.status === Status.ACTIVE
-                      ? "bg-[#F04237] text-[#FFFFFF] rounded-[15px] w-[54px] h-[18px]"
+                      ? "bg-[#F04237] text-[#BC4412] rounded-[15px] w-[54px] h-[18px]"
                       : "bg-[#D32F2F] text-[#FFFFFF] rounded-[15px] w-[63px] h-[19px]"
                   }`}
                 >
-                  {trainer.status}
+                  {trainer.status} 
                 </Badge>
               </div>
             </div>
@@ -104,15 +113,15 @@ const TrainerList: React.FC = () => {
               <Avatar className="h-[36px] w-[36px] rounded-[12px]">
                 <AvatarImage
                   src={trainer.profileImage || "/images/trainer.png"}
-                  alt={trainer.trainerName}
+                  alt={trainer.firstName}
                 />
-                <AvatarFallback>{trainer.trainerName.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{trainer.firstName.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="text-[11px] text-[#363636] font-medium">
                   Trainer Name
                 </div>
-                <div className="text-[12px]">{trainer.trainerName}</div>
+                <div className="text-[12px]">{trainer.firstName} {trainer.lastName}</div>
               </div>
             </div>
 
@@ -137,17 +146,17 @@ const TrainerList: React.FC = () => {
           </div>
 
           <TrainerRegistrationCard />
-          <PaymentHistory 
+          {/* <PaymentHistory 
             trainerType={trainer.type} 
             trainerId={trainer.id} 
           />
           <SessionHistory 
             trainerType={trainer.type} 
             trainerId={trainer.id} 
-          />
+          /> */}
           <UserCancel 
-            trainerId={trainer.id} 
-            onDeactivate={() => handleTrainerDeactivated(trainer.id)}
+            trainerId={trainer._id} 
+            onDeactivate={() => handleTrainerDeactivated(trainer._id)}
           />
         </div>
       ))}

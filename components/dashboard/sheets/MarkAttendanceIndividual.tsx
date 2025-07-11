@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useMarkAttendanceIndividualSheet } from "@/hooks/useMarkAttendanceIndividualSheet";
 import { Customer, FetchedCustomer } from "@/types/Customer";
@@ -41,12 +41,12 @@ const MarkAttendanceIndividual = () => {
       setCustomers(
                     results.map((c: Partial<FetchedCustomer>) => ({
                       _id: c._id ?? "",
-                      name: `${c.first_name ?? ""} ${c.last_name ?? ""}`.trim(),
+                      name: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim(),
                       nic: c.nic ?? "",
                       email: c.email ?? "",
-                      mobileNumber: c.phone ?? "",
-                      packageId: c.package_id ?? "",
-                      package_name: c.package_id ?? "",
+                      mobileNumber: c.mobileNumber ?? "",
+                      packageId: c.packageId ?? "",
+                      package_name: c.packageId ?? "",
                       status: c.status ?? "",
                       isActive: c.isActive ?? false,
                       createdAt: c.createdAt ?? "",

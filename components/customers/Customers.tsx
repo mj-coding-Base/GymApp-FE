@@ -1,9 +1,8 @@
 "use client";
-import React from "react";
+import { IndividualCustomer, GroupShort } from "@/types/Customer";
 import CustomTabs from "../common/CustomTabs";
-import Individual from "./individual/Individual";
 import Group from "./group/Group";
-import { GroupCustomer, IndividualCustomer } from "@/types/Customer";
+import Individual from "./individual/Individual";
 
 interface Props {
   searchParams: {
@@ -13,7 +12,7 @@ interface Props {
     type?: string;
   };
   individuals: { results: IndividualCustomer[]; totalResults: number };
-  groups: { results: GroupCustomer[]; totalResults: number };
+  groups: { results: GroupShort[]; totalResults: number };
 }
 
 const Customers = ({ searchParams, individuals, groups }: Props) => {

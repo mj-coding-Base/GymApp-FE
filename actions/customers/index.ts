@@ -1,16 +1,18 @@
 
 "use server";
 
-import { isAxiosError } from "axios";
-import axios from "@/utils/axios";
+import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
-  CustomerView,
-  GroupCustomer,
+  PaymentHistory,
+  GroupFull,
+  GroupShort,
   IndividualCustomer,
 } from "@/types/Customer";
-import { CommonResponseDataType } from "@/types/Common";
+import axios from "@/utils/axios";
+import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
+const cacheBuster = Date.now();
 
 interface FetchCustomersParams {
   searchTerm?: string;
@@ -28,18 +30,66 @@ export const fetchIndividualCustomers = async (
   searchTerm?: string
 ): Promise<{ results: IndividualCustomer[]; totalResults: number }> => {
   try {
-    const response = await axios.get(
-      "/admin/customer-management/get-all?customer_type=individual",
+    const response = await axios.get("/customers/get-all", {
+      params: {
+        page: page || "1",
+        size: size || "10",
+        searchTerm: searchTerm || undefined,
+    _: cacheBuster,
+      },
+    });
+
+    // 🔍 Debug raw response
+    // console.log("Raw API Response:",response.data?.data?.data?.results);
+
+    // Safely extract results
+    const results = response.data?.data?.data?.results;
+
+    // Safely extract totalResults
+    const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
+
+    // If no results found, log structure again
+    if (!results.length && totalResults === 0) {
+      console.warn("No data returned. Full response:", response.data);
+    }
+
+    return {
+      results,
+      totalResults,
+    };
+  } catch (error) {
+    console.error("Error fetching individual customers:", error);
+    return { results: [], totalResults: 0 };
+  }
+};
+
+
+
+
+export const fetchGroups = async (
+  page?: string,
+  size?: string,
+  searchTerm?: string,
+  group_id?: string,
+  isPrimaryMembersOnly?: boolean
+): Promise<{ results: GroupShort[]; totalResults: number }> => {
+  try {
+    const response = await axios.get("/customers/get-all?customer_type=group",
       {
         params: {
           page,
           size,
           searchTerm,
+          group_id,
+          isPrimaryMembersOnly,
         },
       }
     );
-
-    return response.data.data;
+  console.log("API Response:", response.data.data);
+      return {
+    results: response.data?.data ?? [],
+    totalResults: response?.data?.totalResults ?? 0,
+  };
   } catch (error) {
     console.error(error);
 
@@ -56,10 +106,9 @@ export const fetchGroupCustomers = async (
   searchTerm?: string,
   group_id?: string,
   isPrimaryMembersOnly?: boolean
-): Promise<{ results: GroupCustomer[]; totalResults: number }> => {
+): Promise<{ results: GroupFull }> => {
   try {
-    const response = await axios.get(
-      "/admin/customer-management/get-all?customer_type=group",
+    const response = await axios.get("/customers/get-all?customer_type=group",
       {
         params: {
           page,
@@ -70,14 +119,15 @@ export const fetchGroupCustomers = async (
         },
       }
     );
-
-    return response.data.data;
+  console.log("API Response:", response.data.data);
+      return {
+    results: response.data.data ,
+  };
   } catch (error) {
     console.error(error);
 
     return {
-      results: [],
-      totalResults: 0,
+      results: {} as GroupFull,
     };
   }
 };
@@ -89,18 +139,29 @@ export const fetchAllCustomers = async (
   total?: number;
 }> => {
   try {
-    // Ensure we only fetch individual customers
+    // Filter out undefined values to avoid sending null/undefined in query params
+    const safeParams: Record<string, any> = {};
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (key === 'ids' && Array.isArray(value)) {
+            // Convert array of IDs to comma-separated string
+            safeParams[key] = value.join(',');
+          } else {
+            safeParams[key] = value;
+          }
+        }
+      });
+    }
+
     const res = await axios.get("/admin/customer-management/get-all", {
-      params: {
-        ...params,
-        // Convert array to comma-separated string if needed
-        ids: params?.ids?.join(","),
-      },
+      params: safeParams,
     });
 
     return {
       data: Array.isArray(res.data?.data) ? res.data.data : [],
-      total: res.data?.total,
+      total: res.data?.total || 0,
     };
   } catch (error) {
     console.error("Fetch customers error:", error);
@@ -112,13 +173,13 @@ export const fetchAllCustomers = async (
   }
 };
 
-export const getUserById = async (id: string): Promise<CustomerView | null> => {
+export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | null> => {
   try {
     const response = await axios.get(
-      `/admin/customer-management/profile-view/${id}`
+      `/clientsPayment/userPayments/${id}`
     );
 
-    console.log(response.data);
+    console.log("`/clientsPayment/userPayments/${id}`",response.data);
 
     return response.data.data;
   } catch (error) {
@@ -130,22 +191,28 @@ export const getUserById = async (id: string): Promise<CustomerView | null> => {
 
 // Create a customer
 export interface CustomerRegistrationData {
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
+  addressLine1 :  string ,
+  addressLine2 :  string ,
   email: string;
   nic: string;
-  phone: string;
-  package_id: string;
-  fee: number;
+  mobileNumber: string;
+  packageId: string;
+  whyJoin: string;
+  profession: string;
+  dob: string;
+  isMale : boolean,
+  isMarried : boolean,
 }
 
 export const createIndividualCustomer = async (
-  customerData: CustomerRegistrationData
+  NewIndividualCustomer: CustomerRegistrationData
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.post(
-      "/admin/customer-management/individual",
-      customerData
+      "/customers/add-customer",
+      NewIndividualCustomer
     );
 
     revalidatePath(`/customers`);
@@ -165,7 +232,7 @@ export const updateCustomer = async (
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      `/admin/customer-management/${customerId}`,
+      `/customers/${customerId}`,
       updatedData
     );
 
@@ -190,7 +257,7 @@ export const toggleCustomerStatus = async (customerId: string) => {
 
     console.log(res.data);
 
-    return res.data;
+    return (" successfully deactivated");
   } catch (error) {
     console.error(error);
 
@@ -201,20 +268,27 @@ export const toggleCustomerStatus = async (customerId: string) => {
 // deactivate a customer
 export const deactivateCustomer = async (
   customerId: string
-): Promise<{ message: string }> => {
+): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      `/admin/customer-management/${customerId}/toggleStatus`
+      `/customers/${customerId}/deactivate`
     );
-    return res.data;
+
+    return {
+      status: 'SUCCESS',
+      message: 'Customer deactivated',
+      data: res.data.data, // or res.data if needed
+    };
   } catch (error) {
     throw new Error(
       isAxiosError(error)
         ? error.response?.data?.message || error.message
-        : "Failed to delete customer"
+        : "Failed to deactivate customer"
     );
   }
 };
+
+
 
 export const searchCustomers = async (
   searchTerm: string

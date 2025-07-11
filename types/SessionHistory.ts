@@ -37,6 +37,7 @@ export interface Session {
   status: string;
   customer_id: string;
   attendance: 'attended' | 'missed' | 'cancelled';
+  customer_type?: 'individual' | 'group';
   trainer_id: string;
   current_session: number;
   isExtra: boolean;
@@ -60,6 +61,12 @@ export interface FetchSessionsParams {
   customer_id?: string;
   page?: number;
   size?: number;
+}
+
+export interface Attendance{
+  id: string;
+  userId: string;
+  date: string;
 }
 
 export interface SessionsResponse {

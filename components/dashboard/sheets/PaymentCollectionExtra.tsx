@@ -17,20 +17,28 @@ import { z } from "zod";
 
 // Validation schema
 const paymentSchema = z.object({
-  session: z.string().min(1, "Session is required"),
+  sessionQuota: z.string().min(1, "Session is required"),
   amount: z.number().positive("Amount must be positive"),
 });
 
-export const PaymentCollectionExtra = (clientId: string) => {
+interface PaymentCollectionExtraProps {
+  clientId: string | null;
+  onPaymentSuccess?: () => void; // Add this prop
+}
+
+export const PaymentCollectionExtra = ({ 
+  clientId, 
+  onPaymentSuccess 
+}: PaymentCollectionExtraProps) => {
   const {
     openExtraPaymentCollectionSheet,
     setOpenExtraPaymentCollectionSheet,
   } = useExtraPaymentCollectionSheet();
 
   const [formData, setFormData] = useState({
-    session: "",
+    sessionQuota: "",
     amount: "",
-    clientId: clientId, // Assuming you need to pass clientId in the payment data
+    clientId: clientId,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,22 +50,32 @@ export const PaymentCollectionExtra = (clientId: string) => {
   };
 
   const handleSubmit = async () => {
+    if (!clientId) {
+      toast.error("Client ID is missing. Cannot process payment.");
+      return;
+    }
     try {
       setIsSubmitting(true);
       
-      // Validate form data
       const validatedData = paymentSchema.parse({
-        session: formData.session,
+
+        sessionQuota: formData.sessionQuota,
         amount: Number(formData.amount)
+
       });
 
-      // Submit payment
-      const result = await collectExtraPayment(validatedData);
+      const paidFor = clientId;
+      const result = await collectExtraPayment({ ...validatedData, paidFor });
       
       if (result.status === "SUCCESS") {
         toast.success(`Extra payment of LKR ${validatedData.amount.toFixed(2)} collected`);
         setOpenExtraPaymentCollectionSheet(false);
-        setFormData({ session: "", amount: "", clientId: clientId }); // Reset form data
+        setFormData({ sessionQuota: "", amount: "", clientId: clientId });
+              
+        // Call the success callback if provided
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
+        }
       } else {
         throw new Error(result.message || "Payment collection failed");
       }
@@ -94,21 +112,21 @@ export const PaymentCollectionExtra = (clientId: string) => {
         <div className="flex flex-col px-4 overflow-y-auto gap-[20px]">
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label
-              htmlFor="session"
+              htmlFor="sessionQuota"
               className="text-[12px]/[100%] font-medium text-[#363636]"
             >
-              Session
+              Session count
             </Label>
             <Input
-              placeholder="Enter Session"
+              placeholder="Enter Session count"
               type="text"
-              id="session"
-              value={formData.session}
+              id="sessionQuota"
+              value={formData.sessionQuota}
               onChange={handleInputChange}
               className="h-[53px] text-[14px]/[100%] font-semibold text-[#3D3D3D] placeholder:text-[#B0B0B0] placeholder:font-normal"
             />
-            {errors.session && (
-              <p className="text-red-500 text-xs">{errors.session}</p>
+            {errors.sessionQuota && (
+              <p className="text-red-500 text-xs">{errors.sessionQuota}</p>
             )}
           </div>
           <div className="grid w-full max-w-sm items-center gap-1.5">
@@ -143,7 +161,7 @@ export const PaymentCollectionExtra = (clientId: string) => {
           </SheetClose>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.session || !formData.amount}
+            disabled={isSubmitting || !formData.sessionQuota || !formData.amount}
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
           >
             {isSubmitting ? "Processing..." : "Collect"}
@@ -153,4 +171,3 @@ export const PaymentCollectionExtra = (clientId: string) => {
     </Sheet>
   );
 };
-

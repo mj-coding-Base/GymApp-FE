@@ -1,5 +1,4 @@
 import { create } from "zustand";
-
 interface ViewGroupDetailsState {
   openViewGroupDetails: boolean;
   openGroupMemberProfile: boolean;
@@ -13,6 +12,8 @@ interface ViewGroupDetailsState {
   setOpenAddNewGroup: (value: boolean) => void;
   setOpenTransferMemberToAGroup: (value: boolean) => void;
   setOpenTransferMemberToExistingGroup: (value: boolean) => void;
+  selectedGroupData: string | null;
+  setSelectedGroupData: (_id:string) => void;
 }
 
 export const useViewGroupDetails = create<ViewGroupDetailsState>((set) => ({
@@ -33,4 +34,6 @@ export const useViewGroupDetails = create<ViewGroupDetailsState>((set) => ({
     set({ openTransferMemberToAGroup }),
   setOpenTransferMemberToExistingGroup: (openTransferMemberToExistingGroup) =>
     set({ openTransferMemberToExistingGroup }),
+  selectedGroupData: null,
+  setSelectedGroupData: (_id: string) => set({ selectedGroupData: _id }),
 }));

@@ -1,27 +1,28 @@
 export type Package = {
-  packageId: string;         // corresponds to "_id"
-  package_name: string;       // corresponds to "name"
+  name: string;
   description: string;
-  sessionCount: number;      // corresponds to "sessions"
+  sessions: number;
+  durationDays: number;
+  price: number;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  isActive: boolean;
-  status: string;
+  packageId: string;
 };
 
-export interface PackageData {
-  id: string;
-  dateCreated: string;
-  package_name: string;
-  sessions: number;
-  members: number;
-}
+// export interface PackageData {
+//   id: string;
+//   dateCreated: string;
+//   package_name: string;
+//   sessions: number;
+//   members: number;
+// }
 
-export interface MemberData {
-  id: string;
-  dateRegistered: string;
-  clientName: string;
-  currentSession: number;
-  clientType: "Individual" | "Group";
-  nic: string;
-}
+// export interface MemberData {
+//   id: string;
+//   dateRegistered: string;
+//   clientName: string;
+//   currentSession: number;
+//   clientType: "Individual" | "Group";
+//   nic: string;
+// }

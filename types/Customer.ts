@@ -14,7 +14,7 @@ export interface Customer {
   package_name: string;
   groupMembersNames: any[];
   currentSession?: number;
-  type?: "individual" | "group";
+  // type?: "individual" | "group";
   groupMembers?: { _id: string; name: string }[];
 }
 
@@ -23,16 +23,16 @@ export interface FetchedCustomer {
   createdAt?: string;
   updatedAt?: string;
   status?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   nic?: string;
-  phone?: string;
-  package_id?: string;
+  mobileNumber?: string;
+  packageId?: string;
   fee?: number;
   isActive?: boolean;
   isPaid?: boolean;
-  type?: "individual" | "group";
+  // type?: "individual" | "group";
 }
 
 export interface FetchedGroupCustomer {
@@ -40,12 +40,12 @@ export interface FetchedGroupCustomer {
   createdAt?: string;
   updatedAt?: string;
   status?: string;
-  first_name?: string;
-  last_name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   nic?: string;
-  phone?: string;
-  package_id?: string;
+  mobileNumber?: string;
+  packageId?: string;
   fee?: number;
   isActive?: boolean;
   isPaid?: boolean;
@@ -55,8 +55,9 @@ export interface FetchedGroupCustomer {
   group_id?: string;
   number_of_members?: number;
   package_name?: string;
-  attendedSessionCount?: number;
-  type?: "individual" | "group";
+  clientld: string;
+  groupId?: string;
+  availableSessionQuota?: number;
 
   groupMembersNames?: string[];
 }
@@ -78,39 +79,88 @@ export type IndividualCustomer = {
   createdAt: string;
   updatedAt: string;
   status: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
+  addressLine1 :  string ,
+  addressLine2 :  string ,
   email: string;
   nic: string;
-  phone: string;
-  package_id: string;
+  mobileNumber: string;
+  packageId: string;
   fee: number;
   isActive: boolean;
   isPaid: boolean;
   package_name: string;
-  attendedSessionCount: number;
+  availableSessionQuota: number;
+  clientld: string;
+  groupId?: string;
+  whyJoin: string;
+  profession: string;
+  dob: string;
+  isMale : true,
+  isMarried : true,
 };
 
+export type NewIndividualCustomer ={
+  _id: string;
+  firstName :  string ,
+  lastName :  string ,
+  nic :  string ,
+  addressLine1 :  string ,
+  addressLine2 :  string ,
+  email :  string ,
+  mobileNumber :  string ,
+  packageId :  string ,
+  isMale : true,
+  dob :  string ,
+  isMarried : true,
+  whyJoin :  string ,
+  profession :  string
+}
+
+export type GroupShort ={
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  primaryMember: string;
+  number_of_members: number;
+  package_name: string;
+  status: string;
+
+}
+export type GroupFull ={
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  primaryMember: string;
+  number_of_members: number;
+  package_name: string;
+  status: string;
+  members: GroupCustomer[];
+
+}
 export type GroupCustomer = {
   _id: string;
   createdAt: string;
   updatedAt: string;
   status: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   nic: string;
-  phone: string;
+  mobileNumber: string;
   relationToPrimaryMember: string;
   isPrimaryMember: boolean;
-  package_id: string;
+  packageId: string;
   fee: number;
   isActive: boolean;
   isPaid: boolean;
   group_id: string;
   number_of_members: number;
   package_name: string;
-  attendedSessionCount: number;
+  availableSessionQuota: number;
+  clientld: string;
+  groupId?: string;
 };
 
 export type CustomerView = {
@@ -119,38 +169,35 @@ export type CustomerView = {
     createdAt: string;
     updatedAt: string;
     status: string;
-    first_name: string;
-    last_name: string;
-    phone: string;
+    firstName: string;
+    lastName: string;
+    mobileNumber: string;
     email: string;
     nic: string;
-    package_id: string;
+    packageId: string;
     fee: number;
     isActive: boolean;
     isPaid: boolean;
   };
-  paymentHistory: PaymemtnHistory[];
+  paymentHistory: PaymentHistory[];
   packageHistory: PackageHistory[];
 };
 
-type PaymemtnHistory = {
+export type PaymentHistory = {
   _id: string;
   createdAt: string;
   updatedAt: string;
   status: string;
-  customerOrGroupId: string;
+  month: string;
   amount: number;
-  paymentFor: string;
-  type: string;
-  package_id: string;
-  package: {
-    _id: string;
-    createdAt: string;
-    updatedAt: string;
-    status: string;
-    sessions_allocated: number;
-    package_name: string;
-  };
+  paidFor: string;
+  isExtra: string;
+  paymentId:string;
+};
+
+export type AttendanceHistory = {
+  _id: string;
+  attendedDateTime: string;
 };
 
 type PackageHistory = {
@@ -162,7 +209,7 @@ type PackageHistory = {
   amount: number;
   paymentFor: string;
   type: string;
-  package_id: string;
+  packageId: string;
   totalPayments: number;
   package: {
     _id: string;

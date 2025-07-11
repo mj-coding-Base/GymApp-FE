@@ -15,7 +15,6 @@ const Individual = ({
   individualCustomers: { results: IndividualCustomer[]; totalResults: number };
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   return (
     <div className="w-full">
       <Card>
