@@ -20,6 +20,7 @@ type DashboardData = {
 export const fetchDashboardData = async (): Promise<DashboardData> => {
   try {
     const res = await axios.get("/admin/admin-management/dashboard");
+    console.log(res.data);
     return res.data.data;
   } catch (error) {
     console.error("API request failed. Returning dummy data.", error);
@@ -27,95 +28,24 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
     // Dummy fallback data
     const dummyData: DashboardData = {
       trainer: {
-        partTime: 0,
-        fullTime: 0,
+        partTime: 5,
+        fullTime: 3,
       },
       client: {
-        group: 0,
-        individual: 0,
-        pendingPayments: 0,
+        group: 12,
+        individual: 7,
+        pendingPayments: 4,
       },
       paymentHistory: [
-        { month: "January", amount: 0 },
-        { month: "February", amount: 0 },
-        { month: "March", amount: 0 },
-        { month: "April", amount: 0 },
-        { month: "May", amount: 0 },
-        { month: "June", amount: 0 },
+        { month: "January", amount: 19200 },
+        { month: "February", amount: 21950 },
+        { month: "March", amount: 10350 },
+        { month: "April", amount: 12500 },
+        { month: "May", amount: 19950 },
+        { month: "June", amount: 10500 },
       ],
     };
 
-    return dummyData;
-  }
-};
-
-// Types for daily attendance data
-export type DailyAttendanceData = {
-  date: string;
-  attendances: Array<{
-    customerId: string;
-    firstName: string;
-    lastName: string;
-    time: string;
-  }>;
-};
-
-export const fetchDailyAttendance = async (
-  startDate: string,
-  endDate: string
-): Promise<DailyAttendanceData[]> => {
-  try {
-    const res = await axios.get(
-      `/admin/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`
-    );
-    return res.data.data;
-  } catch (error) {
-    console.error("Failed to fetch daily attendance data:", error);
-    
-    // Return dummy data for development
-    const dummyData: DailyAttendanceData[] = [
-      {
-        date: "2024-01-15",
-        attendances: [
-          {
-            customerId: "CUST001",
-            firstName: "User",
-            lastName: "01",
-            time: "08:30 AM"
-          },
-          {
-            customerId: "CUST002", 
-            firstName: "User",
-            lastName: "02",
-            time: "09:15 AM"
-          }
-        ]
-      },
-      {
-        date: "2024-01-16",
-        attendances: [
-          {
-            customerId: "CUST003",
-            firstName: "User",
-            lastName: "01",
-            time: "07:45 AM"
-          },
-          {
-            customerId: "CUST003",
-            firstName: "User",
-            lastName: "02",
-            time: "07:45 AM"
-          },
-          {
-            customerId: "CUST003",
-            firstName: "User",
-            lastName: "03",
-            time: "07:45 PM"
-          },
-        ]
-      }
-    ];
-    
     return dummyData;
   }
 };
