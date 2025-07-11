@@ -1,5 +1,7 @@
 "use client";
-import { IndividualCustomer, GroupShort } from "@/types/Customer";
+import { IndividualCustomer,
+  //  GroupShort
+   } from "@/types/Customer";
 import CustomTabs from "../common/CustomTabs";
 import Group from "./group/Group";
 import Individual from "./individual/Individual";
@@ -12,10 +14,13 @@ interface Props {
     type?: string;
   };
   individuals: { results: IndividualCustomer[]; totalResults: number };
-  groups: { results: GroupShort[]; totalResults: number };
+  // groups: { results: GroupShort[]; totalResults: number };
 }
 
-const Customers = ({ searchParams, individuals, groups }: Props) => {
+const Customers = ({ searchParams, individuals, 
+  // groups
+ }: Props) => {
+
   const tabsData = () => [
     {
       title: "Individual",
@@ -28,7 +33,9 @@ const Customers = ({ searchParams, individuals, groups }: Props) => {
       title: "Group",
       value: "group",
       path: "/customers/?type=group",
-      content: () => <Group groups={groups} />,
+      content: () => <Group
+      //  groups={groups} 
+       />,
       className: "w-[110px] lg:w-[112.5px] 3xl:w-[150px]",
     },
   ];

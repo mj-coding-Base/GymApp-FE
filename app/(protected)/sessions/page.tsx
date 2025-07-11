@@ -29,7 +29,6 @@ const SessionsPage = () => {
   const [activeTab, setActiveTab] = useState("individual");
   // const [usingDummyData, setUsingDummyData] = React.useState(false);
   console.log(error)
-
   React.useEffect(() => {
     const fetchData = async () => {
       if (!session?.user?.token) {

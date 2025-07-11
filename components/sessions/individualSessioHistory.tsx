@@ -11,29 +11,30 @@ import {
     DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PaymentStatus, getPaymentStatusColor } from "@/types/SessionHistory";
+// import { PaymentStatus } from "@/types/SessionHistory";
 import { useEffect, useState } from "react";
 
-interface SessionData {
-  date: string;
-  startTime: string;
-  session: string;
-  trainer: string;
-  paymentStatus?: PaymentStatus;
-}
+// interface SessionData {
+//   date: string;
+//   startTime: string;
+//   session: string;
+//   trainer: string;
+//   paymentStatus?: PaymentStatus;
+// }
 
 interface PaymentHistoryProps {
   readonly clientId?: string; // Add clientId prop if needed
 }
 
 export function IndividualSessionHistory({ clientId }: PaymentHistoryProps) {
+  console.log(clientId);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionData] = useState<SessionData[]>([]);
-  const [paymentStatus] = useState<PaymentStatus>(PaymentStatus.NOT_PAID);
+  // const [sessionData, setSessionData] = useState<SessionData[]>([]);
+  // const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(PaymentStatus.NOT_PAID);
   // const [currentMonth, setCurrentMonth] = useState("");
-console.log(clientId);
+
   useEffect(() => {
     if (open) {
       fetchSessionData();
@@ -65,7 +66,7 @@ console.log(clientId);
     }
   };
 
-   getPaymentStatusColor(paymentStatus);
+  //  getPaymentStatusColor(paymentStatus);
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
@@ -113,7 +114,7 @@ console.log(clientId);
                     <div className="text-[#434745] text-[11.5px]">Trainer</div>
                   </div>
 
-                  {sessionData.length > 0 ? (
+                  {/* {sessionData.length > 0 ? (
                     sessionData.map((item, index) => (
                       <div
                         key={`${item.date}-${item.startTime}-${item.session}-${item.trainer}`}
@@ -131,7 +132,7 @@ console.log(clientId);
                     <div className="p-4 text-center text-gray-500">
                       {loading ? "Loading sessions..." : "No sessions found"}
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             )}

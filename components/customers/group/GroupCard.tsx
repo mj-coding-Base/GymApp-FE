@@ -7,6 +7,8 @@ interface Props {
 }
 
 const GroupCard = ({ group }: Props) => {
+  const { setOpenViewGroupDetails } = useViewGroupDetails();
+  const { setSelectedGroupData } = useGroupDetailsStore();
 
   const formattedDate = group.createdAt
     ? new Date(group.createdAt).toISOString().split("T")[0]
@@ -88,11 +90,3 @@ const GroupCard = ({ group }: Props) => {
 };
 
 export default GroupCard;
-
-        {/* <i
-          onClick={() => {
-            setSelectedGroupData(group);
-            setOpenViewGroupDetails(true);
-          }}
-          className="view-details w-[40px] h-[50px]"
-        /> */}

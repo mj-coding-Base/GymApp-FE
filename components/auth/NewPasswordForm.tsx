@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
+import { Suspense } from 'react'
 
 const formSchema = z
   .object({
@@ -102,6 +103,7 @@ const NewPasswordForm = () => {
   const action: () => void = form.handleSubmit(onSubmit);
 
   return (
+    <Suspense>
     <Form {...form}>
       <form
         action={action}
@@ -129,17 +131,13 @@ const NewPasswordForm = () => {
                           />
                         </FormControl>
                       </span>
-                      <button
-                        type="button"
+                      <i
                         onClick={() => setShowPassword(!showPassword)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        tabIndex={0}
                         className={cn(
-                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer bg-transparent border-none p-0",
+                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer",
                           showPassword && "password-show"
                         )}
-                      >
-                      </button>
+                      />
                     </div>
                   </div>
                 </FormItem>
@@ -165,17 +163,15 @@ const NewPasswordForm = () => {
                           />
                         </FormControl>
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                        tabIndex={0}
+                      <i
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className={cn(
-                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer bg-transparent border-none p-0",
+                          "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer",
                           showConfirmPassword && "password-show"
                         )}
-                      >
-                      </button>
+                      />
                     </div>
                   </div>
                   <FormMessage />
@@ -238,7 +234,7 @@ const NewPasswordForm = () => {
                   className={cn(
                     "round-check size-[17px] text-[#999999]",
                     form.watch().password &&
-                      /\d/.test(form.watch().password) &&
+                      /[0-9]/.test(form.watch().password) &&
                       "text-[#34C759]"
                   )}
                 />
@@ -276,6 +272,7 @@ const NewPasswordForm = () => {
         <Loading open={form.formState.isSubmitting} />
       </form>
     </Form>
+    </Suspense>
   );
 };
 

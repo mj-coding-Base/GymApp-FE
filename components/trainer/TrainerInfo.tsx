@@ -2,7 +2,7 @@
 
 import { getTrainers } from "@/actions/trainers";
 import { Badge } from "@/components/ui/badge";
-import { Status, Trainer, Type } from "@/types/TrainerDetails";
+import { Status, Trainer } from "@/types/TrainerDetails";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ const TrainerList: React.FC = () => {
       try {
         const data = await getTrainers();
         // Map or transform the data to match the expected Trainer type
-        const mappedData = data.map((trainer: any) => ({
+        const mappedData = data.map((trainer: Trainer) => ({
           ...trainer,
           isFullTime: trainer.isFullTime ?? false,
           isAdmin: trainer.isAdmin ?? false,

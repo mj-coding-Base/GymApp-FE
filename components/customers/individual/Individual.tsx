@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import AddNewMember from "./AddNewMember";
 import CustomPagination from "@/components/common/CustomPagination";
 import CommonSearch from "@/components/common/Search";
+import { Suspense } from 'react';
 
 const Individual = ({
   individualCustomers,
@@ -20,7 +21,10 @@ const Individual = ({
       <Card>
         <CardContent className="flex-col px-0">
           <div className="flex flex-col gap-[10px] mb-[15px] px-[15px]">
-            <CommonSearch />
+            
+            <Suspense fallback={<div>Loading...</div>}>
+              <CommonSearch />
+            </Suspense>
 
             <Button
               onClick={() => setIsOpen(true)}
