@@ -1,5 +1,6 @@
 "use client";
-import { getPackageMembers, getPackages } from "@/actions/package";
+import { getPackages } from "@/actions/package";
+import { fetchIndividualCustomers } from "@/actions/customers";
 import CustomPagination from "@/components/common/CustomPagination";
 import AddNewPackage from "@/components/packages/AddNewPackage";
 import UpdatePackage from "@/components/packages/UpdatePackage";
@@ -14,17 +15,18 @@ import {
     DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { MemberData, PackageData } from "@/types/Packages";
+import { Package } from "@/types/Packages";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
+import { IndividualCustomer } from "@/types/Customer";
 
 export default function PackagePage() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-  const [selectedFilter, setSelectedFilter] = React.useState<
-    "All" | "Individual" | "Group"
-  >("All");
-  const [packages, setPackages] = React.useState<PackageData[]>([]);
-  const [members, setMembers] = React.useState<MemberData[]>([]);
+  // const [selectedFilter, setSelectedFilter] = React.useState<
+  //   "All" | "Individual" | "Group"
+  // >("All");
+  const [packages, setPackages] = React.useState<Package[]>([]);
+  const [members, setMembers] = React.useState<IndividualCustomer[]>([]);
   const [isLoading, setIsLoading] = React.useState({
     packages: true,
     members: false,
@@ -48,24 +50,28 @@ export default function PackagePage() {
   }, []);
 
   // Fetch members when drawer opens
-  const handleOpenMembersDrawer = async (packageId: string) => {
-    setIsDrawerOpen(true);
-    setIsLoading(prev => ({...prev, members: true}));
-    
-    try {
-      const data = await getPackageMembers(packageId);
-      setMembers(data);
-    } catch (error) {
-      console.error("Error loading members:", error);
-    } finally {
-      setIsLoading(prev => ({...prev, members: false}));
-    }
-  };
+const [membersCount, setMembersCount] = React.useState<Record<string, number>>({});
 
-  const filteredMembers =
-    selectedFilter === "All"
-      ? members
-      : members.filter((member) => member.clientType === selectedFilter);
+const handleOpenMembersDrawer = async (packageId: string) => {
+  setIsDrawerOpen(true);
+  setIsLoading(prev => ({ ...prev, members: true }));
+
+  try {
+    const data = await fetchIndividualCustomers("1", "1000", packageId);
+    setMembers(data.results);
+    setMembersCount(prev => ({ ...prev, [packageId]: data.results.length }));
+  } catch (error) {
+    console.error("Error loading members:", error);
+  } finally {
+    setIsLoading(prev => ({ ...prev, members: false }));
+  }
+};
+
+
+  // const filteredMembers =
+  //   selectedFilter === "All"
+  //     ? members
+  //     : members.filter((member) => member.clientType === selectedFilter);
 
   return (
     <div className="w-full">
@@ -96,22 +102,28 @@ export default function PackagePage() {
           ) : (
             packages.map((pkg) => (
               <div
-                key={pkg.id}
+                key={pkg.packageId}
                 className="border border-b border-gray-200 p-2 bg-white relative"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="flex gap-9 mb-3">
+                    <div className="flex gap-7 mb-3">
                       <div>
-                        <p className="text-[11px] text-gray-500">Date Created</p>
+                        <p className="text-[11px] text-gray-500 max-w-[72]">Date Created</p>
                         <p className="text-[12px] font-medium">
-                          {pkg.dateCreated}
+                          {pkg.createdAt.slice(0,10)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-500">Package Name</p>
+                        <p className="text-[11px] text-gray-500 max-w-[40]">Package Name</p>
                         <p className="text-[12px] font-medium">
-                          {pkg.package_name}
+                          {pkg.packageId}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] text-gray-500 ">Package Name</p>
+                        <p className="text-[12px] font-medium">
+                          {pkg.name}
                         </p>
                       </div>
                     </div>
@@ -121,19 +133,24 @@ export default function PackagePage() {
                         <p className="text-[11px] text-gray-500">Sessions</p>
                         <p className="text-[12px] font-medium">{pkg.sessions}</p>
                       </div>
+                      <div>
+                        <p className="text-[11px] text-gray-500">Price</p>
+                        <p className="text-[12px] font-medium">{pkg.price}</p>
+                      </div>
                       <Button
-                        className="bg-[#6BBD78] px-2 text-black py-2 rounded-[11px] flex items-center w-[134px] h-[35px]"
-                        onClick={() => handleOpenMembersDrawer(pkg.id)}
+                        className="bg-[#6BBD78] px-2 text-black py-2 rounded-[11px] flex items-center w-[120px] h-[35px]"
+                        onClick={() => handleOpenMembersDrawer(pkg.packageId)}
                       >
                         <span className="text-[13px] mr-2">Members</span>
                         <span className="text-[13px] font-bold">
-                          {pkg.members}
+                          ({membersCount[pkg.packageId] ?? 0})
                         </span>
                       </Button>
+
                     </div>
                   </div>
 
-                  <UpdatePackage packageId={pkg.id} onPackageUpdated={() => getPackages().then(setPackages)} />
+                  <UpdatePackage packageId={pkg.packageId} onPackageUpdated={() => getPackages().then(setPackages)} />
                 </div>
               </div>
             ))
@@ -157,7 +174,7 @@ export default function PackagePage() {
               </div>
             </DrawerClose>
             <DrawerTitle className="text-[16px] font-semibold text-center mb-2">
-              Member List
+              Member List ({members.length})
             </DrawerTitle>
 
             <div className="relative flex-1 mb-2">
@@ -168,7 +185,7 @@ export default function PackagePage() {
               />
             </div>
 
-            <div className="flex justify-between mb-0">
+            {/* <div className="flex justify-between mb-0">
               {["All", "Individual", "Group"].map((filter) => (
                 <Button
                   key={filter}
@@ -184,7 +201,7 @@ export default function PackagePage() {
                   {filter}
                 </Button>
               ))}
-            </div>
+            </div> */}
           </DrawerHeader>
 
           <div className="flex-1 px-4 overflow-y-auto">
@@ -193,9 +210,9 @@ export default function PackagePage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              filteredMembers.map((member) => (
+              members.map((member) => (
                 <div
-                  key={member.id}
+                  key={member._id}
                   className="border-b border-gray-200 py-4 last:border-b-0"
                 >
                   <div className="grid grid-cols-2 gap-4 mb-3">
@@ -204,13 +221,13 @@ export default function PackagePage() {
                         Date Registered
                       </p>
                       <p className="text-[12px] text-[#434745]">
-                        {member.dateRegistered}
+                        {member.createdAt.slice(0,10)}
                       </p>
                     </div>
                     <div>
                       <p className="text-[11px] text-[#6D6D6D]">Client Name</p>
                       <p className="text-[12px] text-[#434745]">
-                        {member.clientName}
+                        {member.firstName} {member.lastName}
                       </p>
                     </div>
                   </div>
@@ -221,29 +238,33 @@ export default function PackagePage() {
                         Current Session
                       </p>
                       <p className="text-[12px] text-[#434745]">
-                        {member.currentSession}
+                        {member.availableSessionQuota}
                       </p>
                     </div>
                     <div>
                       <p className="text-[11px] text-[#6D6D6D]">Client Type</p>
                       <span
                         className={`inline-block px-4 py-1 rounded-[36px] text-[12.5px] ${
-                          member.clientType === "Individual"
+                          member.groupId == null
                             ? "bg-[#BBC2FF] text-[#122DBC]"
                             : "bg-[#CDEDFF] text-[#005F95]"
                         }`}
                       >
-                        {member.clientType}
+                        {
+                          member.groupId == null
+                            ? "Group"
+                            : "Individual"}
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-[11px] text-[#6D6D6D]">NIC</p>
-                    <p className="text-[12px] text-[#434745]">{member.nic}</p>
+                    <p className="text-[11px] text-[#6D6D6D]">User ID</p>
+                    <p className="text-[12px] text-[#434745]">{member.clientld}</p>
                   </div>
                 </div>
-              ))
+              )
+            )
             )}
           </div>
 

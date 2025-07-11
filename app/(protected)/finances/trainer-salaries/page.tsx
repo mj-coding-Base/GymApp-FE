@@ -148,3 +148,5 @@ export default function ClientPaymentsPage() {
     </div>
   );
 }
+
+export const dynamic = 'force-dynamic';

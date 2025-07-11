@@ -1,28 +1,28 @@
 "use client";
 
-import { createNewPackage, packageSchema } from "@/actions/package";
+import { createNewPackage } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-    Drawer,
-    DrawerClose,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +32,15 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+// Define the form schema to match the API interface
+const packageSchema = z.object({
+  name: z.string().min(1, "Package name is required"),
+  description: z.string().min(1, "Description is required"),
+  sessions: z.number().min(1, "Sessions must be at least 1"),
+  durationDays: z.number().min(1, "Duration must be at least 1 day"),
+  price: z.number().min(0, "Price cannot be negative"),
+});
+
 interface AddNewPackageProps {
   onPackageAdded?: () => void;
 }
@@ -40,25 +49,35 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof packageSchema>>({
     resolver: zodResolver(packageSchema),
     defaultValues: {
-      package_name: "",
-      sessionsAllocated: undefined,
+      name: "",
+      description: "",
+      sessions: 0,
+      durationDays: 0,
+      price: 0,
     },
   });
 
   const onSubmit = async (data: z.infer<typeof packageSchema>) => {
     setIsSubmitting(true);
     try {
-      const result = await createNewPackage(data);
+      // Call the API with the properly formatted data
+      const result = await createNewPackage({
+        name: data.name,
+        description: data.description,
+        sessions: data.sessions,
+        durationDays: data.durationDays,
+        price: data.price,
+      });
       
-      if (result.status === "SUCCESS") {
+      if (result) { // Assuming successful response if we get data back
         setShowSuccessDialog(true);
         form.reset();
         onPackageAdded?.();
       } else {
-        toast.error(result.message);
+        toast.error("Failed to create package");
       }
     } catch (error) {
       console.error("Error creating new package:", error);
@@ -99,13 +118,10 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
           </DrawerHeader>
 
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col"
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <FormField
                 control={form.control}
-                name="package_name"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">
@@ -125,22 +141,87 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
 
               <FormField
                 control={form.control}
-                name="sessionsAllocated"
+                name="description"
                 render={({ field }) => (
-                  <FormItem className="mt-5">
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Description
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter package description"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sessions"
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">
                       Sessions allocated
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Add session count"
+                        placeholder="Number of sessions"
                         className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
                         type="number"
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value);
-                          field.onChange(isNaN(value) ? "" : value);
-                        }}
-                        value={field.value || ""}
+                        min="1"
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="durationDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Duration (days)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Duration in days"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        type="number"
+                        min="1"
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Price
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Package price"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />

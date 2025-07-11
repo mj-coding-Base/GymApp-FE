@@ -14,7 +14,7 @@ const CommonSearch = ({ placeholder }: { placeholder?: string }) => {
   const handleSubmit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
 
-    const params = new URLSearchParams(searchparams?.toString());
+    const params = new URLSearchParams((searchparams?.toString() ?? ""));
 
     if (search === "") {
       setSearch("");

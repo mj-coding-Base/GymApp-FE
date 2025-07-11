@@ -96,7 +96,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
     const variant = currentPage === i ? "default" : "outline";
 
     const onClick = () => {
-      const searchparams = new URLSearchParams(searchParams?.toString());
+      const searchparams = new URLSearchParams((searchParams?.toString() ?? ""));
 
       if (i === 0) {
         if (searchParams?.get("playlistId")) {
@@ -129,7 +129,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   }
 
   const handleNavigateLastPage = () => {
-    const searchparams = new URLSearchParams(searchParams?.toString());
+    const searchparams = new URLSearchParams((searchParams?.toString() ?? ""));
 
     if (currentPage === totalPages - 1) return;
 
@@ -141,7 +141,7 @@ const CustomPagination: React.FC<CustomPaginationProps> = ({
   };
 
   const handleNavigateFirstPage = () => {
-    const searchparams = new URLSearchParams(searchParams?.toString());
+    const searchparams = new URLSearchParams((searchParams?.toString() ?? ""));
 
     if (currentPage === 0) return;
 

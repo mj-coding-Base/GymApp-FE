@@ -1,6 +1,7 @@
 "use client";
 
-import { getUserById } from "@/actions/customers";
+import { getUserPaymentsId } from "@/actions/customers";
+import { getUserAttendance } from "@/actions/session";
 import {
   Sheet,
   SheetClose,
@@ -8,8 +9,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { CustomerView, IndividualCustomer } from "@/types/Customer";
-import React, { useEffect, useState } from "react";
+import { PaymentHistory,AttendanceHistory, IndividualCustomer } from "@/types/Customer";
+import { useEffect, useState } from "react";
 
 interface ViewClientProfileProps {
   isOpen: boolean;
@@ -22,7 +23,8 @@ const ViewClientProfile = ({
   setIsOpen,
   customer,
 }: ViewClientProfileProps) => {
-  const [paymentData, setPaymentData] = useState<CustomerView | null>(null);
+  const [paymentData, setPaymentData] = useState<PaymentHistory[] | null>(null);
+  const [attendanceData, setAttendance] = useState<AttendanceHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,9 +32,21 @@ const ViewClientProfile = ({
 
     setLoading(true);
 
-    getUserById(customer._id)
+    getUserPaymentsId(customer._id)
       .then((response) => {
         setPaymentData(response);
+      })
+      .finally(() => setLoading(false));
+  }, [customer._id, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setLoading(true);
+
+    getUserAttendance(customer._id)
+      .then((response) => {
+        setAttendance(response);
       })
       .finally(() => setLoading(false));
   }, [customer._id, isOpen]);
@@ -59,15 +73,23 @@ const ViewClientProfile = ({
         <div className="overflow-y-auto">
           <div className="mt-[16px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
             <div className="flex border-b-[1px] border-b-[#000000]">
-              <div className="flex-[50%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-l-[1px]  content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Name
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {`${customer.first_name} ${customer.last_name}`}
+                  {`${customer.firstName} ${customer.lastName}`}
                 </p>
               </div>
-              <div className="flex-[50%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
+              <div className="flex-[20%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
+                <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                  User ID
+                </p>
+                <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
+                  {customer.clientld}
+                </p>
+              </div>
+              <div className="flex-[45%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Email
                 </p>
@@ -85,20 +107,20 @@ const ViewClientProfile = ({
                   {customer.nic}
                 </p>
               </div>
-              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000] content-center flex flex-col gap-[9px]">
+              <div className="flex-[25%] shrink-0 px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                  Current Session
+                  Session count
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.attendedSessionCount}
+                  {customer.availableSessionQuota}
                 </p>
               </div>
-              <div className="flex-[30%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+              <div className="flex-[40%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Mobile
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.phone}
+                  {customer.mobileNumber}
                 </p>
               </div>
             </div>
@@ -113,28 +135,34 @@ const ViewClientProfile = ({
           ) : (
             <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
               <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
-                <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[28.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Payment Date
                 </p>
-                <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Package
+                <p className="w-[20.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Month
                 </p>
-                <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[24.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Payment ID
+                </p>
+                <p className="w-[24.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Amount
                 </p>
               </div>
-              {paymentData?.paymentHistory.map((item) => (
+              {paymentData?.map((item) => (
                 <div
                   key={item._id}
                   className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
                 >
-                  <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.createdAt}
+                  <p className="w-[28.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.createdAt.slice(0, 10)}
                   </p>
-                  <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.package.package_name}
+                  <p className="w-[20.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.month}
                   </p>
-                  <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                  <p className="w-[24.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {item.paymentId}
+                  </p>
+                  <p className="w-[24.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
                     LKR {item.amount}
                   </p>
                 </div>
@@ -143,7 +171,7 @@ const ViewClientProfile = ({
           )}
 
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
-            Package History
+            Attendance History
           </p>
           {loading ? (
             <div className="min-h-[500px] flex items-center justify-center">
@@ -153,28 +181,34 @@ const ViewClientProfile = ({
             <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
               <div className=" flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
                 <p className="w-[29.5%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Payment Date
+                  Date
                 </p>
-                <p className="w-[41.3%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Package
+                <p className="w-[33.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Day
                 </p>
-                <p className="w-[22.95%] text-[11px]/[14px] font-medium text-[#212121]">
-                  Amount
+                <p className="w-[33.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                  Time
                 </p>
               </div>
-              {paymentData?.packageHistory.map((item) => (
+              {attendanceData?.map((item) => (
                 <div
                   key={item._id}
                   className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
                 >
                   <p className="w-[29.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.createdAt}
+                    {item.attendedDateTime.slice(0,10)}
                   </p>
-                  <p className="w-[41.3%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    {item.package.package_name}
+                  <p className="w-[33.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {new Date(item.attendedDateTime).toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
                   </p>
-                  <p className="w-[22.95%] text-[12px]/[13.5px] font-normal text-[#212121]">
-                    LKR {item.amount}
+                  <p className="w-[33.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    {new Date(item.attendedDateTime).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
                   </p>
                 </div>
               ))}

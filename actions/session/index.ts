@@ -1,3 +1,4 @@
+"use server";
 import  { isAxiosError } from 'axios'; // Adjust path if needed
 import {
   CreateExtraSessionDto,
@@ -151,6 +152,25 @@ export const findTrainerSessions = async (
   }
 };
 
+export const getUserAttendance = async (
+  customerId: string,
+  page = 1,
+  size = 50 // or any default
+) => {
+  try {
+    const res = await axios.get(`/Attendances/get-all`, {
+      params: {
+        page,
+        size,
+        searchTerm: customerId,
+      },
+    });
+
+    return res.data.data.customers; // access the array directly
+  } catch (error) {
+    handleApiError(error, "fetching user attendance");
+  }
+};
 
 
 export const getAllSessions = async (
@@ -182,7 +202,8 @@ export const getAllSessions = async (
     // Debug: Log the final query params
     console.log('Final query params:', queryParams);
 
-    const response = await axios.get('/admin/session-management',
+    const response = 
+    await axios.get('/admin/session-management',
       {
         params: queryParams,
       }

@@ -7,7 +7,8 @@ interface GroupDetailsStoreState {
   selectedGroupData: GroupMemberData | null; // Add this line
   setUpdateGroupMemberData: (value: UpdateGroupMemberData | null) => void;
   setNewUserGroupRegisterData: (value: NewUserGroupRegisterData | null) => void;
-  setSelectedGroupData: (value: GroupMemberData | null) => void; // Add this line
+  selectedGroupData: string | null;
+  setSelectedGroupData: (_id:string) => void;
 }
 
 export const useGroupDetailsStore = create<GroupDetailsStoreState>((set) => ({
@@ -18,6 +19,6 @@ export const useGroupDetailsStore = create<GroupDetailsStoreState>((set) => ({
     set({ updateGroupMemberData }),
   setNewUserGroupRegisterData: (newUserGroupRegisterData) =>
     set({ newUserGroupRegisterData }),
-  setSelectedGroupData: (selectedGroupData) =>
-    set({ selectedGroupData }), // Add this setter
+  selectedGroupData: null,
+  setSelectedGroupData: (_id: string) => set({ selectedGroupData: _id }),
 }));

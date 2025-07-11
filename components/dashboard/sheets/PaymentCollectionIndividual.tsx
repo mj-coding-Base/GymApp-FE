@@ -10,18 +10,34 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
-import React, { useState } from "react";
-import { toast } from "sonner"; // or your preferred toast library
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { z } from "zod";
-import { submitPaymentReal } from "@/actions/clientPayment"; // Adjust the import based on your project structure
+import { collectIndividualPayment } from "@/actions/clientPayment";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Payment validation schema
 const paymentSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
   reference: z.string().optional(),
+  month: z.string().min(1, "Month is required"),
 });
+interface PaymentCollectionIndividualProps {
+  clientId: string | null;
+  onPaymentSuccess?: () => void; // Add this prop
+}
 
-const PaymentCollectionIndividual = (clientId: string) => {
+const PaymentCollectionIndividual = ({ 
+  clientId, 
+  onPaymentSuccess 
+}: PaymentCollectionIndividualProps) => {
+
   const {
     openPaymentCollectionIndividualSheet,
     setOpenPaymentCollectionIndividualSheet,
@@ -30,9 +46,28 @@ const PaymentCollectionIndividual = (clientId: string) => {
   const [formData, setFormData] = useState({
     amount: "",
     reference: "",
+    month: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [monthOptions, setMonthOptions] = useState<{value: string, label: string}[]>([]);
+
+  useEffect(() => {
+    // Generate month options when component mounts
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    const months = [
+      { value: `${currentYear}-${currentMonth}`, label: new Date(currentYear, currentMonth - 1).toLocaleString('default', { month: 'long' }) },
+      { value: `${currentYear}-${currentMonth + 1}`, label: new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' }) },
+      { value: `${currentYear}-${currentMonth + 2}`, label: new Date(currentYear, currentMonth + 1).toLocaleString('default', { month: 'long' }) },
+    ];
+
+    setMonthOptions(months);
+    // Set default to current month
+    setFormData(prev => ({ ...prev, month: `${currentYear}-${currentMonth + 1}` }));
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -41,30 +76,42 @@ const PaymentCollectionIndividual = (clientId: string) => {
       [id]: value
     }));
     
-    // Clear error when user types
     if (errors[id]) {
       setErrors(prev => ({ ...prev, [id]: "" }));
     }
   };
 
+  const handleMonthChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      month: value
+    }));
+  };
+
   const handleSubmit = async () => {
+    if (!clientId) {
+      toast.error("Client ID is missing. Cannot process payment.");
+      return;
+    }
     try {
       setIsSubmitting(true);
       
       // Validate input
       const validatedData = paymentSchema.parse({
         amount: Number(formData.amount),
-        reference: formData.reference,
-        clientId:clientId
+        reference: formData.reference || "cash" ,
+        month: formData.month,
       });
-
-      // Simulate API call with dummy data
-      await submitPaymentReal({ ...validatedData, clientId });
+      const paidFor = clientId;
+      await collectIndividualPayment({ ...validatedData, paidFor });
       
-      toast.success(`Payment of LKR ${validatedData.amount.toFixed(2)} collected successfully`);
+      toast.success(`Payment of LKR ${validatedData.amount.toFixed(2)} collected successfully for ${validatedData.month}`);
       setOpenPaymentCollectionIndividualSheet(false);
-      setFormData({ amount: "", reference: "" });
-      
+      setFormData({ amount: "", reference: "", month: monthOptions[1].value }); // Reset to current month
+            // Call the success callback if provided
+      if (onPaymentSuccess) {
+        onPaymentSuccess();
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors = error.errors.reduce((acc, curr) => {
@@ -80,9 +127,6 @@ const PaymentCollectionIndividual = (clientId: string) => {
       setIsSubmitting(false);
     }
   };
-
-  // Dummy payment submission function
-
 
   return (
     <Sheet
@@ -118,6 +162,30 @@ const PaymentCollectionIndividual = (clientId: string) => {
               <p className="text-red-500 text-xs">{errors.amount}</p>
             )}
           </div>
+
+          <div className="grid w-full max-w-sm items-center gap-1.5">
+            <Label className="text-[12px]/[100%] font-medium text-[#363636]">
+              Select Month
+            </Label>
+            <Select
+              value={formData.month}
+              onValueChange={handleMonthChange}
+            >
+              <SelectTrigger className="h-[53px] text-[14px]/[100%] font-semibold text-[#3D3D3D]">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month.value} value={month.label}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.month && (
+              <p className="text-red-500 text-xs">{errors.month}</p>
+            )}
+          </div>
           
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label
@@ -148,7 +216,7 @@ const PaymentCollectionIndividual = (clientId: string) => {
           </SheetClose>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !formData.amount}
+            disabled={isSubmitting || !formData.amount || !formData.month}
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
           >
             {isSubmitting ? "Processing..." : "Collect"}

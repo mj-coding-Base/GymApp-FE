@@ -1,6 +1,6 @@
 "use client";
 
-import { updatePackage, updatePackageSchema } from "@/actions/package";
+import { updatePackage } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -27,11 +27,23 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
+// Define the form schema to match the API interface
+const updatePackageSchema = z.object({
+  name: z.string().min(1, "Package name is required"),
+  description: z.string().min(1, "Description is required"),
+  sessions: z.number().min(1, "Sessions must be at least 1"),
+  durationDays: z.number().min(1, "Duration must be at least 1 day"),
+  price: z.number().min(0, "Price cannot be negative"),
+});
+
 interface UpdatePackageProps {
   packageId: string;
   initialData?: {
-    package_name: string;
+    name: string;
+    description: string;
     sessions: number;
+    durationDays: number;
+    price: number;
   };
   onPackageUpdated?: () => void;
 }
@@ -41,11 +53,14 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize form with initial data if provided
-  const form = useForm({
+  const form = useForm<z.infer<typeof updatePackageSchema>>({
     resolver: zodResolver(updatePackageSchema),
     defaultValues: {
-      package_name: initialData?.package_name || "",
+      name: initialData?.name || "",
+      description: initialData?.description || "",
       sessions: initialData?.sessions ?? 0,
+      durationDays: initialData?.durationDays ?? 0,
+      price: initialData?.price ?? 0,
     },
   });
 
@@ -53,8 +68,11 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
     setIsSubmitting(true);
     try {
       const result = await updatePackage(packageId, {
-        package_name: values.package_name,
-        sessions: Number(values.sessions),
+        name: values.name,
+        description: values.description,
+        sessions: values.sessions,
+        durationDays: values.durationDays,
+        price: values.price,
       });
 
       if (result.status === "SUCCESS") {
@@ -99,13 +117,10 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
           </DrawerHeader>
 
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex flex-col"
-            >
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <FormField
                 control={form.control}
-                name="package_name"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-medium text-[14px]">
@@ -125,19 +140,87 @@ function UpdatePackage({ packageId, initialData, onPackageUpdated }: UpdatePacka
 
               <FormField
                 control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-[14px]">
+                      Description
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter package description"
+                        className="p-3 rounded-[10px] border text-[14px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[12px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="sessions"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-medium text-[14px] mt-6">
+                    <FormLabel className="font-medium text-[14px]">
                       Sessions allocated
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Add session count"
+                        placeholder="Number of sessions"
                         className="p-3 rounded-[10px] border text-[14px]"
                         type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value)}
+                        min="1"
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[12px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="durationDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-[14px]">
+                      Duration (days)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Duration in days"
+                        className="p-3 rounded-[10px] border text-[14px]"
+                        type="number"
+                        min="1"
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                        value={field.value}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-[12px]" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-[14px]">
+                      Price
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Package price"
+                        className="p-3 rounded-[10px] border text-[14px]"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        value={field.value}
                       />
                     </FormControl>
                     <FormMessage className="text-[12px]" />

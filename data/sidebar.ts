@@ -13,13 +13,13 @@ export const sidebarData = [
     icon: "customers-icon",
     value: "customers",
   },
-  {
-    id: 3,
-    title: "Sessions",
-    url: "/sessions",
-    icon: "sessions-icon",
-    value: "sessions",
-  },
+  // {
+  //   id: 3,
+  //   title: "Sessions",
+  //   url: "/sessions",
+  //   icon: "sessions-icon",
+  //   value: "sessions",
+  // },
   {
     id: 4,
     title: "Trainers",

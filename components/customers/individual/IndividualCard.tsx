@@ -1,12 +1,12 @@
 "use client";
 
+import { deactivateCustomer } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
-import { IndividualCustomer } from "@/types/Customer";
-import React, { useState } from "react";
-import ViewClientProfile from "./ClientProfile";
-import AddNewMember from "./AddNewMember";
 import { useActions } from "@/hooks/modals/useActions";
-import { toggleCustomerStatus } from "@/actions/customers";
+import { IndividualCustomer } from "@/types/Customer";
+import { useState } from "react";
+import AddNewMember from "./AddNewMember";
+import ViewClientProfile from "./ClientProfile";
 
 interface Props {
   customer: IndividualCustomer;
@@ -16,9 +16,11 @@ const IndividualCard = ({ customer }: Props) => {
   const [isClientProfileOpen, setIsClientProfileOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { handleAction } = useActions();
+  const [isActive, setIsActive] = useState(customer.isActive);
 
   const formatedDate = new Date(customer.createdAt).toISOString().split("T")[0];
-
+ 
+  console.log(customer);
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
       <div className="flex flex-col gap-[15px]">
@@ -36,10 +38,10 @@ const IndividualCard = ({ customer }: Props) => {
               Status
             </p>
             <Badge
-              variant={customer.isActive ? "success" : "destructive"}
+              variant={isActive ? "success" : "destructive"}
               className="rounded-[15px] text-[11px]/[13px] font-semibold"
             >
-              {customer.isActive ? "Active" : "Inactive"}
+              {isActive ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>
@@ -56,7 +58,7 @@ const IndividualCard = ({ customer }: Props) => {
             Client Name
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {`${customer.first_name} ${customer.last_name}`}
+            {`${customer.firstName} ${customer.lastName}`}
           </p>
         </div>
 
@@ -65,7 +67,7 @@ const IndividualCard = ({ customer }: Props) => {
             Mobile Number
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.phone}
+            {customer.mobileNumber}
           </p>
         </div>
 
@@ -90,13 +92,16 @@ const IndividualCard = ({ customer }: Props) => {
           }}
           className="edit-with-bg w-[36.26px] h-[50px]"
         />
-        <i
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label="Deactivate customer"
           onClick={() => {
             handleAction(
-              async () => await toggleCustomerStatus(customer._id),
+              async () => {
+                const res = await deactivateCustomer(customer._id);
+                setIsActive(false); // ✅ update state on success
+                return res;
+              },
               `Are you sure you want to deactivate this client?`,
               `The client has been successfully deactivated!`,
               "Deactivate",
@@ -105,8 +110,9 @@ const IndividualCard = ({ customer }: Props) => {
               "red"
             );
           }}
-          className="deactivate-customer w-[36.26px] h-[50px]"
+          className="deactivate-customer w-[36.26px] h-[50px] bg-transparent border-none p-0"
         />
+
       </div>
 
       <ViewClientProfile

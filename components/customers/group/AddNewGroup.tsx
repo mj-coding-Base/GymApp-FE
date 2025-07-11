@@ -247,7 +247,7 @@ function AddNewGroup() {
                               Mobile Number
                             </Label>
                             <Input
-                              placeholder="+94"
+                              placeholder=""
                               className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
                             />
                           </div>
@@ -308,7 +308,7 @@ function AddNewGroup() {
                                 Mobile Number
                               </Label>
                               <Input
-                                placeholder="+94"
+                                placeholder=""
                                 className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
                               />
                             </div>
@@ -434,7 +434,7 @@ function AddNewGroup() {
                                 Mobile Number
                               </Label>
                               <Input
-                                placeholder="+94"
+                                placeholder=""
                                 className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
                               />
                             </div>

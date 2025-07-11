@@ -58,7 +58,7 @@ export function TrainerRegistrationCard() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      mobileNumber: "+94",
+      mobileNumber: "",
       email: "",
       nic: "",
       type: "",
@@ -145,7 +145,7 @@ export function TrainerRegistrationCard() {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="+94"
+                          placeholder=""
                           {...field}
                           className="text-[14px] text-[#44424D] rounded-[10px] border-[1px] border-[#BDBDBD]"
                         />
@@ -228,7 +228,7 @@ export function TrainerRegistrationCard() {
                   )}
                 />
 
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="session"
                   render={({ field }) => (
@@ -246,7 +246,7 @@ export function TrainerRegistrationCard() {
                       <FormMessage className="text-xs" />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <DrawerFooter className="px-0 pt-4 pb-0 sticky bottom-0 bg-white z-10">
                   <div className="grid grid-cols-2 gap-4 w-full">
