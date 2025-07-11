@@ -34,21 +34,21 @@ const CollectPaymentSuccessGroup = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    if (openCollectPaymentSuccessGroupSheet) {
-      fetchData();
-    }
-  }, [openCollectPaymentSuccessGroupSheet, selectedMonth, selectedYear]);
+  // useEffect(() => {
+  //   if (openCollectPaymentSuccessGroupSheet) {
+  //     fetchData();
+  //   }
+  // }, [openCollectPaymentSuccessGroupSheet, selectedMonth, selectedYear]);
 
+useEffect(() => {
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Simulate API call with dummy data
+
       const response = await fetchGroupPaymentDetails({
         month: selectedMonth,
-        year: selectedYear
+        year: selectedYear,
       });
 
       if (response.status === "SUCCESS") {
@@ -59,37 +59,16 @@ const CollectPaymentSuccessGroup = () => {
     } catch (err) {
       console.error("Error fetching group payments:", err);
       setError(err instanceof Error ? err.message : "An unknown error occurred");
-      // Fallback dummy data
-      setMembers([
-        {
-          id: "1",
-          name: "Raj Ayesh",
-          nic: "1234567890",
-          currentSession: 11,
-          paymentStatus: "PAID",
-          lastPaymentDate: "03/03/25"
-        },
-        {
-          id: "2",
-          name: "Priya Sharma",
-          nic: "9876543210",
-          currentSession: 8,
-          paymentStatus: "PENDING",
-          lastPaymentDate: "02/28/25"
-        },
-        {
-          id: "3",
-          name: "Amit Patel",
-          nic: "4567891230",
-          currentSession: 12,
-          paymentStatus: "OVERDUE",
-          lastPaymentDate: "01/15/25"
-        }
-      ]);
+      setMembers([/* fallback data */]);
     } finally {
       setLoading(false);
     }
   };
+
+  if (openCollectPaymentSuccessGroupSheet) {
+    fetchData();
+  }
+}, [openCollectPaymentSuccessGroupSheet, selectedMonth, selectedYear]); // ✅ All dependencies are tracked now
 
   const handleMonthChange = (month: number, year: number) => {
     setSelectedMonth(month);

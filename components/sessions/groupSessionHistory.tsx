@@ -11,12 +11,12 @@ import {
     DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { GroupSessionHistoryProps, Session, SessionSummary, } from "@/types/SessionHistory";
+import {  Session, SessionSummary, } from "@/types/SessionHistory";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-export function GroupSessionHistory({ groupId }: Readonly<GroupSessionHistoryProps>) {
+export function GroupSessionHistory() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);

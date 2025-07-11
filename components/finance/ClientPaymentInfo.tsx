@@ -1,3 +1,4 @@
+'use client';
 import { Badge } from "@/components/ui/badge";
 import { Payment } from "@/types/ClientPayment";
 import React from "react";
@@ -22,33 +23,7 @@ export const ClientPaymentInfo: React.FC = () => {
       paymentType: "Individual",
       status: "Paid",
     },
-    {
-      id: "3",
-      paymentDate: "10/03/25",
-      clientName: "Mahesh Karunarathna",
-      paidAmount: "45000",
-      clientType: "Group",
-      paymentType: "Group",
-      status: "Paid",
-    },
-    {
-      id: "4",
-      paymentDate: "10/03/25",
-      clientName: "Mahesh Karunarathna",
-      paidAmount: "10000",
-      clientType: "Individual",
-      paymentType: "Individual",
-      status: "Paid",
-    },
-    {
-      id: "5",
-      paymentDate: "10/03/25",
-      clientName: "Mahesh Karunarathna",
-      paidAmount: "10000",
-      clientType: "Group",
-      paymentType: "Extra Payment",
-      status: "Paid",
-    },
+   
   ];
 
   return (

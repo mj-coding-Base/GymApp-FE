@@ -31,12 +31,7 @@ const TransferMemberToAGroup = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (openTransferMemberToAGroup) {
-      fetchClientData();
-    }
-  }, [openTransferMemberToAGroup]);
-
+useEffect(() => {
   const fetchClientData = async () => {
     try {
       setLoading(true);
@@ -51,6 +46,26 @@ const TransferMemberToAGroup = () => {
       setLoading(false);
     }
   };
+
+  if (openTransferMemberToAGroup) {
+    fetchClientData();
+  }
+}, [openTransferMemberToAGroup, searchTerm]);
+
+  // const fetchClientData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     const response = await searchCustomers(searchTerm);
+  //     setClients(response || []);
+  //   } catch (err) {
+  //     console.error("Error fetching clients:", err);
+  //     setError("Failed to load clients");
+  //     toast.error("Failed to load client data");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

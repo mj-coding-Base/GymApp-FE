@@ -109,7 +109,7 @@ const MarkAttendanceIndividual = () => {
       >
         <SheetHeader className="gap-5">
           <SheetTitle className="text-[14px] font-semibold text-[#363636]">
-            Mark Attendance for Individual
+            Mark Attendance for Individual Presonal Training
           </SheetTitle>
           <SheetDescription className="relative w-full max-w-sm">
             <div className="flex gap-2">

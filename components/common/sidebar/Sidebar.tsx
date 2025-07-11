@@ -30,7 +30,7 @@ const Sidebar = () => {
               <span
                 className={cn(
                   "flex flex-row gap-[5px] 3xl:gap-[7px] items-center text-base 3xl:text-lg font-normal size-full rounded-[8px] 3xl:rounded-[11px] px-[8px] 3xl:px-[11px] text-nowrap",
-                  pathname.split("/")[1] === item.url.split("/")[1]
+                  pathname?.split("/")[1] === item.url.split("/")[1]
                     ? "text-[#F6F5F5] bg-[#65A28C]"
                     : "text-[#4F4F4F] hover:bg-[#65A28C] hover:text-[#F6F5F5] hover:opacity-50"
                 )}
@@ -39,7 +39,7 @@ const Sidebar = () => {
                   className={cn(
                     "size-[18px] 3xl:size-[24px]",
                     item.icon,
-                    pathname.split("/")[1] === item.url.split("/")[1]
+                    pathname?.split("/")[1] === item.url.split("/")[1]
                       ? "text-white"
                       : "text-[#4C4E64DE] group-hover:text-[#F6F5F5]"
                   )}

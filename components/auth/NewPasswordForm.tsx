@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
+import { Suspense } from 'react'
 
 const formSchema = z
   .object({
@@ -69,7 +70,7 @@ const NewPasswordForm = () => {
   const router = useRouter();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const token = searchparams.get("token");
+    const token = searchparams?.get("token");
 
     if (!token) {
       form.setError("password", {
@@ -102,6 +103,7 @@ const NewPasswordForm = () => {
   const action: () => void = form.handleSubmit(onSubmit);
 
   return (
+    <Suspense>
     <Form {...form}>
       <form
         action={action}
@@ -270,6 +272,7 @@ const NewPasswordForm = () => {
         <Loading open={form.formState.isSubmitting} />
       </form>
     </Form>
+    </Suspense>
   );
 };
 

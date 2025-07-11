@@ -1,6 +1,6 @@
 import React from "react";
 import { useMarkAttendanceGroupSheet } from "@/hooks/useMarkAttendanceGroupSheet";
-import { GroupSessionHistory } from "./groupSessionHistory";
+// import { GroupSessionHistory } from "./groupSessionHistory";
 import { Button } from "../ui/button";
 import { Customer } from "@/types/Customer";
 
@@ -39,7 +39,7 @@ const GroupSessions = ({ members }: GroupSessionsProps) => {
                 {(member.groupMembersNames?.join(',  ')) || ''}
               </div>
 
-            <GroupSessionHistory groupId={member._id} />
+            {/* <GroupSessionHistory groupId={member._id} /> */}
           </div>
 
           <div className="flex justify-between gap-8">

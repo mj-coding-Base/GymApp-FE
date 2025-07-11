@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-
+import { useState } from "react"; // Added useEffect
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,7 +16,6 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
 import { useSecureCredentials } from "@/hooks/useSecureCredentials";
 import { login } from "@/lib/authentication";
 import { cn } from "@/lib/utils";
@@ -46,6 +43,7 @@ const formSchema = z.object({
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // const [isMounted, setIsMounted] = useState(false); // Added mounted state
 
   const router = useRouter();
 
@@ -54,6 +52,10 @@ const LoginForm = () => {
   });
 
   const { isRemembered, setIsRemembered } = useSecureCredentials();
+
+  // useEffect(() => {
+  //   setIsMounted(true); // Set mounted to true after component mounts
+  // }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
@@ -66,14 +68,11 @@ const LoginForm = () => {
         type: "manual",
         message: res.message ?? "Something went wrong. Please try again.",
       });
-
       return;
     }
 
     SuccessToast("Logged in successfully.");
-
     router.prefetch("/");
-
     router.push("/");
     await new Promise((resolve) => setTimeout(resolve, 1000));
   };
