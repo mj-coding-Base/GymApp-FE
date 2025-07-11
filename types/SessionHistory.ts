@@ -37,6 +37,7 @@ export interface Session {
   status: string;
   customer_id: string;
   attendance: 'attended' | 'missed' | 'cancelled';
+  customer_type?: 'individual' | 'group';
   trainer_id: string;
   current_session: number;
   isExtra: boolean;

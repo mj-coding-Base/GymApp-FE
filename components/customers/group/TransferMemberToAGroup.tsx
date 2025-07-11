@@ -1,6 +1,8 @@
 "use client";
 
+import { searchCustomers } from "@/actions/customers";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -9,12 +11,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import React, { useState, useEffect } from "react";
-import { searchCustomers } from "@/actions/customers";
-import { Customer } from "@/types/Customer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
+import { Customer } from "@/types/Customer";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const TransferMemberToAGroup = () => {

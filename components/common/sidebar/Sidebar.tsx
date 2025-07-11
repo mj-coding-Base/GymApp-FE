@@ -1,14 +1,13 @@
 "use client";
 
-import React from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Logo from "../Logo";
 
-import { cn } from "@/lib/utils";
 import { sidebarData } from "@/data/sidebar";
+import { cn } from "@/lib/utils";
 
 const Sidebar = () => {
   const pathname = usePathname();

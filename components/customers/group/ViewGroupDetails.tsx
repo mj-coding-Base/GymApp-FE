@@ -45,10 +45,7 @@ const ViewGroupDetails = () => {
   };
 
   useEffect(() => {
-    if (openViewGroupDetails) {
-      fetchPackages();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [openViewGroupDetails]);
 
   return (

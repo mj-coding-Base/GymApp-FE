@@ -21,6 +21,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       const status = (error as { response?: { status?: number } })?.response?.status || 500;
       const data = (error as { response?: { data?: unknown } })?.response?.data || { error: "Internal Server Error" };
       res.status(status).json(data);
+
   }
 };
 
