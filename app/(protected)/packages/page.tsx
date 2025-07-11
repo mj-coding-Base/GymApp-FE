@@ -22,9 +22,9 @@ import { IndividualCustomer } from "@/types/Customer";
 
 export default function PackagePage() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-  const [selectedFilter, setSelectedFilter] = React.useState<
-    "All" | "Individual" | "Group"
-  >("All");
+  // const [selectedFilter, setSelectedFilter] = React.useState<
+  //   "All" | "Individual" | "Group"
+  // >("All");
   const [packages, setPackages] = React.useState<Package[]>([]);
   const [members, setMembers] = React.useState<IndividualCustomer[]>([]);
   const [isLoading, setIsLoading] = React.useState({
@@ -51,11 +51,9 @@ export default function PackagePage() {
 
   // Fetch members when drawer opens
 const [membersCount, setMembersCount] = React.useState<Record<string, number>>({});
-const [activePackageId, setActivePackageId] = React.useState<string | null>(null);
 
 const handleOpenMembersDrawer = async (packageId: string) => {
   setIsDrawerOpen(true);
-  setActivePackageId(packageId);
   setIsLoading(prev => ({ ...prev, members: true }));
 
   try {

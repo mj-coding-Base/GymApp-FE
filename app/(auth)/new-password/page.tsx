@@ -1,6 +1,7 @@
 import CardWrapper from "@/components/auth/CardWrapper";
 import NewPasswordForm from "@/components/auth/NewPasswordForm";
 import PasswordSuccessModal from "@/components/auth/PasswordSuccessModal";
+import { Suspense } from "react";
 
 const LoginPage = () => {
   return (
@@ -16,7 +17,9 @@ const LoginPage = () => {
         headerTexts=""
         className=""
       >
-        <NewPasswordForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <NewPasswordForm />
+        </Suspense>
       </CardWrapper>
 
       <PasswordSuccessModal />

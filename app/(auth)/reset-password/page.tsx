@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState ,Suspense} from "react";
 
 import CardWrapper from "@/components/auth/CardWrapper";
 import CheckEmail from "@/components/auth/CheckEmail";
@@ -57,8 +57,11 @@ const ResetPassword = () => {
             <Loading open={loading} />
           </div>
         ) : (
+          
+        <Suspense fallback={<div>Loading...</div>}>
           <ResetPasswordForm onNext={handleNext} setEmail={setEmail} />
-        )}
+        </Suspense>
+ )}
       </CardWrapper>
     </div>
   );
