@@ -114,6 +114,7 @@
 //                 </DrawerTitle>
 //               </DrawerHeader>
 
+
 //               {trainerType === Type.PART_TIME ? (
 //                 <div className="w-full">
 //                   <div className="rounded-lg border border-[#000000] mb-6 overflow-hidden w-full">
@@ -259,6 +260,7 @@
 //                           </span>
 //                         </div>
 //                       </div>
+
 
 //                       <div className="flex flex-col col-span-3 pl-2 border-r border-[#000000]">
 //                         <div className="py-2">

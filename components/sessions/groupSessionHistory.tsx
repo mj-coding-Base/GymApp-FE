@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function GroupSessionHistory({ groupId }: Readonly<GroupSessionHistoryProps>) {
+console.log(groupId);
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<Session[]>([]);

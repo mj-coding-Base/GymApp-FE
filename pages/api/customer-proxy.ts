@@ -17,9 +17,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     );
 
     res.status(apiRes.status).json(apiRes.data);
-  } catch (error: any) {
-    const status = error.response?.status || 500;
-    const data = error.response?.data || { error: "Internal Server Error" };
+  } catch (error) {
+    let status = 500;
+    let data = { error: "Internal Server Error" };
+    if (typeof error === "object" && error !== null && "response" in error) {
+      const err = error as { response?: { status?: number; data?: string } };
+      status = err.response?.status ?? 500;
+      const respData = err.response?.data;
+      data = typeof respData === "string"
+        ? { error: respData }
+        : respData ?? { error: "Internal Server Error" };
+    }
     res.status(status).json(data);
   }
 };
