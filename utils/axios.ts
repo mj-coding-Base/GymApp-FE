@@ -16,7 +16,15 @@ axiosInstance.interceptors.request.use(async (request) => {
     let token: string | null | undefined = null;
 
     if (isServer) {
-      const session = await getSession();
+        let session = null;
+
+  if (typeof window === 'undefined') {
+    // Running during static generation → skip session
+    session = null;
+  } else {
+    // Running during SSR or client render → safe to fetch session
+    session = await getSession();
+  }
       token = session?.user.token;
     } else {
       token = localStorage.getItem("x-auth-token");
