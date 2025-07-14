@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 
-const backendUrl = "https://dev-bixfit-backend-new-407792198674.asia-southeast1.run.app/api/v1";
+const backendUrl = "http://129.154.47.11:8080/api/v1";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
