@@ -106,16 +106,17 @@
     };
 
     // Get the session
-    export async function getSession(): Promise<Session | null> {
-      const sessionCookie = (await cookies()).get("session-gymapp-admin")?.value;
-
-      if (!sessionCookie) return null;
-
-      const decrypted = await decrypt(sessionCookie);
-
-      
-      return decrypted;
+  export async function getSession(): Promise<Session | null> {
+    // During static generation, return null
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return null;
     }
+
+    const sessionCookie = (await cookies()).get("session-gymapp-admin")?.value;
+    if (!sessionCookie) return null;
+
+    return await decrypt(sessionCookie);
+  }
 
     // Update the session
     export async function updateSession(request: NextRequest) {

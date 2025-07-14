@@ -12,7 +12,7 @@ import {
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { useMarkAttendanceGroupSheet } from "@/hooks/useMarkAttendanceGroupSheet";
-import { getAllSessions, markGroupAttendance } from "@/actions/session";
+import {  markGroupAttendance } from "@/actions/session"; //getAllSessions,
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -53,22 +53,22 @@ const MarkAttendanceGroup = () => {
       items: [],
     },
   });
+setItems([]);
+  // React.useEffect(() => {
+  //   const fetchSessions = async () => {
+  //     try {
+  //       const sessions = await getAllSessions();
+  //       setItems(sessions.data.map(session => ({
+  //         id: session._id ?? "",
+  //         name: `Session ${new Date(session.createdAt ?? "").toLocaleDateString()}`,
+  //       })));
+  //     } catch (error) {
+  //        toast.error(error instanceof Error ? error.message :"Failed to load sessions");
+  //     }
+  //   };
 
-  React.useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        const sessions = await getAllSessions();
-        setItems(sessions.data.map(session => ({
-          id: session._id ?? "",
-          name: `Session ${new Date(session.createdAt ?? "").toLocaleDateString()}`,
-        })));
-      } catch (error) {
-         toast.error(error instanceof Error ? error.message :"Failed to load sessions");
-      }
-    };
-
-    fetchSessions();
-  }, []);
+  //   fetchSessions();
+  // }, []);
 
   async function onSubmit(data: z.infer<typeof FormSchema>) {
     try {
