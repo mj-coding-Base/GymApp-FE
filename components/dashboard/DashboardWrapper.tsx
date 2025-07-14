@@ -10,10 +10,19 @@ export default async function DashboardWrapper() {
       console.error("Received empty response from server");
       return <div>No data available</div>;
     }
-    const userData = await getSession();
-    console.log( "Print user name",userData?.user.name);
-    console.log( "Print user email",userData?.user.email);
-    console.log( "Print user id",userData?.user.id);
+
+    // ✅ Skip session fetching during static generation
+    let userData = null;
+    if (typeof window === 'undefined') {
+      // Running during static generation → skip cookies logic
+      userData = null;
+    } else {
+      userData = await getSession();
+    }
+
+    console.log("Print user name", userData?.user.name);
+    console.log("Print user email", userData?.user.email);
+    console.log("Print user id", userData?.user.id);
 
     console.log("API response received:", {
       hasTrainerData: !!data.trainer,
