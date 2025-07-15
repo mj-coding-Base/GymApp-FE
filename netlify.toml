@@ -5,9 +5,7 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20.17.0"
-  NPM_CONFIG_SCRIPT_TIMEOUT = "600000"
-  NEXT_PUBLIC_SITE_URL = "https://your-site.netlify.app" 
+  NEXT_PUBLIC_SITE_URL = "https://gymapp-khetech.netlify.app/" 
 
 [dev]
   command = "yarn dev"

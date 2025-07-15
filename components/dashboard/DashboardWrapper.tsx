@@ -1,7 +1,7 @@
 import Dashboard from "@/components/dashboard/Dashboard";
 import { fetchDashboardData } from "@/actions/dashboard";
 import { getSession } from "@/lib/authentication";
-
+export const dynamic = 'force-dynamic';
 export default async function DashboardWrapper() {
   try {
     const data = await fetchDashboardData();

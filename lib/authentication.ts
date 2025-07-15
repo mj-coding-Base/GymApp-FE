@@ -106,17 +106,21 @@
     };
 
     // Get the session
-  export async function getSession(): Promise<Session | null> {
-    // During static generation, return null
-    if (process.env.NEXT_PHASE === "phase-production-build") {
-      return null;
-    }
-
+// lib/authentication.ts
+export async function getSession(): Promise<Session | null> {
+  try {
     const sessionCookie = (await cookies()).get("session-gymapp-admin")?.value;
+
     if (!sessionCookie) return null;
 
-    return await decrypt(sessionCookie);
+    const decrypted = await decrypt(sessionCookie);
+
+    return decrypted;
+  } catch (error) {
+    console.error("Failed to get session:", error);
+    return null;
   }
+}
 
     // Update the session
     export async function updateSession(request: NextRequest) {
