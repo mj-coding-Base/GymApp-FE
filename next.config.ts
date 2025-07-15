@@ -13,4 +13,3 @@ const nextConfig = {
   transpilePackages: ['axios'] 
 };
 
-module.exports = nextConfig;
