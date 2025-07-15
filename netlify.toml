@@ -1,0 +1,24 @@
+# netlify.toml
+
+[build]
+  command = "yarn install --immutable && yarn build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20.17.0"
+  NPM_CONFIG_SCRIPT_TIMEOUT = "600000"
+  NEXT_PUBLIC_SITE_URL = "https://your-site.netlify.app" 
+
+[dev]
+  command = "yarn dev"
+  port = 3000
+  publish = "public"
+
+[context.production.environment]
+  ENVIRONMENT = "production"
+
+[context.deploy-preview]
+  environment = "preview"
+
+[context.branch-deploy]
+  environment = "staging"
