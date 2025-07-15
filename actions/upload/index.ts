@@ -1,7 +1,6 @@
 "use server";
 
 import axios from "axios";
-
 import { getSession } from "@/lib/authentication";
 import type { CommonResponseDataType } from "@/types/Common";
 
@@ -11,7 +10,19 @@ export const uploadImage = async (
   cancelTokenSourceRef?: React.MutableRefObject<any>
 ): Promise<CommonResponseDataType> => {
   try {
-    const session = await getSession();
+    // ✅ Prevent getSession() from running during static generation
+    let session = null;
+    if (typeof window === 'undefined') {
+      // Running during static generation → skip cookies logic
+      return {
+        status: 'FAIL',
+        message: 'Operation not allowed during static generation',
+        data: null,
+      };
+    }
+
+    // ✅ Only call getSession() in dynamic context (SSR or API call)
+    session = await getSession();
 
     if (cancelTokenSourceRef) {
       cancelTokenSourceRef.current = axios.CancelToken.source();

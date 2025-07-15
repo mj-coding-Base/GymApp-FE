@@ -6,7 +6,16 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getSession();
+  // ✅ Prevent getSession() during static generation
+  let session = null;
+
+  if (typeof window === 'undefined') {
+    // Running during static generation → skip session
+    session = null;
+  } else {
+    // Running during SSR or client render → safe to fetch session
+    session = await getSession();
+  }
 
   return (
     <AuthWrapper session={session}>

@@ -1,6 +1,11 @@
 // app/(protected)/(dashboard)/page.tsx
+
 import DashboardWrapper from "@/components/dashboard/DashboardWrapper";
 
-export default function Page() {
+// ✅ Opt this route into dynamic rendering only
+export const dynamic = 'force-dynamic';
+
+export default async function Page() {
+  // This will now run safely in SSR context
   return <DashboardWrapper />;
 }

@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+      "build": "next build",
+    "export": "next export",
+    "build:netlify": "yarn install --immutable && yarn build && yarn export",
     "start": "next start",
     "lint": "next lint"
   },
