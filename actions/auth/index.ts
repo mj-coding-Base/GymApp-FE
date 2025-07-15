@@ -93,7 +93,7 @@ export const forgotPassword = async (
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.post(
-      "https://bixfit-backend-dev-407792198674.asia-southeast1.run.app/api/v1/admin/admin-management/forgot-password",
+      "/admin/admin-management/login", 
       { email }
     );
 
@@ -112,7 +112,7 @@ export const resetPassword = async ({
 }): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      "https://bixfit-backend-dev-407792198674.asia-southeast1.run.app/api/v1/admin/admin-management/change-password",
+      "/admin/admin-management/login", 
       {
         password: newPassword,
         confirmPassword: newPassword,

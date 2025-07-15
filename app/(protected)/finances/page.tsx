@@ -1,4 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ServerCapacityBanner } from "@/components/common/TestingBanner";
+import { Card, CardContent,
+  //  CardHeader, CardTitle 
+  } from "@/components/ui/card";
 import Link from "next/link";
 export const dynamic = 'force-dynamic';
 const FinancesPage = () => {
@@ -25,8 +28,8 @@ const FinancesPage = () => {
           </Card>
         </Link>
       </div>
-
-      <div className="flex-col space-y-3">
+            <ServerCapacityBanner />
+      {/* <div className="flex-col space-y-3">
         <Card className="p-0 gap-0 h-[130.4px] ">
           <CardHeader className="p-[12px] pb-0">
             <div className="flex gap-1 items-center">
@@ -91,7 +94,7 @@ const FinancesPage = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 };

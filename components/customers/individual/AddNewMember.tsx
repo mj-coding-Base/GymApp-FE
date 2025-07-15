@@ -585,7 +585,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                             <SelectValue
                               placeholder={
                                 selectedPackage
-                                  ? selectedPackage.name
+                                  ? selectedPackage.package_name
                                   : "Select Package"
                               }
                             />
@@ -600,7 +600,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                           ) : packages.length > 0 ? (
                             packages.map((pkg) => (
                               <SelectItem key={pkg.packageId} value={pkg.packageId}>
-                                {pkg.name}
+                                {pkg.package_name}
                               </SelectItem>
                             ))
                           ) : (
