@@ -1,0 +1,11 @@
+[build]
+command = "yarn install --immutable && yarn add -D @tailwindcss/postcss7-compat postcss@^7 autoprefixer@^9 && yarn build"
+publish = ".next"
+
+[build.environment]
+NODE_VERSION = "18.20.0"
+CASE_SENSITIVE_IMPORTS = "false"
+NEXT_PUBLIC_SITE_URL = "https://gymapp-khetech.netlify.app "
+BASE_URL = "https://api.yourapp.com "
+JWT_SECRET = "secret123"
+NPM_CONFIG_SCRIPT_TIMEOUT = "300000"
