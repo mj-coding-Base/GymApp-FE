@@ -1,5 +1,5 @@
 [build]
-command = "yarn install --immutable && yarn add -D @tailwindcss/postcss7-compat postcss@^7 autoprefixer@^9 && yarn build"
+command = "yarn install --immutable && yarn build"
 publish = ".next"
 
 [build.environment]
