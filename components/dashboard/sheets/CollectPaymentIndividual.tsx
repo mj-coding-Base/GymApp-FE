@@ -19,7 +19,8 @@ import { fetchIndividualCustomers } from "@/actions/customers";
 import { PaymentHistory, IndividualCustomer } from "@/types/Customer";
 import { getUserPaymentsId } from "@/actions/customers";
 import PaymentCollectionIndividual from "./PaymentCollectionIndividual";
-
+import { PaymentCollectionExtra } from "./PaymentCollectionExtra";
+import { Suspense } from 'react';
 
 const CollectPaymentIndividual = () => {
   // State management
@@ -44,6 +45,9 @@ const CollectPaymentIndividual = () => {
     usePaymentCollectionIndividualSheet();
   const { setOpenExtraPaymentCollectionSheet } = useExtraPaymentCollectionSheet();
 
+  // Derived state for button disabled status
+  const buttonsDisabled = !customer || loading;
+
   // Effect: Load customer based on search query
   useEffect(() => {
     if (!searchQuery || searchQuery === currentSearch) {
@@ -59,14 +63,13 @@ const CollectPaymentIndividual = () => {
         setCustomer(null);
         return;
       }
-      console.log("searchQuery is  ", searchQuery)
+
       setLoading(true);
       try {
         const result = await fetchIndividualCustomers("1","1",searchQuery);
         const foundCustomer = result.results?.[0] ?? null;
 
         setCustomer(foundCustomer);
-
         if (foundCustomer?._id) {
           setCurrentCustomerId(foundCustomer._id);
         } else {
@@ -94,7 +97,7 @@ const CollectPaymentIndividual = () => {
     const loadPaymentHistory = async () => {
       setLoading(true);
       try {
-        const response = await getUserPaymentsId(currentCustomerId as string);
+        const response = await getUserPaymentsId(currentCustomerId);
         setPaymentData(response);
       } catch (error) {
         console.error("Failed to fetch payment history:", error);
@@ -107,15 +110,26 @@ const CollectPaymentIndividual = () => {
     loadPaymentHistory();
   }, [currentCustomerId]);
 
-  console.log("Current Customer:", customer);
-  console.log("Current Customer ID:", currentCustomerId);
-  console.log("Payment Data:", paymentData);
+  const refreshPaymentData = async () => {
+    if (!currentCustomerId) return;
+    
+    setLoading(true);
+    try {
+      const response = await getUserPaymentsId(currentCustomerId);
+      setPaymentData(response);
+    } catch (error) {
+      console.error("Failed to refresh payment history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <>
     <Sheet
-      open={openCollectPaymentIndividualSheet}
-      onOpenChange={setOpenCollectPaymentIndividualSheet}
+        open={openCollectPaymentIndividualSheet}
+        onOpenChange={setOpenCollectPaymentIndividualSheet}
     >
       <SheetContent side="bottom" className="rounded-t-2xl min-h-[500px] max-h-[calc(100%-40px)]">
         <SheetHeader className="gap-[20px]">
@@ -123,7 +137,10 @@ const CollectPaymentIndividual = () => {
             Collect Payment
           </SheetTitle>
           <SheetDescription className="relative w-full max-w-sm">
-            <CommonSearch />
+            
+            <Suspense fallback={<div>Loading...</div>}>
+              <CommonSearch />
+            </Suspense>
           </SheetDescription>
         </SheetHeader>
 
@@ -132,7 +149,7 @@ const CollectPaymentIndividual = () => {
             <div className="mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
               <div className="flex border-b-[1px] border-b-[#000000]">
                 <div className="flex-[35%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Current Session</p>
+                  <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
                   <p className="text-[#3D3D3D] text-[12px] font-semibold">
                     {customer.availableSessionQuota ?? "--"}
                   </p>
@@ -163,16 +180,16 @@ const CollectPaymentIndividual = () => {
                   <p className="text-[#6D6D6D] text-[12px] font-medium">Payment</p>
                   <p
                     className={`bg-${
-                      customer.isPaid ? "[#D32F2F]" : "[#FFA726]"
+                      customer.isPaid == null ?  "[#D32F2F]" : customer.isPaid ? "[#4CAF50]" : "[#D32F2F]"
                     } text-center rounded-[15px] px-[0px] py-[5px] text-[#FFFFFF] text-[12px]/[100%] font-semibold`}
                   >
-                    {customer.isPaid ? "Paid" : "Not Paid"}
+                    {customer.isPaid == null ?  "Not Paid" : customer.isPaid ? "Paid" : "Not Paid"}
                   </p>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="text-center mt-4 text-xs text-gray-400">No results found</p>
+            <p className="text-center mt-4 text-xs text-gray-400">Search user for data</p>
           )}
 
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
@@ -203,8 +220,11 @@ const CollectPaymentIndividual = () => {
                 paymentData.map((item) => (
                   <div
                     key={item._id}
-                    className="flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px]"
+                    className={`flex px-[13.5px] py-[18px] border-t-[#E7E7E7] border-t-[1px] ${
+                      item.isExtra ? "bg-[#FFEEA9]" : ""
+                    }`}
                   >
+
                     <p className="w-[40%] text-[12px]/[13.5px] font-normal text-[#212121]">
                       {item.createdAt.slice(0, 10)}
                     </p>
@@ -231,6 +251,7 @@ const CollectPaymentIndividual = () => {
         <SheetFooter className="grid grid-cols-2 gap-[15px]">
           <Button
             variant={"outline"}
+            disabled = {buttonsDisabled}
             onClick={() => {
               setOpenCollectPaymentIndividualSheet(false);
               setOpenExtraPaymentCollectionSheet(true);
@@ -241,6 +262,7 @@ const CollectPaymentIndividual = () => {
           </Button>
           <Button
             type="button"
+            disabled = {buttonsDisabled}
             onClick={() => {
               setOpenCollectPaymentIndividualSheet(false);
               setOpenPaymentCollectionIndividualSheet(true);
@@ -252,7 +274,8 @@ const CollectPaymentIndividual = () => {
         </SheetFooter>
       </SheetContent>
     </Sheet>
-          <PaymentCollectionIndividual clientId={currentCustomerId} />
+          <PaymentCollectionIndividual clientId={currentCustomerId} onPaymentSuccess={refreshPaymentData}/>
+          <PaymentCollectionExtra clientId={currentCustomerId} onPaymentSuccess={refreshPaymentData}/>
     </>
   );
 };

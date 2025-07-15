@@ -3,8 +3,6 @@
 import { getAllSessions } from "@/actions/session";
 import { CalendarForm } from "@/components/common/CalendarForm";
 import { useSession } from "@/components/providers/SessionProvider";
-import GroupSessions from "@/components/sessions/group";
-import IndividualSessions from "@/components/sessions/individual";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -16,21 +14,21 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Customer } from "@/types/Customer";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState } from "react";
 
 // Dummy data generators
-
+export const dynamic = 'force-dynamic';
 
 const SessionsPage = () => {
   const session = useSession();
-  const [groups, setGroups] = React.useState<Customer[]>([]);
-  const [individuals, setIndividuals] = React.useState<Customer[]>([]);
+  // const [groups, setGroups] = React.useState<Customer[]>([]);
+  // const [individuals, setIndividuals] = React.useState<Customer[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("individual");
-  const [usingDummyData, setUsingDummyData] = React.useState(false);
+  // const [usingDummyData, setUsingDummyData] = React.useState(false);
+  console.log(error)
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -75,11 +73,11 @@ const SessionsPage = () => {
 
   return (
     <div className="max-w-md">
-      {usingDummyData && (
+      {/* {usingDummyData && (
         <div className="bg-yellow-100 text-yellow-800 p-2 mb-2 rounded text-sm">
           Warning: Using demo data. {error}
         </div>
-      )}
+      )} */}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="border-b-[1.8px] border-[#E7E7E7]">
@@ -139,14 +137,14 @@ const SessionsPage = () => {
                   </DialogContent>
                 </Dialog>
               </div>
-
+{/* 
               <TabsContent value="individual" className="mt-0">
                 <IndividualSessions clients={individuals} />
               </TabsContent>
 
               <TabsContent value="group" className="mt-0">
                 <GroupSessions members={groups} />
-              </TabsContent>
+              </TabsContent> */}
             </div>
           </CardContent>
         </Card>

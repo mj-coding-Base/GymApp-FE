@@ -1,8 +1,8 @@
 "use server";
 import axios from "@/utils/axios";
 
-export const submitPaymentReal = async (data: { amount: number; reference?: string; clientId: string }) => {
-  const response = await axios.post("/payments/collect", data);
+export const collectIndividualPayment = async (data: { amount: number; reference?: string; paidFor: string }) => {
+  const response = await axios.post("/clientsPayment/create", data);
   return response.data;
 };
 
@@ -15,7 +15,7 @@ interface GroupPaymentData {
 
 export const collectGroupPayment = async (data: GroupPaymentData) => {
   try {
-    const response = await axios.post("/payments/group", data);
+    const response = await axios.post("/clientsPayment/create", data);
     
     return {
       status: "SUCCESS",
@@ -53,50 +53,9 @@ export const collectGroupPayment = async (data: GroupPaymentData) => {
 };
 
 
-interface ExtraPaymentData {
-  session: string;
-  amount: number;
-  clientId?: string; // Optional if you need to associate with a client
-}
-
-export const collectExtraPayment = async (data: ExtraPaymentData) => {
-  try {
-    const response = await axios.post("/payments/extra", data);
-    
-    return {
-      status: "SUCCESS",
-      data: response.data,
-      message: "Extra payment collected successfully"
-    };
-  } catch (error) {
-    console.error("Extra payment error:", error);
-    
-    // Fallback dummy response for development
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Using dummy extra payment response");
-      return {
-        status: "SUCCESS",
-        data: {
-          id: `ext_${Math.random().toString(36).substring(2, 10)}`,
-          ...data,
-          timestamp: new Date().toISOString(),
-          type: "EXTRA"
-        },
-        message: "Dummy extra payment processed"
-      };
-    }
-    
-    let errorMessage = "Extra payment failed";
-    if (typeof error === "object" && error !== null && "response" in error) {
-      const err = error as { response?: { data?: { message?: string } } };
-      errorMessage = err.response?.data?.message || errorMessage;
-    }
-    return {
-      status: "FAIL",
-      message: errorMessage,
-      data: null
-    };
-  }
+export const collectExtraPayment = async (data: { amount: number; reference?: string; paidFor: string }) => {
+  const response = await axios.post("/clientsPayment/createExtra", data);
+  return response.data;
 };
 
 

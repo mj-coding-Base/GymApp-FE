@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from 'react';
 import React from "react";
 import { Toaster } from "react-hot-toast";
 import CollectPaymentIndividual from "../dashboard/sheets/CollectPaymentIndividual";
@@ -27,6 +27,7 @@ const Providers =  () => {
   // const notifications = sampleNotifications;
   return (
     <>
+    <Suspense fallback="Loading...">
       <CollectPaymentIndividual />
       <CollectPaymentGroup />
       <MarkAttendanceIndividual />
@@ -44,6 +45,7 @@ const Providers =  () => {
       <TransferMemberToExistingGroup />
       <SuccessModal />
       <WarningModal />
+    </Suspense>
 
       <Toaster
         position="top-right"

@@ -69,7 +69,7 @@ const NewPasswordForm = () => {
   const router = useRouter();
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const token = searchparams.get("token");
+    const token = searchparams?.get("token");
 
     if (!token) {
       form.setError("password", {

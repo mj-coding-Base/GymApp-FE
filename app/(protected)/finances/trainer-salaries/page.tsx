@@ -28,7 +28,7 @@ import {
 import { CalendarForm } from "@/components/common/CalendarForm";
 import CustomPagination from "@/components/common/CustomPagination";
 import TrainerSalariesInfo from "@/components/finance/TrainerSalariesInfo";
-
+export const dynamic = 'force-dynamic';
 export default function ClientPaymentsPage() {
   return (
     <div className="">

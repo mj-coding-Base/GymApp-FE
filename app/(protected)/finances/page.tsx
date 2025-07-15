@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-
+export const dynamic = 'force-dynamic';
 const FinancesPage = () => {
   return (
     <div className="w-full max-w-md ">

@@ -1,6 +1,8 @@
 "use client";
 
+import { searchCustomers } from "@/actions/customers";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -9,12 +11,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import React, { useState, useEffect } from "react";
-import { searchCustomers } from "@/actions/customers";
-import { Customer } from "@/types/Customer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
+import { Customer } from "@/types/Customer";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const TransferMemberToAGroup = () => {
@@ -31,12 +31,7 @@ const TransferMemberToAGroup = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (openTransferMemberToAGroup) {
-      fetchClientData();
-    }
-  }, [openTransferMemberToAGroup]);
-
+useEffect(() => {
   const fetchClientData = async () => {
     try {
       setLoading(true);
@@ -51,6 +46,26 @@ const TransferMemberToAGroup = () => {
       setLoading(false);
     }
   };
+
+  if (openTransferMemberToAGroup) {
+    fetchClientData();
+  }
+}, [openTransferMemberToAGroup, searchTerm]);
+
+  // const fetchClientData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setError(null);
+  //     const response = await searchCustomers(searchTerm);
+  //     setClients(response || []);
+  //   } catch (err) {
+  //     console.error("Error fetching clients:", err);
+  //     setError("Failed to load clients");
+  //     toast.error("Failed to load client data");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

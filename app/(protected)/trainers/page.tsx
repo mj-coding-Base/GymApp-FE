@@ -13,7 +13,7 @@ import {
 import { CalendarForm } from "@/components/common/CalendarForm";
 import TrainerInfo from "@/components/trainer/TrainerInfo";
 // import { TrainerRegistration } from "@/components/trainer/TrainerRegistration";
-
+export const dynamic = 'force-dynamic';
 export default function ClientPaymentsPage() {
   return (
     <div className="">
