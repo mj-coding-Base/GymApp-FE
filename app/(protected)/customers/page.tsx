@@ -49,11 +49,11 @@ export default async function Page({ searchParams }: Props) {
     );
       console.log("fuck ",individualCustomers.totalResults );
   }
-
+  console.log(groupCustomers);
   return (
     <Customers
       individuals={individualCustomers}
-      groups={groupCustomers}
+      // groups={groupCustomers}
       searchParams={searchparams}
     />
   );

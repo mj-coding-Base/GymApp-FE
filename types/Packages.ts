@@ -1,5 +1,5 @@
 export type Package = {
-  name: string;
+  package_name: string;
   description: string;
   sessions: number;
   durationDays: number;

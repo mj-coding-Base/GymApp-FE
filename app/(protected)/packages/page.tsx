@@ -123,7 +123,7 @@ const handleOpenMembersDrawer = async (packageId: string) => {
                       <div>
                         <p className="text-[11px] text-gray-500 ">Package Name</p>
                         <p className="text-[12px] font-medium">
-                          {pkg.name}
+                          {pkg.package_name}
                         </p>
                       </div>
                     </div>
