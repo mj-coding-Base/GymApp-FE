@@ -5,8 +5,12 @@ const nextConfig = {
     unoptimized: true, // if you're having image optimization issues
   },
   experimental: {
-    serverActions: true,
+    serverActions: {
+      // New format required in Next.js 15.3.2
+      allowedOrigins: ['https://gymapp-khetech.netlify.app'] // Add your domains or IPs
+    }
   },
+  transpilePackages: ['axios'] 
 };
 
 module.exports = nextConfig;
