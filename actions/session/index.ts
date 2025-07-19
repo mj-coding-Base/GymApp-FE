@@ -203,7 +203,7 @@ export const getAllSessions = async (
     // console.log('Final query params:', queryParams);
 
     const response = 
-    await axios.get('/admin/session-management',
+    await axios.get('/sessions/get-all',
       {
         params: queryParams,
       }
@@ -295,20 +295,26 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
   }
 }
 
-export async function markMultipleAttendances(
-  customerIds: string[]
-): Promise<{
+export async function markIndividualAttendance(data: {
+  customerId: string;
+  customerName: string;
+  trainerId: string;
+  trainerName: string;
+}): Promise<{
   status: "SUCCESS" | "FAIL";
   message?: string;
 }> {
   try {
-    await axios.post("/attendance/mark-multiple", {
-      customerIds,
-    });
+    await axios.post("/sessions/create",       {
+        customerId: data.customerId,
+        customerName: data.customerName,
+        trainerId: data.trainerId,
+        trainerName: data.trainerName
+      });
     
     return {
       status: "SUCCESS",
-      message: `${customerIds.length} attendance(s) marked successfully`,
+      message: "Attendance marked successfully",
     };
   } catch (error) {
     console.error("Failed to mark attendance:", error);
