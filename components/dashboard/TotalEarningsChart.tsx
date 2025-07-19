@@ -46,7 +46,7 @@ const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
 
   // Ensure data is always an array and has the correct structure
 
-console.log("Chart Data:", formattedChartData);
+// console.log("Chart Data:", formattedChartData);
   return (
     <div className="mb-[32px]">
       <div className="flex items-center justify-between mb-4">

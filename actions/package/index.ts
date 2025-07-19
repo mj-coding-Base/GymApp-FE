@@ -21,7 +21,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       status: item.status || "active",
     }));
 
-        console.log(packages);
+        // console.log(packages);
     return packages;
   } catch (error: unknown) {
     console.error("Failed to fetch packages. Using dummy data instead.", error);
@@ -29,7 +29,7 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
     const dummyPackages: Package[] = [
     ];
 
-        console.log(dummyPackages);
+        // console.log(dummyPackages);
     return dummyPackages;
   }
 };
@@ -77,7 +77,7 @@ export const updatePackage = async (
 export async function getPackages(): Promise<Package[]> {
   try {
     const response = await axios.get("/packages/get-all");
-    console.log(response.data.data)
+    // console.log(response.data.data)
     return response.data.data;
   } catch (error) {
     console.error("Failed to fetch packages:", error);

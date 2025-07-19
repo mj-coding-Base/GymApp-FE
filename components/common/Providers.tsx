@@ -22,19 +22,16 @@ import PaymentCollectionGroup from "@/components/dashboard/sheets/MarkAttendance
 // import { sampleNotifications } from "@/data/notifications";
 
 const Providers =  () => {
-    // const session = await getSession();
-  // const notifications = await getNotifications();
-  // const notifications = sampleNotifications;
   return (
     <>
     <Suspense fallback="Loading...">
-      <CollectPaymentIndividual />
+      <CollectPaymentIndividual  />
       <CollectPaymentGroup />
       <MarkAttendanceIndividual />
       <PaymentCollectionIndividual />
       {/* <PaymentCollectionExtra /> */}
       <PaymentCollectionGroup />
-      <ProfileDetails />
+      <ProfileDetails  />
       <ResetPassword />
       <CollectPaymentSuccessGroup />
       <ViewGroupDetails />

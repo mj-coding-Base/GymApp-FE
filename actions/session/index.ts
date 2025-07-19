@@ -200,7 +200,7 @@ export const getAllSessions = async (
     });
 
     // Debug: Log the final query params
-    console.log('Final query params:', queryParams);
+    // console.log('Final query params:', queryParams);
 
     const response = 
     await axios.get('/admin/session-management',
@@ -210,7 +210,7 @@ export const getAllSessions = async (
     );
 
     // Debug: Log the full response
-    console.log('Session fetch response:', response);
+    // console.log('Session fetch response:', response);
 
     if (!response.data) {
       throw new Error('No data received from server');
