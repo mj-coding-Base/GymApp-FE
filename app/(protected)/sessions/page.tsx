@@ -2,7 +2,6 @@
 
 import { getAllSessions } from "@/actions/session";
 import { CalendarForm } from "@/components/common/CalendarForm";
-import { useSession } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -21,7 +20,6 @@ import React, { useState } from "react";
 export const dynamic = 'force-dynamic';
 
 const SessionsPage = () => {
-  const session = useSession();
   // const [groups, setGroups] = React.useState<Customer[]>([]);
   // const [individuals, setIndividuals] = React.useState<Customer[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -32,32 +30,24 @@ const SessionsPage = () => {
 
   React.useEffect(() => {
     const fetchData = async () => {
-      if (!session?.user?.token) {
-        const error = new Error("No authentication token found in session");
-        console.error("[Customers] Authentication error:", {
-          message: error.message,
-          sessionAvailable: !!session,
-          tokenAvailable: !!session?.user?.token,
-          time: new Date().toISOString()
-        });
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
+ setLoading(true);
 
  try{
     const individualSessions = await getAllSessions({
     customer_type: 'individual'
   });
+ setLoading(false);
     console.log(individualSessions)
  }
  catch(error){
   console.log(error)
+  setError("error");
+ setLoading(false);
  }
     };
 
     fetchData();
-  }, [session]);
+  }, []);
 
   if (loading) {
     return (

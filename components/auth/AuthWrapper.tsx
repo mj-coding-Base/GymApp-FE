@@ -3,8 +3,8 @@
 import React, { useEffect } from "react";
 
 import { useRouter } from "next/navigation";
+import { Session } from "@/types/auth";
 
-import type { Session } from "@/lib/authentication";
 
 const AuthWrapper = ({
   children,

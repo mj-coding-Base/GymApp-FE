@@ -13,7 +13,7 @@ const MarkAttendance = () => {
   return (
     <WhiteCard className="flex flex-col gap-[10px] items-center">
       <i className="mark-attendance size-[25px] text-[#5D5D5D]" />
-      <p className="text-[12px] font-medium text-[#5D5D5D]">Mark Attendance</p>
+      <p className="text-[12px] font-medium text-[#5D5D5D]">Personal Training</p>
       <div className="grid grid-cols-2 gap-[10px] w-full">
         <div
           onClick={() => {
@@ -26,7 +26,7 @@ const MarkAttendance = () => {
         </div>
         <div
           onClick={() => {
-            setOpenMarkAttendanceGroupSheet(true);
+            setOpenMarkAttendanceGroupSheet(false);
           }}
           className="flex flex-col items-center justify-between bg-[#fac1be] rounded-[15px] py-[18px] gap-[6px]"
         >

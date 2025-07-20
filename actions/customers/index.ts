@@ -85,7 +85,7 @@ export const fetchGroups = async (
         },
       }
     );
-  console.log("API Response:", response.data.data);
+  // console.log("API Response:", response.data.data);
       return {
     results: response.data?.data ?? [],
     totalResults: response?.data?.totalResults ?? 0,
@@ -119,7 +119,7 @@ export const fetchGroupCustomers = async (
         },
       }
     );
-  console.log("API Response:", response.data.data);
+  // console.log("API Response:", response.data.data);
       return {
     results: response.data.data ,
   };
@@ -179,7 +179,7 @@ export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | 
       `/clientsPayment/userPayments/${id}`
     );
 
-    console.log("`/clientsPayment/userPayments/${id}`",response.data);
+    // console.log("`/clientsPayment/userPayments/${id}`",response.data);
 
     return response.data.data;
   } catch (error) {
@@ -255,7 +255,7 @@ export const toggleCustomerStatus = async (customerId: string) => {
 
     revalidatePath(`/customers`);
 
-    console.log(res.data);
+    // console.log(res.data);
 
     return (" successfully deactivated");
   } catch (error) {

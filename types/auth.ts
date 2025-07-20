@@ -6,7 +6,8 @@ export interface UserSession {
   token: string;
   refreshToken: string | null;
   mobile?: string;
-  // role?: 'admin' | 'trainer';
+  isAdmin:boolean;
+
   // profilePicture?: string;
 }
 
@@ -14,6 +15,14 @@ export interface Session {
   user: UserSession;
   expires: Date;
   createdAt: Date;
+}
+
+export interface PTSession{
+  trainerId: string;
+  trainerName: string;
+  customerId: string;
+  customerName: string;
+  createdAt: string;
 }
 
 export interface LoginRequest {

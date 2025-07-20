@@ -21,51 +21,7 @@ const dummyCustomers = [
     name: "Job Belflore",
     nic: "98123456V",
   },
-  {
-    id: "2",
-    name: "Jane Smith",
-    nic: "98123457V",
-  },
-  {
-    id: "3",
-    name: "Alan Cooper",
-    nic: "98123458V",
-  },
-  {
-    id: "4",
-    name: "Maria Gomez",
-    nic: "98123459V",
-  },
-  {
-    id: "5",
-    name: "Liam Johnson",
-    nic: "98123460V",
-  },
-  {
-    id: "6",
-    name: "Chloe Brown",
-    nic: "98123461V",
-  },
-  {
-    id: "7",
-    name: "Noah Wilson",
-    nic: "98123462V",
-  },
-  {
-    id: "8",
-    name: "Emma Davis",
-    nic: "98123463V",
-  },
-  {
-    id: "9",
-    name: "Mason Lee",
-    nic: "98123464V",
-  },
-  {
-    id: "10",
-    name: "Olivia Martin",
-    nic: "98123465V",
-  },
+
 ];
 
 /**
@@ -172,6 +128,41 @@ export const getUserAttendance = async (
   }
 };
 
+export const getAllSessions2 = async (
+  page: number = 1,
+  size: number = 10,
+  searchTerm?: string
+): Promise<{
+  status: "SUCCESS" | "FAIL";
+  data?: any;
+  message?: string;
+}> => {
+  try {
+    const response = await axios.get(
+      `sessions/get-all`,
+      {
+        params: {
+          page,
+          size,
+          ...(searchTerm && { searchTerm }) // Only include searchTerm if it exists
+        }
+      }
+    );
+
+    return {
+      status: "SUCCESS",
+      data: response.data,
+      message: "Sessions fetched successfully"
+    };
+  } catch (error) {
+    console.error("Failed to fetch sessions:", error);
+    return {
+      status: "FAIL",
+      message: "Failed to fetch sessions"
+    };
+  }
+};
+
 
 export const getAllSessions = async (
   params?: FetchSessionsParams
@@ -200,17 +191,17 @@ export const getAllSessions = async (
     });
 
     // Debug: Log the final query params
-    console.log('Final query params:', queryParams);
+    // console.log('Final query params:', queryParams);
 
     const response = 
-    await axios.get('/admin/session-management',
+    await axios.get('/sessions/get-all',
       {
         params: queryParams,
       }
     );
 
     // Debug: Log the full response
-    console.log('Session fetch response:', response);
+    // console.log('Session fetch response:', response);
 
     if (!response.data) {
       throw new Error('No data received from server');
@@ -295,20 +286,26 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
   }
 }
 
-export async function markMultipleAttendances(
-  customerIds: string[]
-): Promise<{
+export async function markIndividualAttendance(data: {
+  customerId: string;
+  customerName: string;
+  trainerId: string;
+  trainerName: string;
+}): Promise<{
   status: "SUCCESS" | "FAIL";
   message?: string;
 }> {
   try {
-    await axios.post("/attendance/mark-multiple", {
-      customerIds,
-    });
+    await axios.post("/sessions/create",       {
+        customerId: data.customerId,
+        customerName: data.customerName,
+        trainerId: data.trainerId,
+        trainerName: data.trainerName
+      });
     
     return {
       status: "SUCCESS",
-      message: `${customerIds.length} attendance(s) marked successfully`,
+      message: "Attendance marked successfully",
     };
   } catch (error) {
     console.error("Failed to mark attendance:", error);
@@ -386,11 +383,11 @@ export const deleteSessions = async (
 // }
 // actions/session/getIndividualSessions.ts
 
-interface GetSessionsParams {
-  clientId?: string;
-  month: number;
-  year: number;
-}
+// interface GetSessionsParams {
+//   clientId?: string;
+//   month: number;
+//   year: number;
+// }
 
 // export async function getIndividualSessions(params: GetSessionsParams) {
 //   try {

@@ -146,7 +146,8 @@ const CollectPaymentIndividual = () => {
 
         <div className="px-4 overflow-y-auto">
           {customer ? (
-            <div className="mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
+            <div className={`mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden 
+              ${customer.isActive ? "" : "bg-[#fac1be]" }`}>
               <div className="flex border-b-[1px] border-b-[#000000]">
                 <div className="flex-[35%] px-[10px] py-[7.8px]">
                   <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
@@ -203,7 +204,7 @@ const CollectPaymentIndividual = () => {
           ) : (
             <div className="border-[#EEEEEE] border-[0.9px] rounded-[15px] overflow-hidden">
               <div className="flex bg-[#F5F5F5] px-[13.5px] py-[15.5px]">
-                <p className="w-[40%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[30%] text-[11px]/[14px] font-medium text-[#212121]">
                   Payment Date
                 </p>
                 <p className="w-[20%] text-[11px]/[14px] font-medium text-[#212121]">
@@ -212,7 +213,7 @@ const CollectPaymentIndividual = () => {
                 <p className="w-[20%] text-[11px]/[14px] font-medium text-[#212121]">
                   Payment ID
                 </p>
-                <p className="w-[20%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[30%] text-[11px]/[14px] font-medium text-[#212121]">
                   Amount
                 </p>
               </div>
@@ -225,7 +226,7 @@ const CollectPaymentIndividual = () => {
                     }`}
                   >
 
-                    <p className="w-[40%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    <p className="w-[30%] text-[12px]/[13.5px] font-normal text-[#212121]">
                       {item.createdAt.slice(0, 10)}
                     </p>
                     <p className="w-[20%] text-[12px]/[13.5px] font-normal text-[#212121]">
@@ -234,7 +235,7 @@ const CollectPaymentIndividual = () => {
                     <p className="w-[20%] text-[12px]/[13.5px] font-normal text-[#212121]">
                       {item.paymentId}
                     </p>
-                    <p className="w-[20%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                    <p className="w-[30%] text-[12px]/[13.5px] font-normal text-[#212121]">
                       LKR {item.amount}
                     </p>
                   </div>

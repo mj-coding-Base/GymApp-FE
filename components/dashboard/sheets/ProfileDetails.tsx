@@ -5,11 +5,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { useSession } from "@/context/session-context";
 import { useProfileDetailsSheet } from "@/hooks/useProfileSheet";
 import React from "react";
 
 const ProfileDetails = () => {
-  // const session = useSession();
+  
+  const { session } = useSession();
+  const user = session?.user;
+  console.log("user details",user)
   const { openProfileDetailsSheet, setOpenProfileDetailsSheet } =
     useProfileDetailsSheet();
 
@@ -40,7 +44,7 @@ const ProfileDetails = () => {
               Full Name
             </p>
             <p className="mt-[8px] text-[14px]/[100%] font-normal text-[#616161]">
-              {/* {session?.user.name} */}
+              {user?.name}
             </p>
           </div>
           <div className="border-b-[#E7E7E7] border-b-[0.8px]"></div>
@@ -49,16 +53,16 @@ const ProfileDetails = () => {
               Mobile
             </p>
             <p className="mt-[8px] text-[14px]/[100%] font-normal text-[#616161]">
-              {/* {session?.user.email} */}
+              {user?.mobile}
             </p>
           </div>
           <div className="border-b-[#E7E7E7] border-b-[0.8px]"></div>
           <div>
             <p className="text-[12px]/[100%] font-semibold text-[#2A2A2A]">
-              {}
+              Position
             </p>
             <p className="mt-[8px] text-[14px]/[100%] font-normal text-[#616161]">
-              123456789
+              {user?.isAdmin ? "Manager":"Trainer"}
             </p>
           </div>
           <div className="border-b-[#E7E7E7] border-b-[0.8px]"></div>
@@ -67,7 +71,7 @@ const ProfileDetails = () => {
               Email
             </p>
             <p className="mt-[8px] text-[14px]/[100%] font-normal text-[#616161]">
-              akilabandara@gmail.com
+              {user?.email}
             </p>
           </div>
         </div>

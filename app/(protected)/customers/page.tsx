@@ -32,7 +32,7 @@ export default async function Page({ searchParams }: Props) {
   };
 
   if (type === "group") {
-    console.log("fetching group customers++++++++++++")
+    // console.log("fetching group customers++++++++++++")
     groupCustomers = await fetchGroups(
       searchparams.page ?? "1",
       "10",
@@ -41,7 +41,7 @@ export default async function Page({ searchParams }: Props) {
       true
     );
   } else {
-    console.log("fetching individual customers++++++++++++")
+    // console.log("fetching individual customers++++++++++++")
     individualCustomers = await fetchIndividualCustomers(
       searchparams.page ?? "1",
       "10",

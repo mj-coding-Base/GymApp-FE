@@ -11,15 +11,15 @@ export default async function DashboardWrapper() {
       return <div>No data available</div>;
     }
     const userData = await getSession();
-    console.log( "Print user name",userData?.user.name);
-    console.log( "Print user email",userData?.user.email);
-    console.log( "Print user id",userData?.user.id);
+    // console.log( "Print user name",userData?.user.name);
+    // console.log( "Print user email",userData?.user.email);
+    // console.log( "Print user id",userData?.user.id);
 
-    console.log("API response received:", {
-      hasTrainerData: !!data.trainer,
-      hasClientData: !!data.client,
-      hasPaymentHistory: !!data.paymentHistory,
-    });
+    // console.log("API response received:", {
+    //   hasTrainerData: !!data.trainer,
+    //   hasClientData: !!data.client,
+    //   hasPaymentHistory: !!data.paymentHistory,
+    // });
 
     return (
       <Dashboard 

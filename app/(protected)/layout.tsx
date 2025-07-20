@@ -1,6 +1,5 @@
 import Navbar from "@/components/common/navbar/Navbar";
 import MobileSidebar from "@/components/common/sidebar/MobileSidebar";
-import { SessionProvider } from "@/components/providers/SessionProvider";
 import { sampleNotifications } from "@/data/notifications";
 import { getSession } from "@/lib/authentication";
 
@@ -12,7 +11,7 @@ export default async function RootLayout({
   const session = await getSession();
   // const notifications = await getNotifications();
   const notifications = sampleNotifications;
-
+  console.log(notifications)
   if (!session) {
     return (
       <div className="m-auto flex items-center justify-center w-screen h-screen bg-[#FAFAFA]">
@@ -30,7 +29,6 @@ export default async function RootLayout({
   // );
 
   return (
-    <SessionProvider session={session} notifications={notifications}>
       <div className="flex w-full h-screen overflow-y-auto overflow-x-hidden z-0">
         <div className="flex flex-col w-full bg-[#F2F3F6] overflow-y-auto">
           <Navbar />
@@ -40,6 +38,5 @@ export default async function RootLayout({
           </div>
         </div>
       </div>
-    </SessionProvider>
   );
 }

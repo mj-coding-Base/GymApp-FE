@@ -1,10 +1,9 @@
 "use client";
 
-import { markMultipleAttendances, searchCustomers } from "@/actions/session";
+import { fetchIndividualCustomers } from "@/actions/customers";
+import { markIndividualAttendance } from "@/actions/session";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
+import {    
   Sheet,
   SheetClose,
   SheetContent,
@@ -13,9 +12,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMarkAttendanceIndividualSheet } from "@/hooks/useMarkAttendanceIndividualSheet";
-import { Customer, FetchedCustomer } from "@/types/Customer";
-import { useState } from "react";
+import { IndividualCustomer } from "@/types/Customer";
 import { toast } from "sonner";
+import { useSearchParams } from "next/navigation";
+import CommonSearch from "@/components/common/Search";
+import { useEffect, useState } from "react";
+import { Suspense } from 'react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useSession } from "@/context/session-context";
 
 const MarkAttendanceIndividual = () => {
   const {
@@ -23,80 +27,89 @@ const MarkAttendanceIndividual = () => {
     setOpenMarkAttendanceIndividualSheet,
   } = useMarkAttendanceIndividualSheet();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [customers, setCustomers] = useState<IndividualCustomer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      setCustomers([]);
-      return;
+  // Track current search term to avoid stale closure issues
+  const [currentSearch, setCurrentSearch] = useState<string | null>(null);
+
+  // Hooks for search params
+  const searchParams = useSearchParams();
+  const paramsSearchQuery = searchParams?.get("search") || "";
+
+  const { session } = useSession();
+
+  // Effect: Load customer based on search query
+  useEffect(() => {
+    if (paramsSearchQuery === currentSearch) {
+      return; // Skip if same
     }
 
-    setIsSearching(true);
-    try {
-      const results = await searchCustomers(searchQuery);
-      // Map or cast the results to match your local Customer type
-      setCustomers(
-                    results.map((c: Partial<FetchedCustomer>) => ({
-                      _id: c._id ?? "",
-                      name: `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim(),
-                      nic: c.nic ?? "",
-                      email: c.email ?? "",
-                      mobileNumber: c.mobileNumber ?? "",
-                      packageId: c.packageId ?? "",
-                      package_name: c.packageId ?? "",
-                      status: c.status ?? "",
-                      isActive: c.isActive ?? false,
-                      createdAt: c.createdAt ?? "",
-                      updatedAt: c.updatedAt ?? "",
-                      isPaid: c.isPaid ?? false,
-                      groupMembersNames: [],
-                      type: "individual",
-                    }))
-                  );
-    } catch (error) {
-      console.error("Error searching customers:", error);
-      toast.error("Failed to search customers");
-    } finally {
-      setIsSearching(false);
-    }
-  };
+    setCurrentSearch(paramsSearchQuery); // Track new search
+    setCustomers([]); // Clear previous results
+    setSelectedCustomer(null);
 
-  const handleCheckboxChange = (customerId: string) => {
-    setSelectedCustomers(prev =>
-      prev.includes(customerId)
-        ? prev.filter(id => id !== customerId)
-        : [...prev, customerId]
-    );
+    const loadCustomer = async () => {
+      if (!paramsSearchQuery.trim()) {
+        setCustomers([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const result = await fetchIndividualCustomers("1", "1", paramsSearchQuery);
+        setCustomers(result.results || []);
+      } catch (error) {
+        console.error("Failed to fetch customer:", error);
+        setCustomers([]);
+        toast.error("Failed to fetch customers");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCustomer();
+  }, [paramsSearchQuery, currentSearch]);
+
+  const handleCustomerSelect = (customerId: string) => {
+    setSelectedCustomer(customerId === selectedCustomer ? null : customerId);
   };
 
   const handleMarkAttendance = async () => {
-    if (selectedCustomers.length === 0) {
-      toast.error("Please select at least one customer");
+    if (!selectedCustomer) {
+      toast.error("Please select a customer");
       return;
     }
 
-    const result = await markMultipleAttendances(selectedCustomers);
-    
-    if (result.status === "SUCCESS") {
-      toast.success(result.message);
-      setOpenMarkAttendanceIndividualSheet(false);
-      // Reset form
-      setSearchQuery("");
-      setSelectedCustomers([]);
-      setCustomers([]);
-    } else {
-      toast.error(result.message);
+    const customer = customers.find(c => c._id === selectedCustomer);
+    if (!customer) {
+      toast.error("Customer not found");
+      return;
+    }
+
+    try {
+      const result = await markIndividualAttendance({
+        customerId: customer._id,
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        trainerId: session?.user?.id || "",
+        trainerName: session?.user?.name || ""
+      });
+      
+      if (result.status === "SUCCESS") {
+        toast.success(result.message);
+        setOpenMarkAttendanceIndividualSheet(false);
+        // Reset form
+        setSelectedCustomer(null);
+        setCustomers([]);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      toast.error("Failed to mark attendance");
+      console.error("Attendance marking error:", error);
     }
   };
-
-  // Extracted label for the Mark Attendance button
-  const markAttendanceLabel =
-    selectedCustomers.length > 0
-      ? `Mark (${selectedCustomers.length}) Attendance`
-      : "Mark Attendance";
 
   return (
     <Sheet
@@ -112,50 +125,49 @@ const MarkAttendanceIndividual = () => {
             Mark Attendance for Individual
           </SheetTitle>
           <SheetDescription className="relative w-full max-w-sm">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <i className="search-icon w-[16.54px] h-[18.9px] text-[#000000] absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  type="search"
-                  placeholder="Search by Full name/ NIC"
-                  className="pl-10 text-[11px] font-normal text-[#4F4F4F]"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <Button
-                onClick={handleSearch}
-                className="bg-[#378644] rounded-[10px] text-[11px] font-semibold text-[#FFFFFF] h-[40px] px-4"
-                disabled={isSearching}
-              >
-                {isSearching ? "Searching..." : "Search"}
-              </Button>
-            </div>
+            <Suspense fallback={<div>Loading...</div>}>
+              <CommonSearch />
+            </Suspense>
           </SheetDescription>
           {customers.length > 0 ? (
             <div className="flex flex-col gap-[5px]">
+            <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
+              <span className="flex-1">Name</span>
+              <span className="flex-1">Client ID</span>
+              <span className="flex-1">Session Count</span>
+              <span className="w-5"></span> {/* Empty space for radio button alignment */}
+            </div>
               {customers.map((customer) => (
-                  <RadioGroup key={customer._id}>
-                <div
-                  
-                  className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-normal text-[#4F4F4F]"
-                >
-                  <span className="flex-1">{customer.name}</span>
-                  <span className="flex-1">{customer.nic}</span>
-                  <RadioGroupItem
-                    value={customer._id}
-                    checked={selectedCustomers.includes(customer._id)}
-                    onClick={() => handleCheckboxChange(customer._id)}
-                    className="bg-white"
-                  />
-                </div>
-                  </RadioGroup>
+                <RadioGroup key={customer._id}>
+                  <div className={`
+                    flex items-center rounded-[10px] p-[11px] text-[11px] font-normal
+                    ${customer.availableSessionQuota === 0 || customer.isActive === false
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'bg-[#F7F7F7] text-[#4F4F4F]'}
+                  `}>
+                    <span className="flex-1">{customer.firstName} {customer.lastName}</span>
+                    <span className="flex-1">{customer.clientld}</span>
+                    <span className="flex-1">
+                      {customer.availableSessionQuota === 0 ? (
+                        <span className="text-red-500">No sessions left</span>
+                      ) : (
+                        customer.availableSessionQuota
+                      )}
+                    </span>
+                    <RadioGroupItem
+                      value={customer._id}
+                      checked={selectedCustomer === customer._id}
+                      onClick={() => (customer.availableSessionQuota > 0 && customer.isActive !== false) && handleCustomerSelect(customer._id)}
+                      className={(customer.availableSessionQuota === 0 || customer.isActive === false) ? 'opacity-50 cursor-not-allowed' : 'bg-white'}
+                      disabled={customer.availableSessionQuota === 0 || customer.isActive === false}
+                    />
+                  </div>
+                </RadioGroup>
               ))}
             </div>
           ) : (
             <div className="text-center py-4 text-[11px] text-[#4F4F4F]">
-              {searchQuery ? "No customers found. Try another search." : "Enter a name or NIC to search"}
+              {paramsSearchQuery ? "No customers found. Try another search." : "Enter a name or NIC to search"}
             </div>
           )}
         </SheetHeader>
@@ -165,8 +177,7 @@ const MarkAttendanceIndividual = () => {
               variant={"outline"}
               className="border-[#69716C] rounded-[10px] text-[13px] font-semibold text-[#69716C] h-[40px]"
               onClick={() => {
-                setSearchQuery("");
-                setSelectedCustomers([]);
+                setSelectedCustomer(null);
                 setCustomers([]);
               }}
             >
@@ -176,15 +187,14 @@ const MarkAttendanceIndividual = () => {
           <Button
             onClick={handleMarkAttendance}
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
-            disabled={selectedCustomers.length === 0}
+            disabled={!selectedCustomer || loading}
           >
-            {markAttendanceLabel}
+            Mark Attendance
           </Button>
         </div>
       </SheetContent>
     </Sheet>
   );
 };
-
 
 export default MarkAttendanceIndividual;

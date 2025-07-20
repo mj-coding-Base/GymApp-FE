@@ -9,6 +9,7 @@ import type { NextRequest } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 
 import { signIn } from "@/actions/auth";
+import { Session } from "@/types/auth";
 
 const secretKey = process.env.JWT_SECRET || "secret123";
 const key = new TextEncoder().encode(secretKey);
@@ -43,7 +44,8 @@ export async function login(data: {
   rememberMe: boolean;
 }) {
   const res = await signIn(data);
-
+  // const UserDetails = res.data;
+  // console.log(UserDetails)
   // Check if the response is undefined
 
   if (!res) {
@@ -91,19 +93,6 @@ export async function logout() {
   
 }
 
-// Session type
-export type Session = {
-  user: {
-    id: string;
-    name: string;
-    isAdmin: boolean;
-    email: string;
-    token: string;
-    refreshToken: string | null;
-  };
-  expires: Date;
-  createdAt: Date;
-};
 
 // Get the session
 export async function getSession(): Promise<Session | null> {

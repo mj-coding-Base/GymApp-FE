@@ -20,7 +20,7 @@ type DashboardData = {
 export const fetchDashboardData = async (): Promise<DashboardData> => {
   try {
     const res = await axios.get("/admin/admin-management/dashboard");
-    console.log(res.data);
+    // console.log(res.data);
     return res.data.data;
   } catch (error) {
     console.error("API request failed. Returning dummy data.", error);
