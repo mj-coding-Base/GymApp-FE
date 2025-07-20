@@ -21,51 +21,7 @@ const dummyCustomers = [
     name: "Job Belflore",
     nic: "98123456V",
   },
-  {
-    id: "2",
-    name: "Jane Smith",
-    nic: "98123457V",
-  },
-  {
-    id: "3",
-    name: "Alan Cooper",
-    nic: "98123458V",
-  },
-  {
-    id: "4",
-    name: "Maria Gomez",
-    nic: "98123459V",
-  },
-  {
-    id: "5",
-    name: "Liam Johnson",
-    nic: "98123460V",
-  },
-  {
-    id: "6",
-    name: "Chloe Brown",
-    nic: "98123461V",
-  },
-  {
-    id: "7",
-    name: "Noah Wilson",
-    nic: "98123462V",
-  },
-  {
-    id: "8",
-    name: "Emma Davis",
-    nic: "98123463V",
-  },
-  {
-    id: "9",
-    name: "Mason Lee",
-    nic: "98123464V",
-  },
-  {
-    id: "10",
-    name: "Olivia Martin",
-    nic: "98123465V",
-  },
+
 ];
 
 /**
@@ -169,6 +125,41 @@ export const getUserAttendance = async (
     return res.data.data.customers; // access the array directly
   } catch (error) {
     handleApiError(error, "fetching user attendance");
+  }
+};
+
+export const getAllSessions2 = async (
+  page: number = 1,
+  size: number = 10,
+  searchTerm?: string
+): Promise<{
+  status: "SUCCESS" | "FAIL";
+  data?: any;
+  message?: string;
+}> => {
+  try {
+    const response = await axios.get(
+      `sessions/get-all`,
+      {
+        params: {
+          page,
+          size,
+          ...(searchTerm && { searchTerm }) // Only include searchTerm if it exists
+        }
+      }
+    );
+
+    return {
+      status: "SUCCESS",
+      data: response.data,
+      message: "Sessions fetched successfully"
+    };
+  } catch (error) {
+    console.error("Failed to fetch sessions:", error);
+    return {
+      status: "FAIL",
+      message: "Failed to fetch sessions"
+    };
   }
 };
 
@@ -392,11 +383,11 @@ export const deleteSessions = async (
 // }
 // actions/session/getIndividualSessions.ts
 
-interface GetSessionsParams {
-  clientId?: string;
-  month: number;
-  year: number;
-}
+// interface GetSessionsParams {
+//   clientId?: string;
+//   month: number;
+//   year: number;
+// }
 
 // export async function getIndividualSessions(params: GetSessionsParams) {
 //   try {

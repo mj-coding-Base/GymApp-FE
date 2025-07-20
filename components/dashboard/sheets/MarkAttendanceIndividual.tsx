@@ -131,6 +131,12 @@ const MarkAttendanceIndividual = () => {
           </SheetDescription>
           {customers.length > 0 ? (
             <div className="flex flex-col gap-[5px]">
+            <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
+              <span className="flex-1">Name</span>
+              <span className="flex-1">Client ID</span>
+              <span className="flex-1">Session Count</span>
+              <span className="w-5"></span> {/* Empty space for radio button alignment */}
+            </div>
               {customers.map((customer) => (
                 <RadioGroup key={customer._id}>
                   <div className={`
@@ -140,7 +146,7 @@ const MarkAttendanceIndividual = () => {
                       : 'bg-[#F7F7F7] text-[#4F4F4F]'}
                   `}>
                     <span className="flex-1">{customer.firstName} {customer.lastName}</span>
-                    <span className="flex-1">{customer.nic}</span>
+                    <span className="flex-1">{customer.clientld}</span>
                     <span className="flex-1">
                       {customer.availableSessionQuota === 0 ? (
                         <span className="text-red-500">No sessions left</span>

@@ -1,16 +1,16 @@
 "use client";
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { CalendarForm } from "@/components/common/CalendarForm";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogTitle,
+//   DialogTrigger,
+// } from "@/components/ui/dialog";
+// import { CalendarForm } from "@/components/common/CalendarForm";
 import TrainerInfo from "@/components/trainer/TrainerInfo";
 // import { TrainerRegistration } from "@/components/trainer/TrainerRegistration";
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default function ClientPaymentsPage() {
       <div>
         <Card className="py-3 mt-2">
           <CardContent className="flex-col pl-0 pr-0">
-            <div className="flex py-0 gap-2 mb-2 px-3">
+            {/* <div className="flex py-0 gap-2 mb-2 px-3">
               <div className="relative flex-1">
                 <i className="search-icon absolute left-3 top-3 h-[12.8px] w-[12.8px] text-[#9E9E9E]" />
                 <Input
@@ -46,7 +46,7 @@ export default function ClientPaymentsPage() {
                   <CalendarForm />
                 </DialogContent>
               </Dialog>
-            </div>
+            </div> */}
             {/* <TrainerRegistration /> */}
             <div className="flex w-full justify-between p-2 mb-1 bg-[#F6F6F6]">
               <div className=" flex items-center justify-center  text-[10.8px] text-[#757575]  ">

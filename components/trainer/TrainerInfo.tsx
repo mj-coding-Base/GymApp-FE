@@ -6,9 +6,9 @@ import { Status, Trainer } from "@/types/TrainerDetails";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+// import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 // import { PaymentHistory } from "./PaymentHistory";
-// import { SessionHistory } from "./SessionHistory";
+import { SessionHistory } from "./SessionHistory";
 import { TrainerRegistrationCard } from "./UpdateTrainer";
 import { UserCancel } from "./UserCancel";
 
@@ -22,13 +22,10 @@ const TrainerList: React.FC = () => {
       try {
         const data = await getTrainers();
         // Map or transform the data to match the expected Trainer type
-        const mappedData = data.map((trainer: Trainer) => ({
-          ...trainer,
-          isFullTime: trainer.isFullTime ?? false,
-          isAdmin: trainer.isAdmin ?? false,
-          isActive: trainer.isActive ?? false,
-        }));
-        setTrainers(mappedData);
+        // const mappedData = data.map((trainer: Trainer) => ({
+        //   trainer,
+        // }));
+        setTrainers(data);
       } catch (error) {
         if (error instanceof Error) {
           toast.error(`Failed to load trainers: ${error.message}`);
@@ -59,7 +56,7 @@ const TrainerList: React.FC = () => {
       </div>
     );
   }
-
+  console.log(getTrainers)
   return (
     <div className="flex flex-col w-full max-w-md mx-auto">
       {trainers.map((trainer) => (
@@ -95,28 +92,28 @@ const TrainerList: React.FC = () => {
                   Status
                 </div>
                 <Badge
-                  variant={trainer.status ? "success" : "destructive"}
+                  variant={trainer.isActive ? "success" : "destructive"}
                   className={`p-2 text-[11px] ${
-                    trainer.status === Status.ACTIVE
-                      ? "bg-[#F04237] text-[#BC4412] rounded-[15px] w-[54px] h-[18px]"
+                    trainer.isActive 
+                      ? "bg-[#B2FFB9] text-[#0A7117] rounded-[15px] w-[54px] h-[18px]"
                       : "bg-[#D32F2F] text-[#FFFFFF] rounded-[15px] w-[63px] h-[19px]"
                   }`}
                 >
-                  {trainer.status} 
+                  {trainer.isActive ? "Active":"not active"} 
                 </Badge>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 mt-1">
-              <Avatar className="h-[36px] w-[36px] rounded-[12px]">
+          <div className="space-y-3 ">
+            <div className="flex items-center gap-3 mt-1 ">
+              {/* <Avatar className="h-[36px] w-[36px] rounded-[12px]">
                 <AvatarImage
                   src={trainer.profileImage || "/images/trainer.png"}
                   alt={trainer.firstName}
                 />
                 <AvatarFallback>{trainer.firstName.charAt(0)}</AvatarFallback>
-              </Avatar>
+              </Avatar> */}
               <div>
                 <div className="text-[11px] text-[#363636] font-medium">
                   Trainer Name
@@ -125,35 +122,41 @@ const TrainerList: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <div className="text-[11px] text-[#363636] font-medium">NIC</div>
-              <div className="text-[12px]">{trainer.nic}</div>
-            </div>
-
-            <div>
-              <div className="text-[11px] text-[#363636] font-medium">
-                Email
+              <div>
+                <div className="text-[11px] text-[#363636] font-medium">NIC</div>
+                <div className="text-[12px]">{trainer.nic}</div>
               </div>
-              <div className="text-[12px]">{trainer.email}</div>
-            </div>
-
-            <div>
-              <div className="text-[11px] text-[#363636] font-medium">
-                Mobile
+            
+            <div className="flex flex-wrap items-start gap-x-6 gap-y-2 mt-1">
+              <div>
+                <div className="text-[11px] text-[#363636] font-medium mb-1">
+                  Email
+                </div>
+                <div className="text-[12px]">
+                  {trainer.email}
+                </div>
               </div>
-              <div className="text-[12px]">{trainer.mobile}</div>
+
+
             </div>
+              <div>
+                <div className="text-[11px] text-[#363636] font-medium mb-1">
+                  Mobile
+                </div>
+                <div className="text-[12px]">
+                  {trainer.mobile}
+                </div>
+              </div>
           </div>
 
           <TrainerRegistrationCard />
           {/* <PaymentHistory 
-            trainerType={trainer.type} 
-            trainerId={trainer.id} 
-          />
-          <SessionHistory 
-            trainerType={trainer.type} 
-            trainerId={trainer.id} 
+            trainerId={trainer._id} 
           /> */}
+          <SessionHistory 
+            trainerId={trainer._id}
+            trainerName={trainer.firstName} 
+          />
           <UserCancel 
             trainerId={trainer._id} 
             onDeactivate={() => handleTrainerDeactivated(trainer._id)}
