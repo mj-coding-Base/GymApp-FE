@@ -1,8 +1,8 @@
 // components/auth/UserProvider.tsx
 "use client";
 
+import { useUserStore } from "@/hooks/useUserDetails";
 import React, { useEffect } from "react";
-import { useUserStore } from "@/hooks/useUserStore";
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const { setUser } = useUserStore();

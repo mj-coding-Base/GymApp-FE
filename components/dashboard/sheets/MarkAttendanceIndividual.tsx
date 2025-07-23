@@ -19,7 +19,7 @@ import CommonSearch from "@/components/common/Search";
 import { useEffect, useState } from "react";
 import { Suspense } from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useSession } from "@/context/session-context";
+import useUserDetails from "@/hooks/useUserDetails";
 
 const MarkAttendanceIndividual = () => {
   const {
@@ -30,24 +30,21 @@ const MarkAttendanceIndividual = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [customers, setCustomers] = useState<IndividualCustomer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-
-  // Track current search term to avoid stale closure issues
   const [currentSearch, setCurrentSearch] = useState<string | null>(null);
 
-  // Hooks for search params
   const searchParams = useSearchParams();
   const paramsSearchQuery = searchParams?.get("search") || "";
 
-  const { session } = useSession();
+  // Use useUserDetails hook instead of useSession
+  const { user: trainer, loading: trainerLoading } = useUserDetails();
 
-  // Effect: Load customer based on search query
   useEffect(() => {
     if (paramsSearchQuery === currentSearch) {
-      return; // Skip if same
+      return;
     }
 
-    setCurrentSearch(paramsSearchQuery); // Track new search
-    setCustomers([]); // Clear previous results
+    setCurrentSearch(paramsSearchQuery);
+    setCustomers([]);
     setSelectedCustomer(null);
 
     const loadCustomer = async () => {
@@ -88,18 +85,23 @@ const MarkAttendanceIndividual = () => {
       return;
     }
 
+    // Check if trainer data is available
+    if (!trainer || trainerLoading) {
+      toast.error("Trainer information not available refresh the page");
+      return;
+    }
+
     try {
       const result = await markIndividualAttendance({
         customerId: customer._id,
         customerName: `${customer.firstName} ${customer.lastName}`,
-        trainerId: session?.user?.id || "",
-        trainerName: session?.user?.name || ""
+        trainerId: trainer.id,
+        trainerName: trainer.name
       });
       
       if (result.status === "SUCCESS") {
         toast.success(result.message);
         setOpenMarkAttendanceIndividualSheet(false);
-        // Reset form
         setSelectedCustomer(null);
         setCustomers([]);
       } else {
@@ -110,6 +112,7 @@ const MarkAttendanceIndividual = () => {
       console.error("Attendance marking error:", error);
     }
   };
+
 
   return (
     <Sheet

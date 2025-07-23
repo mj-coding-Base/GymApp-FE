@@ -81,29 +81,75 @@ export async function login(data: {
   const createdAt = new Date(Date.now());
   const session = await encrypt({ user, expires, createdAt });
 
-  // Save the session in a cookie
-  (await cookies()).set("session-gymapp-admin", session, { expires });
+  console.log('Setting user-details cookie with:', user); // Add this line
 
+    const cookieStore = await cookies();
+  
+  // Set session cookie (secure, HTTP-only)
+  cookieStore.set("session-gymapp-admin", session, {
+    expires,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+  // Set client-readable cookie
+  cookieStore.set("user-details", JSON.stringify(user), {
+    expires,
+    sameSite: "lax",
+    path: "/",
+  });
+
+
+  // Save the session in a cookie
+
+  // Update client state immediately
+  if (typeof window !== 'undefined') {
+    const { updateUserState } = await import('@/hooks/useUserDetails');
+    updateUserState(user);
+  }
+  
   return res;
 }
 
 export async function logout() {
   // Destroy the session
-  (await cookies()).set("session-gymapp-admin", "", { expires: new Date(0) });
+  // (await cookies()).set("session-gymapp-admin", "", { expires: new Date(0) });
+
+  const cookieStore = await cookies();
+    // Clear both cookies
+  cookieStore.set("session-gymapp-admin", "", { 
+    expires: new Date(0),
+    path: "/",
+  });
+  
+  cookieStore.set("user-details", "", {
+    expires: new Date(0),
+    path: "/",
+  });
   
 }
 
 
 // Get the session
 export async function getSession(): Promise<Session | null> {
-  const sessionCookie = (await cookies()).get("session-gymapp-admin")?.value;
+  const cookieStore = await cookies(); // First await the cookies()
+  const sessionCookie = cookieStore.get("session-gymapp-admin")?.value; // Then access the value
 
   if (!sessionCookie) return null;
 
-  const decrypted = await decrypt(sessionCookie);
-
-  
-  return decrypted;
+  try {
+    const decrypted = await decrypt(sessionCookie);
+    
+    // Validate session expiration
+    if (decrypted && new Date(decrypted.expires) > new Date()) {
+      return decrypted;
+    }
+    return null;
+  } catch (error) {
+    console.error("Session decryption failed:", error);
+    return null;
+  }
 }
 
 // Update the session

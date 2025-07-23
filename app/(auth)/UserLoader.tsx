@@ -1,8 +1,8 @@
 // /app/(auth)/UserLoader.tsx
 "use server";
-import { cookies } from 'next/headers';
+import { useUserStore } from '@/hooks/useUserDetails';
 import { decrypt } from '@/lib/authentication';
-import { useUserStore } from '@/hooks/useUserStore';
+import { cookies } from 'next/headers';
 
 export async function UserLoader({ children }: { children: React.ReactNode }) {
   const sessionCookie =  (await cookies()).get("session-gymapp-admin")?.value;
