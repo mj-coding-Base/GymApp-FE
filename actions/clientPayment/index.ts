@@ -53,7 +53,7 @@ export const collectGroupPayment = async (data: GroupPaymentData) => {
 };
 
 
-export const collectExtraPayment = async (data: { amount: number; reference?: string; paidFor: string }) => {
+export const collectExtraPayment = async (data: { paidFor: string ; amount: number; sessionQuota?: number; }) => {
   const response = await axios.post("/clientsPayment/createExtra", data);
   return response.data;
 };

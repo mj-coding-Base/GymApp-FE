@@ -19,7 +19,7 @@ import CommonSearch from "@/components/common/Search";
 import { useEffect, useState } from "react";
 import { Suspense } from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useSession } from "@/context/session-context";
+import useUserDetails from "@/hooks/useUserDetails";
 
 const MarkAttendanceIndividual = () => {
   const {
@@ -30,24 +30,30 @@ const MarkAttendanceIndividual = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [customers, setCustomers] = useState<IndividualCustomer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
-
-  // Track current search term to avoid stale closure issues
   const [currentSearch, setCurrentSearch] = useState<string | null>(null);
-
-  // Hooks for search params
+  
+  // Get user details with loading state
+  const { user: trainer, loading: trainerLoading, refresh: refreshTrainer } = useUserDetails();
   const searchParams = useSearchParams();
   const paramsSearchQuery = searchParams?.get("search") || "";
 
-  const { session } = useSession();
+  useEffect(() => {
+    // Refresh trainer data if not available
+    if (!trainerLoading && !trainer) {
+      const timer = setTimeout(() => {
+        refreshTrainer();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [trainer, trainerLoading, refreshTrainer]);
 
-  // Effect: Load customer based on search query
   useEffect(() => {
     if (paramsSearchQuery === currentSearch) {
-      return; // Skip if same
+      return;
     }
 
-    setCurrentSearch(paramsSearchQuery); // Track new search
-    setCustomers([]); // Clear previous results
+    setCurrentSearch(paramsSearchQuery);
+    setCustomers([]);
     setSelectedCustomer(null);
 
     const loadCustomer = async () => {
@@ -88,18 +94,23 @@ const MarkAttendanceIndividual = () => {
       return;
     }
 
+    // Validate trainer data
+    if (!trainer || !trainer.id || !trainer.name) {
+      toast.error("Trainer information not available. Please refresh the page.");
+      return;
+    }
+
     try {
       const result = await markIndividualAttendance({
         customerId: customer._id,
         customerName: `${customer.firstName} ${customer.lastName}`,
-        trainerId: session?.user?.id || "",
-        trainerName: session?.user?.name || ""
+        trainerId: trainer.id,
+        trainerName: trainer.name
       });
       
       if (result.status === "SUCCESS") {
         toast.success(result.message);
         setOpenMarkAttendanceIndividualSheet(false);
-        // Reset form
         setSelectedCustomer(null);
         setCustomers([]);
       } else {
@@ -124,19 +135,32 @@ const MarkAttendanceIndividual = () => {
           <SheetTitle className="text-[14px] font-semibold text-[#363636]">
             Mark Attendance for Individual
           </SheetTitle>
+          
+          {/* Display trainer information */}
+          {trainerLoading ? (
+            <div className="text-sm text-gray-500">Loading trainer information...</div>
+          ) : trainer ? (
+            <div className="text-sm font-medium">
+              Trainer: {trainer.name}
+            </div>
+          ) : (
+            <div className="text-sm text-red-500">Trainer information not available</div>
+          )}
+
           <SheetDescription className="relative w-full max-w-sm">
             <Suspense fallback={<div>Loading...</div>}>
               <CommonSearch />
             </Suspense>
           </SheetDescription>
+
           {customers.length > 0 ? (
             <div className="flex flex-col gap-[5px]">
-            <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
-              <span className="flex-1">Name</span>
-              <span className="flex-1">Client ID</span>
-              <span className="flex-1">Session Count</span>
-              <span className="w-5"></span> {/* Empty space for radio button alignment */}
-            </div>
+              <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
+                <span className="flex-1">Name</span>
+                <span className="flex-1">Client ID</span>
+                <span className="flex-1">Session Count</span>
+                <span className="w-5"></span>
+              </div>
               {customers.map((customer) => (
                 <RadioGroup key={customer._id}>
                   <div className={`
@@ -171,6 +195,7 @@ const MarkAttendanceIndividual = () => {
             </div>
           )}
         </SheetHeader>
+        
         <div className="grid grid-cols-2 gap-[15px] px-4 pb-4">
           <SheetClose asChild className="flex">
             <Button
@@ -187,7 +212,7 @@ const MarkAttendanceIndividual = () => {
           <Button
             onClick={handleMarkAttendance}
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
-            disabled={!selectedCustomer || loading}
+            disabled={!selectedCustomer || loading || !trainer?.id}
           >
             Mark Attendance
           </Button>

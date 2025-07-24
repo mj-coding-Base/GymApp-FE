@@ -30,7 +30,7 @@ export const getClientTypeColor = (type: ClientType): { bg: string; text: string
   }
 }
 
-export interface Session {
+export interface PTSession {
   _id: string;
   createdAt: string;
   updatedAt: string;
@@ -71,7 +71,7 @@ export interface Attendance{
 export interface SessionsResponse {
   status: 'SUCCESS' | 'FAIL';
   message: string | null;
-  data: Session[];
+  data: PTSession[];
   total?: number;
 }
 
