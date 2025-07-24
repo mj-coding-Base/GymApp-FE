@@ -31,12 +31,21 @@ const MarkAttendanceIndividual = () => {
   const [customers, setCustomers] = useState<IndividualCustomer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [currentSearch, setCurrentSearch] = useState<string | null>(null);
-
+  
+  // Get user details with loading state
+  const { user: trainer, loading: trainerLoading, refresh: refreshTrainer } = useUserDetails();
   const searchParams = useSearchParams();
   const paramsSearchQuery = searchParams?.get("search") || "";
 
-  // Use useUserDetails hook instead of useSession
-  const { user: trainer, loading: trainerLoading } = useUserDetails();
+  useEffect(() => {
+    // Refresh trainer data if not available
+    if (!trainerLoading && !trainer) {
+      const timer = setTimeout(() => {
+        refreshTrainer();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [trainer, trainerLoading, refreshTrainer]);
 
   useEffect(() => {
     if (paramsSearchQuery === currentSearch) {
@@ -85,9 +94,9 @@ const MarkAttendanceIndividual = () => {
       return;
     }
 
-    // Check if trainer data is available
-    if (!trainer || trainerLoading) {
-      toast.error("Trainer information not available refresh the page");
+    // Validate trainer data
+    if (!trainer || !trainer.id || !trainer.name) {
+      toast.error("Trainer information not available. Please refresh the page.");
       return;
     }
 
@@ -113,7 +122,6 @@ const MarkAttendanceIndividual = () => {
     }
   };
 
-
   return (
     <Sheet
       open={openMarkAttendanceIndividualSheet}
@@ -127,19 +135,32 @@ const MarkAttendanceIndividual = () => {
           <SheetTitle className="text-[14px] font-semibold text-[#363636]">
             Mark Attendance for Individual
           </SheetTitle>
+          
+          {/* Display trainer information */}
+          {trainerLoading ? (
+            <div className="text-sm text-gray-500">Loading trainer information...</div>
+          ) : trainer ? (
+            <div className="text-sm font-medium">
+              Trainer: {trainer.name}
+            </div>
+          ) : (
+            <div className="text-sm text-red-500">Trainer information not available</div>
+          )}
+
           <SheetDescription className="relative w-full max-w-sm">
             <Suspense fallback={<div>Loading...</div>}>
               <CommonSearch />
             </Suspense>
           </SheetDescription>
+
           {customers.length > 0 ? (
             <div className="flex flex-col gap-[5px]">
-            <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
-              <span className="flex-1">Name</span>
-              <span className="flex-1">Client ID</span>
-              <span className="flex-1">Session Count</span>
-              <span className="w-5"></span> {/* Empty space for radio button alignment */}
-            </div>
+              <div className="flex items-center bg-[#F7F7F7] rounded-[10px] p-[11px] text-[11px] font-semibold text-[#363636]">
+                <span className="flex-1">Name</span>
+                <span className="flex-1">Client ID</span>
+                <span className="flex-1">Session Count</span>
+                <span className="w-5"></span>
+              </div>
               {customers.map((customer) => (
                 <RadioGroup key={customer._id}>
                   <div className={`
@@ -174,6 +195,7 @@ const MarkAttendanceIndividual = () => {
             </div>
           )}
         </SheetHeader>
+        
         <div className="grid grid-cols-2 gap-[15px] px-4 pb-4">
           <SheetClose asChild className="flex">
             <Button
@@ -190,7 +212,7 @@ const MarkAttendanceIndividual = () => {
           <Button
             onClick={handleMarkAttendance}
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
-            disabled={!selectedCustomer || loading}
+            disabled={!selectedCustomer || loading || !trainer?.id}
           >
             Mark Attendance
           </Button>

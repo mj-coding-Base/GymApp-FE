@@ -4,7 +4,7 @@ import {
   CreateExtraSessionDto,
   CreateSessionDto,
   FindCustomerSessionsDto,
-  Session,
+  PTSession,
   FetchSessionsParams, SessionsResponse
 } from '@/types/SessionHistory';
 import axios from "@/utils/axios";
@@ -51,7 +51,7 @@ function handleApiError(error: unknown, context: string): never {
 export const createExtraSession = async (
   token: string,
   data: CreateExtraSessionDto
-): Promise<Session> => {
+): Promise<PTSession> => {
   try {
     const res = await axios.post('/sessions/extra', data, );
 
@@ -67,7 +67,7 @@ export const createExtraSession = async (
 export const createSessionBundle = async (
   token: string,
   data: CreateSessionDto
-): Promise<Session[]> => {
+): Promise<PTSession[]> => {
   try {
     const res = await axios.post('/sessions/bundle', data, );
 
@@ -83,7 +83,7 @@ export const createSessionBundle = async (
 export const findCustomerSessions = async (
   token: string,
   data: FindCustomerSessionsDto
-): Promise<Session[]> => {
+): Promise<PTSession[]> => {
   try {
     const res = await axios.post('/sessions/customer', data, );
 
@@ -97,7 +97,7 @@ export const findCustomerSessions = async (
  * Get all sessions for a trainer
  */
 export const findTrainerSessions = async (
-): Promise<Session[]> => {
+): Promise<PTSession[]> => {
   try {
     const res = await axios.get('/sessions/trainer', {
     });
@@ -148,6 +148,7 @@ export const getAllSessions2 = async (
         }
       }
     );
+    console.log( "getAllSessions 2 " ,response.data)
 
     return {
       status: "SUCCESS",
