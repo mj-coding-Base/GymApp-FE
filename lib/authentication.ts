@@ -70,6 +70,8 @@ export async function login(data: {
     refreshToken: res.data?.refreshToken,
     // -TODO
     isAdmin: res.data?.isAdmin,
+    gymId: res.data?.gymId,
+    mobile: res.data?.mobile,
     // profilePicture: res.data?.profilePicture,
   };
 

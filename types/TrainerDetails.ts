@@ -23,6 +23,7 @@ export interface Trainer {
   isFullTime: boolean
   isAdmin: boolean
   isActive: boolean
+  gymId: string;
 }
 
 export enum PaymentStatus {

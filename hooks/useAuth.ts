@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export const useAuth = () => {
   const [token, setToken] = useState<string | null>(null);
+  const [gymId, setGymId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("x-auth-token");
@@ -23,6 +24,17 @@ export const useAuth = () => {
       setToken(null);
     }
   };
-
-  return { token, saveToken, clearToken };
+  const saveGymId = (gymId: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gym-id", gymId);
+      setGymId(gymId);
+    }
+  };
+    const clearGymId = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gym-id");
+      setGymId(null);
+    }
+  };
+  return { token,gymId, saveToken, clearToken ,saveGymId,clearGymId};
 };

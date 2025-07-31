@@ -7,6 +7,7 @@ export interface UserSession {
   refreshToken: string | null;
   mobile?: string;
   isAdmin:boolean;
+  gymId: string;
 
   // profilePicture?: string;
 }
