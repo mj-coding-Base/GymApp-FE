@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  gymapp-fe:
+    build: .
+    ports:
+      - "3002:3002"
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+
