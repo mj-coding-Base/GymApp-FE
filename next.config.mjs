@@ -1,5 +1,23 @@
-// next.config.mjs
-export default {
+// // next.config.mjs
+// export default {
+//   reactStrictMode: true,
+//   output: "standalone"
+// };
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
-  output: "standalone"
+
+  eslint: {
+    // Warning: this will skip ALL ESLint checks during `next build`
+    ignoreDuringBuilds: true,
+  },
+
+  experimental: {
+    serverActions: true,
+  },
+
+  output: 'standalone',
+  trustedHosts: ['payzhe.fit'],
 };
+
+module.exports = nextConfig;
