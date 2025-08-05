@@ -28,21 +28,21 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
     // Dummy fallback data
     const dummyData: DashboardData = {
       trainer: {
-        partTime: 5,
-        fullTime: 3,
+        partTime: 0,
+        fullTime: 0,
       },
       client: {
-        group: 12,
-        individual: 7,
-        pendingPayments: 4,
+        group: 0,
+        individual: 0,
+        pendingPayments: 0,
       },
       paymentHistory: [
-        { month: "January", amount: 19200 },
-        { month: "February", amount: 21950 },
-        { month: "March", amount: 10350 },
-        { month: "April", amount: 12500 },
-        { month: "May", amount: 19950 },
-        { month: "June", amount: 10500 },
+        { month: "January", amount: 10000 },
+        { month: "February", amount: 10000 },
+        { month: "March", amount: 10000 },
+        { month: "April", amount: 10000 },
+        { month: "May", amount: 10000 },
+        { month: "June", amount: 10000 },
       ],
     };
 
