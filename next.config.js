@@ -7,10 +7,10 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  eslint: {
-    // Warning: this will skip ALL ESLint checks during `next build`
-    ignoreDuringBuilds: true,
-  },
+  // eslint: {
+  //   // Warning: this will skip ALL ESLint checks during `next build`
+  //   ignoreDuringBuilds: true,
+  // },
 
   experimental: {
     serverActions: true,
@@ -18,6 +18,7 @@ const nextConfig = {
 
   output: 'standalone',
   trustedHosts: ['payzhe.fit'],
+  eslint: { ignoreDuringBuilds: true },
 };
 
 module.exports = nextConfig;
