@@ -5,7 +5,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Session } from "@/types/auth";
 
-
+// 
 const AuthWrapper = ({
   children,
   session,
