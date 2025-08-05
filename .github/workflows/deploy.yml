@@ -1,0 +1,36 @@
+name: CI/CD – Deploy GymApp-FE
+
+on:
+  push:
+    branches:
+      - Mololithic-Redy
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /srv/gymapp-fe
+            git fetch origin Mololithic-Redy
+            git reset --hard origin/Mololithic-Redy
+            docker-compose down
+            docker-compose up -d --build
+
+      - name: Notify
+        run: echo "✅ Deployed branch Mololithic-Redy to ${{ secrets.VPS_HOST }}"
+
