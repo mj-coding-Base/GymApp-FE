@@ -1,41 +1,33 @@
 
-# Use an official Node runtime as a parent image
-FROM node:20-alpine AS builder 
-
-# Set working directory
+# ─── builder stage ──────────────────────────
+FROM node:20-slim AS builder
 WORKDIR /app
 
-# Copy package manifests and lockfile
-COPY package.json yarn.lock ./
+# install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install deps
-RUN yarn install --frozen-lockfile
-
-# Copy source code
+# copy source & build
 COPY . .
+RUN npm run build
 
-# Build the Next.js app
-RUN yarn build
-
-# ------------------------------------------------------------------
-
-# Production image
-FROM node:20-alpine 
-
+# ─── production stage ───────────────────────
+FROM node:20-slim
 WORKDIR /app
 
-# Only copy production artifacts
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/public ./public
+# copy artifacts & prod deps
 COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
-# Tell Next.js to run on port 3002
+# expose and listen on port 3002
 ENV PORT=3002
-
 EXPOSE 3002
-
-# Start the app
-CMD ["yarn", "start", "-p", "3002"]
+# For development mode (temporary)
+#CMD ["yarn", "dev"]
+ENV NODE_ENV=production
+CMD ["npm", "run", "start", "--", "-p", "3002"]
+#ENV NODE_ENV=development
+#CMD ["npm", "run", "dev", "--", "-p", "3002", "--hostname", "0.0.0.0"]
 
