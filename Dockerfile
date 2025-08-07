@@ -4,8 +4,8 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # install dependencies
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
 # copy source & build
 COPY . .
