@@ -1,35 +1,32 @@
-# Install dependencies and build the Next.js app
-FROM node:18-alpine as build
+
+# ─── builder stage ──────────────────────────
+FROM node:20-slim AS builder
 WORKDIR /app
 
-# Copy all files to the container
+# install dependencies
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# copy source & build
 COPY . .
+RUN npm run build
 
-# Install dependencies using Yarn
-RUN yarn install --frozen-lockfile
-
-# Build the Next.js application
-RUN yarn build
-
-# Production image
-FROM node:18-alpine
+# ─── production stage ───────────────────────
+FROM node:20-slim
 WORKDIR /app
 
-# Copy the necessary files from the build stage
-COPY --from=build /app/.next /app/.next
-COPY --from=build /app/node_modules /app/node_modules
-COPY --from=build /app/public /app/public
-COPY --from=build /app/package.json /app/package.json
-COPY --from=build /app/yarn.lock /app/yarn.lock
-COPY --from=build /app/next.config.ts /app/next.config.ts
+# copy artifacts & prod deps
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
 
-# Install production dependencies (if needed)
-RUN yarn install --production --frozen-lockfile
-
-# Expose the port on which the app will run
-ENV PORT 8080
-ENV HOST 0.0.0.0
-EXPOSE 8080
-
-# Start the Next.js application using Yarn
-CMD ["yarn", "start"]
+# expose and listen on port 3002
+ENV PORT=3002
+EXPOSE 3002
+# For development mode (temporary)
+#CMD ["yarn", "dev"]
+ENV NODE_ENV=production
+CMD ["npm", "run", "start", "--", "-p", "3002"]
+#ENV NODE_ENV=development
+#CMD ["npm", "run", "dev", "--", "-p", "3002", "--hostname", "0.0.0.0"]
