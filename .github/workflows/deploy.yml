@@ -1,0 +1,37 @@
+name: CI/CD – Deploy GymApp-FE
+
+on:
+  push:
+    branches:
+      - Monolothic-2
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.HOSTINGER_PAYZHE_FE }}
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          key: ${{ secrets.HOSTINGER_PAYZHE_FE }}
+          use-agent: true
+          script: |
+            set -e
+            cd /srv/gymapp-fe
+            git fetch origin Monolothic-2
+            git reset --hard origin/Monolothic-2
+            docker-compose down
+            docker-compose up -d --build
+
+      - name: Notify
+        run: echo "✅ Deployed branch Monolothic-2 to ${{ secrets.VPS_HOST }}"
