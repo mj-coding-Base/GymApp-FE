@@ -1,32 +1,36 @@
-
 # ─── builder stage ──────────────────────────
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# install dependencies
+# Install yarn explicitly to avoid fallback to npm
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate
+
+# Copy and install dependencies with yarn
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-# copy source & build
+# Copy all source files and build the Next.js app
 COPY . .
-RUN npm run build
+RUN yarn build
 
 # ─── production stage ───────────────────────
 FROM node:20-slim
 WORKDIR /app
 
-# copy artifacts & prod deps
+# Enable yarn in runtime image as well
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate
+
+# Copy necessary build artifacts and dependencies
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/yarn.lock ./yarn.lock
 
-# expose and listen on port 3002
+# Use production mode
+ENV NODE_ENV=production
 ENV PORT=3002
 EXPOSE 3002
-# For development mode (temporary)
-#CMD ["yarn", "dev"]
-ENV NODE_ENV=production
-CMD ["npm", "run", "start", "--", "-p", "3002"]
-#ENV NODE_ENV=development
-#CMD ["npm", "run", "dev", "--", "-p", "3002", "--hostname", "0.0.0.0"]
+
+# Start with yarn
+CMD ["yarn", "start", "-p", "3002"]
