@@ -1,9 +1,0 @@
-BASE_URL=https://api.payzhe.fit/api/v1
-# http://129.154.47.11:8080/api/v1
-# http://192.168.8.157:8080/api/v1
-# https://bixfit-backend-dev-407792198674.asia-southeast1.run.app/api/v1
-# https://github.com/mj-coding-Base/GymApp-BE/actions/runs/15965808593/job/45025900878:8080/api/v1
-# NEXT_PUBLIC_API_URL=http://129.154.47.11:8080/api/v1
-# https://dev-bixfit-backend-new-407792198674.asia-southeast1.run.app/
-JWT_SECRET=secret123
-#3
