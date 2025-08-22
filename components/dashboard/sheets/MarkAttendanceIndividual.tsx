@@ -170,7 +170,7 @@ const MarkAttendanceIndividual = () => {
                       : 'bg-[#F7F7F7] text-[#4F4F4F]'}
                   `}>
                     <span className="flex-1">{customer.firstName} {customer.lastName}</span>
-                    <span className="flex-1">{customer.clientld}</span>
+                    <span className="flex-1">{customer.clientId}</span>
                     <span className="flex-1">
                       {customer.availableSessionQuota === 0 ? (
                         <span className="text-red-500">No sessions left</span>

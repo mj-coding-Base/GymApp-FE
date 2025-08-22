@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
 
+
 const formSchema = z.object({
   email: z
     .string({
@@ -46,6 +47,7 @@ const formSchema = z.object({
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [userEngaged, setUserEngaged] = useState(false);
 
   const router = useRouter();
 
@@ -55,8 +57,22 @@ const LoginForm = () => {
 
   const { isRemembered, setIsRemembered } = useSecureCredentials();
 
+  useEffect(() => {
+    if (loading && userEngaged) {
+      setLoading(false);
+      setUserEngaged(false);
+    }
+  }, [loading, userEngaged]);
+
+  const handleFieldEngagement = () => {
+    if (loading) {
+      setUserEngaged(true);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
+    setUserEngaged(false); 
 
     const res = await login({ ...values, rememberMe: isRemembered });
 
@@ -109,6 +125,11 @@ const LoginForm = () => {
                         {...field}
                         className="text-[12px] placeholder:text-[12px] focus:outline-transparent outline-none p-0 m-0 py-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none h-max text-[#616161] w-full rounded-none"
                         type="email"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleFieldEngagement();
+                        }}
+                        onFocus={handleFieldEngagement}
                       />
                     </FormControl>
                   </span>
@@ -129,10 +150,15 @@ const LoginForm = () => {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="******************"
+                          placeholder="******"
                           {...field}
                           className="focus:outline-transparent peer p-0 m-0 py-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-none h-max font-normal text-sm text-[#616161] w-full rounded-none"
                           type={showPassword ? "text" : "password"}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleFieldEngagement();
+                        }}
+                        onFocus={handleFieldEngagement}
                         />
                       </FormControl>
                     </span>

@@ -55,7 +55,7 @@ export interface FetchedGroupCustomer {
   group_id?: string;
   number_of_members?: number;
   package_name?: string;
-  clientld: string;
+  clientId: string;
   groupId?: string;
   availableSessionQuota?: number;
 
@@ -92,7 +92,7 @@ export type IndividualCustomer = {
   isPaid: boolean;
   package_name: string;
   availableSessionQuota: number;
-  clientld: string;
+  clientId: string; 
   groupId?: string;
   whyJoin: string;
   profession: string;
@@ -159,7 +159,7 @@ export type GroupCustomer = {
   number_of_members: number;
   package_name: string;
   availableSessionQuota: number;
-  clientld: string;
+  clientId: string;
   groupId?: string;
 };
 

@@ -15,7 +15,7 @@ interface GroupPaymentData {
 
 export const collectGroupPayment = async (data: GroupPaymentData) => {
   try {
-    const response = await axios.post("/clientsPayment/create", data);
+    const response = await axios.post("/clientsPayment/createPayment", data);
     
     return {
       status: "SUCCESS",

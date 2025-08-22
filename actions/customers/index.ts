@@ -44,7 +44,7 @@ export const fetchIndividualCustomers = async (
 
     // Safely extract results
     const results = response.data?.data?.data?.results;
-
+console.log("fetched customer is", results)
     // Safely extract totalResults
     const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
 

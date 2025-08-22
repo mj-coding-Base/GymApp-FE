@@ -63,15 +63,15 @@ const CollectPaymentIndividual = () => {
         setCustomer(null);
         return;
       }
-
       setLoading(true);
       try {
         const result = await fetchIndividualCustomers("1","1",searchQuery);
         const foundCustomer = result.results?.[0] ?? null;
 
+console.log(foundCustomer.clientId)
         setCustomer(foundCustomer);
-        if (foundCustomer?._id) {
-          setCurrentCustomerId(foundCustomer._id);
+        if (foundCustomer.clientId) {
+          setCurrentCustomerId(foundCustomer.clientId);
         } else {
           setCurrentCustomerId(null);
         }
@@ -157,7 +157,7 @@ const CollectPaymentIndividual = () => {
                 </div>
                 <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">
                   <p className="text-[#6D6D6D] text-[12px] font-medium">Customer ID</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.clientld ?? "--"}</p>
+                  <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.clientId ?? "--"}</p>
                 </div>
                 <div className="flex-[30%] px-[10px] py-[7.8px]">
                   <p className="text-[#6D6D6D] text-[12px] font-medium">Today</p>

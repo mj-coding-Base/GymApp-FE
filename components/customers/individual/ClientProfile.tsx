@@ -86,7 +86,7 @@ const ViewClientProfile = ({
                   User ID
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.clientld}
+                  {customer.clientId}
                 </p>
               </div>
               <div className="flex-[45%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
