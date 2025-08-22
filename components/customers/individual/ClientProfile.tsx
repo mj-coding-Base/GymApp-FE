@@ -32,7 +32,7 @@ const ViewClientProfile = ({
 
     setLoading(true);
 
-    getUserPaymentsId(customer._id)
+    getUserPaymentsId(customer.clientId)
       .then((response) => {
         setPaymentData(response);
       })

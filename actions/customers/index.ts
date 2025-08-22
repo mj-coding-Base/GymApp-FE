@@ -175,10 +175,11 @@ export const fetchAllCustomers = async (
 
 export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | null> => {
   try {
+    console.log(id)
     const response = await axios.get(
       `/clientsPayment/userPayments/${id}`
     );
-
+    
     // console.log("`/clientsPayment/userPayments/${id}`",response.data);
 
     return response.data.data;
