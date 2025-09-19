@@ -189,6 +189,21 @@ export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | 
   }
 };
 
+export const refreshUserPaymentsId = async (id: string): Promise<PaymentHistory[] | null> => {
+  try {
+    const response = await axios.put(
+      `/clientsPayment/userPayments/${id}/`
+    );
+
+    // console.log("`/clientsPayment/userPayments/${id}`",response.data);
+
+    return response.data.data;
+  } catch (error) {
+    console.error(error);
+
+    return null;
+  }
+};
 // Create a customer
 export interface CustomerRegistrationData {
   firstName: string;
