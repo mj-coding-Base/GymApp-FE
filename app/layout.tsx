@@ -30,6 +30,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="scrollbar-stylish">
+      <head> <meta name="facebook-domain-verification" content="q8dyybm29donnk8yhijffop1stqxn6" /></head>
       <body className={cn("antialiased max-w-lg mx-auto", inter.className)}>
         {/* Wrap everything with SessionProvider */}
         <SessionProvider initialSession={session}>
