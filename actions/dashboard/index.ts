@@ -20,7 +20,6 @@ type DashboardData = {
 export const fetchDashboardData = async (): Promise<DashboardData> => {
   try {
     const res = await axios.get("/admin/admin-management/dashboard");
-    // console.log(res.data);
     return res.data.data;
   } catch (error) {
     console.error("API request failed. Returning dummy data.", error);
@@ -46,6 +45,65 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
       ],
     };
 
+    return dummyData;
+  }
+};
+
+// Types for daily attendance data
+export type DailyAttendanceData = {
+  date: string;
+  attendances: Array<{
+    customerId: string;
+    firstName: string;
+    lastName: string;
+    time: string;
+  }>;
+};
+
+export const fetchDailyAttendance = async (
+  startDate: string,
+  endDate: string
+): Promise<DailyAttendanceData[]> => {
+  try {
+    const res = await axios.get(
+      `/admin/admin-management/daily-attendance?startDate=${startDate}&endDate=${endDate}`
+    );
+    return res.data.data;
+  } catch (error) {
+    console.error("Failed to fetch daily attendance data:", error);
+    
+    // Return dummy data for development
+    const dummyData: DailyAttendanceData[] = [
+      {
+        date: "2024-01-15",
+        attendances: [
+          {
+            customerId: "CUST001",
+            firstName: "User",
+            lastName: "01",
+            time: "08:30 AM"
+          },
+          {
+            customerId: "CUST002", 
+            firstName: "User",
+            lastName: "02",
+            time: "09:15 AM"
+          }
+        ]
+      },
+      {
+        date: "2024-01-16",
+        attendances: [
+          {
+            customerId: "CUST003",
+            firstName: "User",
+            lastName: "03",
+            time: "07:45 AM"
+          }
+        ]
+      }
+    ];
+    
     return dummyData;
   }
 };

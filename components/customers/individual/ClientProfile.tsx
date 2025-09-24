@@ -141,10 +141,10 @@ const ViewClientProfile = ({
                 <p className="w-[20.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Month
                 </p>
-                <p className="w-[24.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[28.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Payment ID
                 </p>
-                <p className="w-[24.5%] text-[11px]/[14px] font-medium text-[#212121]">
+                <p className="w-[20.5%] text-[11px]/[14px] font-medium text-[#212121]">
                   Amount
                 </p>
               </div>
@@ -159,10 +159,10 @@ const ViewClientProfile = ({
                   <p className="w-[20.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
                     {item.month}
                   </p>
-                  <p className="w-[24.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                  <p className="w-[28.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
                     {item.paymentId}
                   </p>
-                  <p className="w-[24.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
+                  <p className="w-[20.5%] text-[12px]/[13.5px] font-normal text-[#212121]">
                     LKR {item.amount}
                   </p>
                 </div>

@@ -1,5 +1,9 @@
+"use client";
+
+import { useDailyAttendanceSheet } from "@/hooks/useDailyAttendanceSheet";
 import React from "react";
 import CollectPayment from "./CollectPayment";
+import DailyAttendance from "./DailyAttendance";
 import MarkAttendance from "./MarkAttendance";
 import TotalEarningChart from "./TotalEarningsChart";
 import WhiteCard from "./WhiteCard";
@@ -33,6 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
     client,
     paymentHistory: chartData
   } = data;
+  
+  const { setOpenDailyAttendanceSheet } = useDailyAttendanceSheet();
   return (
     <div>
       <div className="flex flex-col gap-[20px]">
@@ -106,6 +112,28 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </div>
         </WhiteCard>
 
+        {/* Daily attendance card */}
+        <WhiteCard className="flex flex-col gap-[10px] items-center">
+          <div className="flex gap-[5px] w-full">
+            <i className="calendar-icon size-[18px] text-[#3D3D3D]" />
+            <h1 className="text-[12px] font-medium text-[#3D3D3D]">
+              Daily Attendance
+            </h1>
+          </div>
+          <button 
+            onClick={() => setOpenDailyAttendanceSheet(true)}
+            className="flex justify-center items-center bg-[#F8F9FA] w-full h-[76px] rounded-[15px] cursor-pointer hover:bg-[#E9ECEF] transition-colors border-none"
+            type="button"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <i className="calendar-icon size-[24px] text-[#363636]" />
+              <p className="text-[12px] font-medium text-[#363636]">
+                View Attendance
+              </p>
+            </div>
+          </button>
+        </WhiteCard>
+
         {/* Pending payments card */}
         <WhiteCard className="flex flex-col gap-[10px] items-center">
           <div className="flex gap-[5px] w-full">
@@ -124,6 +152,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
         {/* Earnings chart - properly passed with TypeScript props */}
         <TotalEarningChart chartData={chartData} />
       </div>
+      
+      {/* Daily Attendance Sheet */}
+      <DailyAttendance />
     </div>
   );
 };
