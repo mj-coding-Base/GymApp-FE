@@ -57,7 +57,25 @@ export type DailyAttendanceData = {
     firstName: string;
     lastName: string;
     time: string;
+    attendedDateTime: string;
   }>;
+  totalCount: number;
+};
+
+// API Response structure
+type DailyAttendanceApiResponse = {
+  status: string;
+  message: string | null;
+  data: {
+    success: boolean;
+    message: string;
+    data: DailyAttendanceData[];
+    totalRecords: number;
+    dateRange: {
+      startDate: string;
+      endDate: string;
+    };
+  };
 };
 
 export const fetchDailyAttendance = async (
@@ -74,7 +92,10 @@ export const fetchDailyAttendance = async (
         }
       }
     );
-    return res.data.data;
+    
+    // Handle the nested response structure
+    const apiResponse: DailyAttendanceApiResponse = res.data;
+    return apiResponse.data.data;
   } catch (error) {
     console.error("Failed to fetch daily attendance data:", error);
     
@@ -87,15 +108,18 @@ export const fetchDailyAttendance = async (
             customerId: "CUST001",
             firstName: "User",
             lastName: "01",
-            time: "08:30 AM"
+            time: "08:30 AM",
+            attendedDateTime: "2024-01-15T08:30:00"
           },
           {
             customerId: "CUST002", 
             firstName: "User",
             lastName: "02",
-            time: "09:15 AM"
+            time: "09:15 AM",
+            attendedDateTime: "2024-01-15T09:15:00"
           }
-        ]
+        ],
+        totalCount: 2
       },
       {
         date: "2024-01-16",
@@ -104,9 +128,11 @@ export const fetchDailyAttendance = async (
             customerId: "CUST003",
             firstName: "User",
             lastName: "03",
-            time: "07:45 AM"
+            time: "07:45 AM",
+            attendedDateTime: "2024-01-16T07:45:00"
           }
-        ]
+        ],
+        totalCount: 1
       }
     ];
     
