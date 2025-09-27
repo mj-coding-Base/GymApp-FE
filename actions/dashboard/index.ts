@@ -84,7 +84,7 @@ export const fetchDailyAttendance = async (
 ): Promise<DailyAttendanceData[]> => {
   try {
     const res = await axios.get(
-      `/api/v1/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`,
+      `/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`,
       {
         headers: {
           'accept': 'application/json',

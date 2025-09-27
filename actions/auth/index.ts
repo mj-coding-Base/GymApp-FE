@@ -143,7 +143,7 @@ export const changePassword = async ({
 }): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      "/api/v1/admin/admin-management/reset-password",
+      "/admin/admin-management/reset-password",
       {
         oldPassword,
         newPassword,
