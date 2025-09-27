@@ -66,7 +66,13 @@ export const fetchDailyAttendance = async (
 ): Promise<DailyAttendanceData[]> => {
   try {
     const res = await axios.get(
-      `/admin/admin-management/daily-attendance?startDate=${startDate}&endDate=${endDate}`
+      `/api/v1/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`,
+      {
+        headers: {
+          'accept': 'application/json',
+          'gym-id': 'Hiru-Fitness'
+        }
+      }
     );
     return res.data.data;
   } catch (error) {
