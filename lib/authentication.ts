@@ -115,14 +115,14 @@ export async function login(data: {
 }
 
 export async function logout() {
-  // Destroy the session
-  // (await cookies()).set("session-gymapp-admin", "", { expires: new Date(0) });
-
+  // ⚡ PERFORMANCE: Fast logout - clear cookies only
   const cookieStore = await cookies();
-    // Clear both cookies
+  
+  // Clear both cookies
   cookieStore.set("session-gymapp-admin", "", { 
     expires: new Date(0),
     path: "/",
+    httpOnly: true,
   });
   
   cookieStore.set("user-details", "", {
@@ -130,6 +130,8 @@ export async function logout() {
     path: "/",
   });
   
+  // Clear localStorage on client side (done in the component)
+  // This avoids any server-side operations that could slow down logout
 }
 
 

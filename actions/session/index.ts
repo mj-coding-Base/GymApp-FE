@@ -1,13 +1,14 @@
 "use server";
-import  { isAxiosError } from 'axios'; // Adjust path if needed
 import {
-  CreateExtraSessionDto,
-  CreateSessionDto,
-  FindCustomerSessionsDto,
-  PTSession,
-  FetchSessionsParams, SessionsResponse
+    CreateExtraSessionDto,
+    CreateSessionDto,
+    FetchSessionsParams,
+    FindCustomerSessionsDto,
+    PTSession,
+    SessionsResponse
 } from '@/types/SessionHistory';
 import axios from "@/utils/axios";
+import { isAxiosError } from 'axios'; // Adjust path if needed
 
 
 export type SessionItem = {
@@ -170,36 +171,52 @@ export const getAllSessions = async (
 ): Promise<SessionsResponse> => {
   try {
     // Debug: Log the request being made
-    console.log('Making request to fetch sessions with params:', params);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Making request to fetch sessions with params:', params);
+    }
 
-    // Prepare query parameters
+    // ⚡ PERFORMANCE: Ensure params is defined to avoid spreading undefined
+    const safeParams = params || {};
+
+    // Prepare query parameters with proper defaults
     const queryParams: Record<string, any> = {
-      ...params,
-      ids: params?.ids?.join(','),
-      month: params?.month && params.month >= 1 && params.month <= 12 
-        ? params.month 
-        : undefined,
-      year: params?.year && params.year > 2000 
-        ? params.year 
-        : undefined
+      page: safeParams.page || 1,
+      size: safeParams.size || 10,
     };
 
-    // Remove undefined values
-    Object.keys(queryParams).forEach(key => {
-      if (queryParams[key] === undefined) {
-        delete queryParams[key];
-      }
+    // Add optional parameters only if they exist
+    if (safeParams.ids && Array.isArray(safeParams.ids) && safeParams.ids.length > 0) {
+      queryParams.ids = safeParams.ids.join(',');
+    }
+
+    if (safeParams.month && safeParams.month >= 1 && safeParams.month <= 12) {
+      queryParams.month = safeParams.month;
+    }
+
+    if (safeParams.year && safeParams.year > 2000) {
+      queryParams.year = safeParams.year;
+    }
+
+    // Add any other parameters from safeParams
+    if (safeParams.searchTerm) {
+      queryParams.searchTerm = safeParams.searchTerm;
+    }
+
+    if (safeParams.trainerId) {
+      queryParams.trainerId = safeParams.trainerId;
+    }
+
+    if (safeParams.customerId) {
+      queryParams.customerId = safeParams.customerId;
+    }
+
+    if (safeParams.isAttended !== undefined) {
+      queryParams.isAttended = safeParams.isAttended;
+    }
+
+    const response = await axios.get('/sessions/get-all', {
+      params: queryParams,
     });
-
-    // Debug: Log the final query params
-    // console.log('Final query params:', queryParams);
-
-    const response = 
-    await axios.get('/sessions/get-all',
-      {
-        params: queryParams,
-      }
-    );
 
     // Debug: Log the full response
     // console.log('Session fetch response:', response);
@@ -220,18 +237,25 @@ export const getAllSessions = async (
     };
 
   } catch (error: any) {
-    console.error('Full fetch sessions error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Full fetch sessions error:', error);
+    }
     
     let errorMessage = 'Failed to fetch sessions';
-    let responseData = null;
+    
+    // Extract error message safely
+    if (error?.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error?.message) {
+      errorMessage = error.message;
+    }
 
-
-
-    console.error('Error details:', {
-      message: errorMessage,
-      response: responseData,
-      stack: error.stack
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error details:', {
+        message: errorMessage,
+        stack: error?.stack
+      });
+    }
 
     return {
       status: 'FAIL',

@@ -1,20 +1,19 @@
 "use client";
 
-import React from "react";
 
-import Logo from "../Logo";
-import NavbarTitle from "./NavbarTitle";
-import Image from "next/image";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { useProfileDetailsSheet } from "@/hooks/useProfileSheet";
 import { useResetPasswordSheet } from "@/hooks/useResetPasswordSheet";
 import { logout } from "@/lib/authentication";
+import Image from "next/image";
 import { useState } from "react";
+import Logo from "../Logo";
+import NavbarTitle from "./NavbarTitle";
 
 const Navbar = () => {
   const { setOpenProfileDetailsSheet } = useProfileDetailsSheet();
@@ -69,14 +68,34 @@ const Navbar = () => {
               <Button
                 variant={"ghost"}
                 onClick={async () => {
+                  setLoading(true);
+                  
+                  // ⚡ PERFORMANCE: Clear all caches and storage immediately
+                  if (typeof window !== 'undefined') {
+                    // Clear localStorage caches
+                    localStorage.removeItem('gymapp-dashboard-cache');
+                    localStorage.removeItem('gymapp-dashboard-cache-expiry');
+                    localStorage.removeItem('gymapp-customers-cache');
+                    localStorage.removeItem('gymapp-customers-cache-expiry');
+                    localStorage.removeItem('gymapp-trainers-cache');
+                    localStorage.removeItem('gymapp-trainers-cache-expiry');
+                    localStorage.removeItem('gymapp-packages-cache');
+                    localStorage.removeItem('gymapp-packages-cache-expiry');
+                    localStorage.removeItem('x-auth-token');
+                    localStorage.removeItem('gym-id');
+                  }
+                  
+                  // Clear server session
                   await logout();
+                  
+                  // Redirect immediately
                   window.location.href = "/sign-in";
-                  setLoading(false);
                 }}
+                disabled={loading}
               >
                 <i className="logout-icon w-4 h-4 text-[#424242]" />
                 <p className="text-[12px]/[100%] text-[#424242] font-normal">
-                  Log Out
+                  {loading ? 'Logging out...' : 'Log Out'}
                 </p>
               </Button>
             </div>
