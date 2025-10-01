@@ -1,24 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 import { deactivateTrainer } from "@/actions/trainers";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface UserCancelProps {
   trainerId: string;
+  onSuccess?: () => void;
   onDeactivate?: () => void;
 }
 
-export function UserCancel({ trainerId, onDeactivate }: UserCancelProps) {
+export function UserCancel(props: Readonly<UserCancelProps>) {
+  const { trainerId, onSuccess, onDeactivate } = props;
   const [open, setOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +32,7 @@ export function UserCancel({ trainerId, onDeactivate }: UserCancelProps) {
       
       if (result.status === "SUCCESS") {
         setShowSuccess(true);
+        onSuccess?.();
         onDeactivate?.();
       } else {
         toast.error(result.message);

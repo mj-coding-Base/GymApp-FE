@@ -1,38 +1,37 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-  DrawerFooter,
+    Drawer,
+    DrawerClose,
+    DrawerContent,
+    DrawerFooter,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
 
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Dialog,
-  DialogContent,
+    Dialog,
+    DialogContent,
 } from "@/components/ui/dialog";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -48,7 +47,12 @@ const formSchema = z.object({
   session: z.string().optional(),
 });
 
-export function TrainerRegistrationCard() {
+interface TrainerRegistrationCardProps {
+  trainerId: string;
+}
+
+export function TrainerRegistrationCard(props: Readonly<TrainerRegistrationCardProps>) {
+  const { trainerId } = props;
   const [open, setOpen] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
@@ -67,7 +71,7 @@ export function TrainerRegistrationCard() {
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Form submitted:", values);
+    console.log("Form submitted:", values, "for trainerId:", trainerId);
     setOpen(false);
     setShowSuccessDialog(true);
   };

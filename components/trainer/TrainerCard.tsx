@@ -97,7 +97,6 @@ const TrainerCard = React.memo(({ trainer, onDeactivate }: TrainerCardProps) => 
         <SessionHistory trainerId={trainer._id} trainerName={fullName} />
         <UserCancel
           trainerId={trainer._id}
-          trainerName={fullName}
           onSuccess={() => onDeactivate(trainer._id)}
         />
       </div>
