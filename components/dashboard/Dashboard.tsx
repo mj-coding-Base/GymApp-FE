@@ -1,10 +1,12 @@
 "use client";
 
 import { useDailyAttendanceSheet } from "@/hooks/useDailyAttendanceSheet";
+import { usePendingPaymentsSheet } from "@/hooks/usePendingPaymentsSheet";
 import React from "react";
 import CollectPayment from "./CollectPayment";
 import DailyAttendance from "./DailyAttendance";
 import MarkAttendance from "./MarkAttendance";
+import PendingPayments from "./PendingPayments";
 import TotalEarningChart from "./TotalEarningsChart";
 import WhiteCard from "./WhiteCard";
 
@@ -39,6 +41,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
   } = data;
   
   const { setOpenDailyAttendanceSheet } = useDailyAttendanceSheet();
+  const { setOpenPendingPaymentsSheet } = usePendingPaymentsSheet();
+  
   return (
     <div>
       <div className="flex flex-col gap-[20px]">
@@ -142,11 +146,20 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
               Payment Pending&apos;s
             </h1>
           </div>
-          <div className="flex justify-center items-center bg-[#FEF7EE] w-full h-[76px] rounded-[15px]">
-            <p className="text-[24px] font-bold text-[#EB5F14]">
-              {client.pendingPayments}
-            </p>
-          </div>
+          <button
+            onClick={() => setOpenPendingPaymentsSheet(true)}
+            className="flex justify-center items-center bg-[#FEF7EE] w-full h-[76px] rounded-[15px] cursor-pointer hover:bg-[#FEE9D9] transition-colors border-none"
+            type="button"
+          >
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-[24px] font-bold text-[#EB5F14]">
+                {client.pendingPayments}
+              </p>
+              <p className="text-[10px] font-medium text-[#EB5F14] opacity-70">
+                Click to view
+              </p>
+            </div>
+          </button>
         </WhiteCard>
 
         {/* Earnings chart - properly passed with TypeScript props */}
@@ -155,6 +168,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
       
       {/* Daily Attendance Sheet */}
       <DailyAttendance />
+      
+      {/* Pending Payments Sheet */}
+      <PendingPayments />
     </div>
   );
 };

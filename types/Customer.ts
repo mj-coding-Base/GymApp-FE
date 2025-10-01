@@ -95,6 +95,7 @@ export type IndividualCustomer = {
   dob: string;
   isMale : true,
   isMarried : true,
+  deactivatedDate?: string;
 };
 
 export type NewIndividualCustomer ={
@@ -157,6 +158,7 @@ export type GroupCustomer = {
   availableSessionQuota: number;
   clientId: string;
   groupId?: string;
+  deactivatedDate?: string;
 };
 
 export type CustomerView = {
