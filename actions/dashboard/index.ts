@@ -66,7 +66,7 @@ export const fetchDailyAttendance = async (
 ): Promise<DailyAttendanceData[]> => {
   try {
     const res = await axios.get(
-      `/admin/admin-management/daily-attendance?startDate=${startDate}&endDate=${endDate}`
+      `/admin/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`
     );
     return res.data.data;
   } catch (error) {
@@ -97,9 +97,21 @@ export const fetchDailyAttendance = async (
           {
             customerId: "CUST003",
             firstName: "User",
-            lastName: "03",
+            lastName: "01",
             time: "07:45 AM"
-          }
+          },
+          {
+            customerId: "CUST003",
+            firstName: "User",
+            lastName: "02",
+            time: "07:45 AM"
+          },
+          {
+            customerId: "CUST003",
+            firstName: "User",
+            lastName: "03",
+            time: "07:45 PM"
+          },
         ]
       }
     ];

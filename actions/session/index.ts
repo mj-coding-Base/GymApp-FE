@@ -124,7 +124,7 @@ export const getUserAttendance = async (
 
     return res.data.data.customers; // access the array directly
   } catch (error) {
-    handleApiError(error, "fetching user attendance");
+    handleApiError(error, "fetching user attendance is failed");
   }
 };
 
