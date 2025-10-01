@@ -1,10 +1,10 @@
+import CustomersClient from "@/components/customers/CustomersClient";
+import CustomersSkeleton from "@/components/customers/CustomersSkeleton";
+import { Suspense } from "react";
+
+// Optimize for fast navigation
 export const dynamic = 'force-dynamic';
-import {
-    fetchGroups,
-    fetchIndividualCustomers,
-} from "@/actions/customers";
-import Customers from "@/components/customers/Customers";
-import { GroupShort, IndividualCustomer } from "@/types/Customer";
+export const revalidate = 0;
 
 interface Props {
   readonly searchParams: Promise<{
@@ -18,42 +18,11 @@ interface Props {
 export default async function Page({ searchParams }: Props) {
   const searchparams = await searchParams;
 
-  const type = searchparams.type;
-
-  let individualCustomers: {
-    results: IndividualCustomer[];
-    totalResults: number;
-  } = { results: [], totalResults: 0 };
-
-  let groupCustomers: { results: GroupShort[]; totalResults: number } = {
-    results: [],
-    totalResults: 0,
-  };
-
-  if (type === "group") {
-    // console.log("fetching group customers++++++++++++")
-    groupCustomers = await fetchGroups(
-      searchparams.page ?? "1",
-      "10",
-      searchparams.search,
-      undefined,
-      true
-    );
-  } else {
-    // console.log("fetching individual customers++++++++++++")
-    individualCustomers = await fetchIndividualCustomers(
-      searchparams.page ?? "1",
-      "10",
-      searchparams.search
-    );
-      console.log("Individual customers total results: ", individualCustomers.totalResults);
-  }
-  console.log(groupCustomers);
+  // No blocking API calls - instant page load!
+  // CustomersClient will show cached data immediately
   return (
-    <Customers
-      individuals={individualCustomers}
-      // groups={groupCustomers}
-      searchParams={searchparams}
-    />
+    <Suspense fallback={<CustomersSkeleton />}>
+      <CustomersClient searchParams={searchparams} />
+    </Suspense>
   );
 }

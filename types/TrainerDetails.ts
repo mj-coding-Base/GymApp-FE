@@ -1,5 +1,3 @@
-import { StringDecoder } from "node:string_decoder"
-
 export enum Type {
   PART_TIME = "Part Time",
   FULL_TIME = "Full Time",
@@ -12,7 +10,7 @@ export enum Status {
 
 export interface Trainer {
   _id: string
-  createdAt: StringDecoder
+  createdAt: string
   status: Status
   firstName: string
   lastName: string

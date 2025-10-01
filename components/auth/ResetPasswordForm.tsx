@@ -55,11 +55,9 @@ const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
     onNext();
   };
 
-  const action: () => void = form.handleSubmit(onSubmit);
-
   return (
     <Form {...form}>
-      <form action={action} className="flex flex-col justify-between h-full">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col justify-between h-full">
         <div className="flex flex-col gap-[15px]">
           <FormField
             control={form.control}

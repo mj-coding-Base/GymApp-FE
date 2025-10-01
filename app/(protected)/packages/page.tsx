@@ -1,8 +1,9 @@
 "use client";
-import { getPackages } from "@/actions/package";
 import { fetchIndividualCustomers } from "@/actions/customers";
+import { getPackages } from "@/actions/package";
 import CustomPagination from "@/components/common/CustomPagination";
 import AddNewPackage from "@/components/packages/AddNewPackage";
+import PackagesSkeleton from "@/components/packages/PackagesSkeleton";
 import UpdatePackage from "@/components/packages/UpdatePackage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,34 +16,49 @@ import {
     DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
+import { packagesCache } from "@/lib/packagesCache";
+import { IndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
-import { IndividualCustomer } from "@/types/Customer";
+
 export const dynamic = 'force-dynamic';
+
 export default function PackagePage() {
   const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
-  // const [selectedFilter, setSelectedFilter] = React.useState<
-  //   "All" | "Individual" | "Group"
-  // >("All");
-  const [packages, setPackages] = React.useState<Package[]>([]);
-  const [members, setMembers] = React.useState<IndividualCustomer[]>([]);
-  const [isLoading, setIsLoading] = React.useState({
-    packages: true,
-    members: false,
+  
+  // Initialize with cached data immediately for instant load!
+  const [packages, setPackages] = React.useState<Package[]>(() => {
+    return packagesCache.get() || [];
   });
+  const [members, setMembers] = React.useState<IndividualCustomer[]>([]);
+  const [isLoading, setIsLoading] = React.useState(() => ({
+    packages: !packagesCache.get(), // Only show loading if no cache
+    members: false,
+  }));
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   // Fetch packages on component mount
   React.useEffect(() => {
     const fetchPackages = async () => {
-      setIsLoading(prev => ({...prev, packages: true}));
+      const hasCache = packagesCache.get() !== null;
+      
+      if (hasCache) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(prev => ({...prev, packages: true}));
+      }
+
       try {
         const data = await getPackages();
         setPackages(data);
+        // Cache the fresh data
+        packagesCache.set(data);
       } catch (error) {
         console.error("Error loading packages:", error);
       } finally {
         setIsLoading(prev => ({...prev, packages: false}));
+        setIsRefreshing(false);
       }
     };
 
@@ -67,14 +83,30 @@ const handleOpenMembersDrawer = async (packageId: string) => {
   }
 };
 
-
-  // const filteredMembers =
-  //   selectedFilter === "All"
-  //     ? members
-  //     : members.filter((member) => member.clientType === selectedFilter);
+  if (isLoading.packages) {
+    return (
+      <div className="w-full">
+        <Card className="py-3 mt-2">
+          <CardContent className="pl-0 pr-0">
+            <PackagesSkeleton />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
+      {/* Show subtle loading indicator when refreshing in background */}
+      {isRefreshing && (
+        <div className="absolute top-0 right-0 z-10">
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+            <i className="loading-icon size-[14px] animate-spin" />
+            <span className="text-xs text-gray-600">Updating...</span>
+          </div>
+        </div>
+      )}
+
       <Card className="py-3 mt-2">
         <CardContent className="pl-0 pr-0">
           <div className="flex px-1 py-0 gap-2 mb-2 pl-3 pr-3">
@@ -95,12 +127,7 @@ const handleOpenMembersDrawer = async (packageId: string) => {
 
           <AddNewPackage onPackageAdded={() => getPackages().then(setPackages)} />
           
-          {isLoading.packages ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            packages.map((pkg) => (
+          {packages.map((pkg) => (
               <div
                 key={pkg.packageId}
                 className="border border-b border-gray-200 p-2 bg-white relative"
@@ -154,7 +181,7 @@ const handleOpenMembersDrawer = async (packageId: string) => {
                 </div>
               </div>
             ))
-          )}
+          }
         </CardContent>
       </Card>
 

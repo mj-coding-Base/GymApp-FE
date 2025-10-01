@@ -99,12 +99,10 @@ const NewPasswordForm = () => {
     router.push("/sign-in");
   };
 
-  const action: () => void = form.handleSubmit(onSubmit);
-
   return (
     <Form {...form}>
       <form
-        action={action}
+        onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col justify-between h-full gap-[68px]"
       >
         <div className="flex flex-col gap-[35px]">

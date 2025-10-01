@@ -2,30 +2,41 @@
 
 import { getTrainers } from "@/actions/trainers";
 import { Badge } from "@/components/ui/badge";
+import { trainersCache } from "@/lib/trainersCache";
 import { Status, Trainer } from "@/types/TrainerDetails";
-import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-// import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-// import { PaymentHistory } from "./PaymentHistory";
 import { SessionHistory } from "./SessionHistory";
+import TrainersSkeleton from "./TrainersSkeleton";
 import { TrainerRegistrationCard } from "./UpdateTrainer";
 import { UserCancel } from "./UserCancel";
 
 const TrainerList: React.FC = () => {
-  const [trainers, setTrainers] = useState<Trainer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Initialize with cached data immediately for instant load!
+  const [trainers, setTrainers] = useState<Trainer[]>(() => {
+    return trainersCache.get() || [];
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    // Only show loading if no cache exists
+    return !trainersCache.get();
+  });
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchTrainers = async () => {
-      setIsLoading(true);
+      const hasCache = trainersCache.get() !== null;
+      
+      if (hasCache) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+
       try {
         const data = await getTrainers();
-        // Map or transform the data to match the expected Trainer type
-        // const mappedData = data.map((trainer: Trainer) => ({
-        //   trainer,
-        // }));
         setTrainers(data);
+        // Cache the fresh data
+        trainersCache.set(data);
       } catch (error) {
         if (error instanceof Error) {
           toast.error(`Failed to load trainers: ${error.message}`);
@@ -35,6 +46,7 @@ const TrainerList: React.FC = () => {
         }
       } finally {
         setIsLoading(false);
+        setIsRefreshing(false);
       }
     };
 
@@ -50,14 +62,21 @@ const TrainerList: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
+    return <TrainersSkeleton />;
   }
   console.log(getTrainers)
   return (
+    <div className="relative">
+      {/* Show subtle loading indicator when refreshing in background */}
+      {isRefreshing && (
+        <div className="absolute top-0 right-0 z-10">
+          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
+            <i className="loading-icon size-[14px] animate-spin" />
+            <span className="text-xs text-gray-600">Updating...</span>
+          </div>
+        </div>
+      )}
+      
     <div className="flex flex-col w-full max-w-md mx-auto">
       {trainers.map((trainer) => (
         <div
@@ -70,7 +89,7 @@ const TrainerList: React.FC = () => {
                 <div className="text-[11px] text-[#363636] font-medium">
                   Registered Date
                 </div>
-                <div className="text-[12px]">{String(trainer.createdAt).slice(0, 10)}</div>
+                <div className="text-[12px]">{new Date(trainer.createdAt).toISOString().slice(0, 10)}</div>
               </div>
               <div className="flex-1">
                 <div className="text-[11px] text-[#363636] font-medium">
@@ -163,6 +182,7 @@ const TrainerList: React.FC = () => {
           />
         </div>
       ))}
+    </div>
     </div>
   );
 };

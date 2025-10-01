@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input";
 import { useSecureCredentials } from "@/hooks/useSecureCredentials";
 import { login } from "@/lib/authentication";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { SuccessToast } from "../common/toast";
 import Loading from "./Loading";
 
@@ -48,8 +47,6 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [userEngaged, setUserEngaged] = useState(false);
-
-  const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -88,18 +85,15 @@ const LoginForm = () => {
 
     SuccessToast("Logged in successfully.");
 
-    router.prefetch("/");
-
-    router.push("/");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Use window.location.href for a full page reload to ensure cookies are properly set
+    // This prevents the double-login issue caused by middleware not seeing the cookie immediately
+    window.location.href = "/";
   };
-
-  const action: () => void = form.handleSubmit(onSubmit);
 
   return (
     <Form {...form}>
       <form
-        action={action}
+        onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col justify-between h-full gap-[68px]"
       >
         <div className="flex flex-col gap-[15px]">
@@ -162,12 +156,14 @@ const LoginForm = () => {
                         />
                       </FormControl>
                     </span>
-                    <i
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className={cn(
-                        "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer",
+                        "password-closed-icon w-[20px] h-[20px] text-[#B1B1B1] cursor-pointer border-0 bg-transparent p-0",
                         showPassword && "password-show"
                       )}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                     />
                   </div>
                 </div>

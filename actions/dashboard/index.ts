@@ -1,7 +1,7 @@
 "use server";
 import axios from "@/utils/axios";
 
-type DashboardData = {
+export type DashboardData = {
   trainer: {
     partTime: number;
     fullTime: number;
