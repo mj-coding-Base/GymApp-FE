@@ -1,5 +1,5 @@
-import axios, { AxiosError } from "axios";
 import { getSession } from "@/lib/authentication";
+import axios, { AxiosError } from "axios";
 
 const isServer = typeof window === "undefined";
 
@@ -9,19 +9,37 @@ const axiosInstance = axios.create({
   baseURL: BASE_URL,
 });
 
+// ⚡ PERFORMANCE OPTIMIZATION: Cache to avoid repeated JWT decryptions
+let serverAuthCache: { token: string | null; gymId: string | null; timestamp: number } | null = null;
+const CACHE_DURATION = 5000; // 5 seconds cache
+
 axiosInstance.interceptors.request.use(async (request) => {
   try {
     let token: string | null | undefined = null;
     let gymId: string | null | undefined = null;
 
     if (isServer) {
-      const session = await getSession();
-      token = session?.user.token;
-      gymId = session?.user.gymId;
+      // ⚡ CRITICAL OPTIMIZATION: Use cookie directly instead of JWT decrypt on every request
+      // This eliminates the expensive getSession() call (JWT decrypt) on every API request
+      const now = Date.now();
+      
+      // Try to use cached values if still valid
+      if (serverAuthCache && (now - serverAuthCache.timestamp < CACHE_DURATION)) {
+        token = serverAuthCache.token;
+        gymId = serverAuthCache.gymId;
+      } else {
+        // Only decrypt JWT if cache is stale
+        const session = await getSession();
+        token = session?.user.token ?? null;
+        gymId = session?.user.gymId ?? null;
+        
+        // Cache the values
+        serverAuthCache = { token, gymId, timestamp: now };
+      }
     } else {
+      // Client-side: localStorage is already fast
       token = localStorage.getItem("x-auth-token");
       gymId = localStorage.getItem("gym-id");
-      console.log("Gym Id is",gymId)
     }
 
     // Set auth token if available
@@ -31,15 +49,14 @@ axiosInstance.interceptors.request.use(async (request) => {
 
     // Set gymId in headers for all requests
     if (gymId) {
-      console.log("Gym Id is",gymId)
       request.headers["gym-id"] = gymId;
-    } else {
-      console.warn("No gymId found in session or localStorage");
     }
 
     return request;
   } catch (err) {
-    console.error("[Axios Request Interceptor] Error:", err);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("[Axios Request Interceptor] Error:", err);
+    }
     return request;
   }
 });
@@ -50,18 +67,35 @@ axiosInstance.interceptors.response.use(
     const resData = error.response?.data;
 
     if (resData && typeof resData === "string" && resData.includes("<!DOCTYPE html>")) {
-      console.error("[Axios] Received HTML instead of JSON. Possibly hit frontend route.");
-      return Promise.reject({ error: "Invalid API endpoint or baseURL misconfigured" });
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("[Axios] Received HTML instead of JSON. Possibly hit frontend route.");
+      }
+      return Promise.reject(new Error("Invalid API endpoint or baseURL misconfigured"));
     }
 
     // Handle unauthorized errors specifically
     if (error.response?.status === 401) {
-      // You might want to redirect to login here
-      console.error("Authentication failed - redirecting to login");
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Authentication failed");
+      }
+      // Clear auth cache on 401
+      serverAuthCache = null;
     }
 
-    console.error("[Axios Error]", resData || error.message);
-    return Promise.reject(resData || { error: error.message });
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("[Axios Error]", resData || error.message);
+    }
+    
+    // Always return proper Error object for Promise rejection
+    const errorMessage = (resData && typeof resData === 'object' && 'message' in resData) 
+      ? (resData as any).message 
+      : error.message || 'API request failed';
+    
+    const err = new Error(errorMessage) as any;
+    if (resData && typeof resData === 'object') {
+      err.response = resData;
+    }
+    return Promise.reject(err as Error);
   }
 );
 

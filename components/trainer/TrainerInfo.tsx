@@ -1,15 +1,12 @@
 "use client";
 
 import { getTrainers } from "@/actions/trainers";
-import { Badge } from "@/components/ui/badge";
 import { trainersCache } from "@/lib/trainersCache";
 import { Status, Trainer } from "@/types/TrainerDetails";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { SessionHistory } from "./SessionHistory";
+import TrainerCard from "./TrainerCard";
 import TrainersSkeleton from "./TrainersSkeleton";
-import { TrainerRegistrationCard } from "./UpdateTrainer";
-import { UserCancel } from "./UserCancel";
 
 const TrainerList: React.FC = () => {
   // Initialize with cached data immediately for instant load!
@@ -64,7 +61,7 @@ const TrainerList: React.FC = () => {
   if (isLoading) {
     return <TrainersSkeleton />;
   }
-  console.log(getTrainers)
+
   return (
     <div className="relative">
       {/* Show subtle loading indicator when refreshing in background */}
@@ -77,112 +74,16 @@ const TrainerList: React.FC = () => {
         </div>
       )}
       
-    <div className="flex flex-col w-full max-w-md mx-auto">
-      {trainers.map((trainer) => (
-        <div
-          key={trainer._id}
-          className="border-b border-gray-200 p-4 bg-white relative"
-        >
-          <div className="flex mb-3">
-            <div className="flex w-full gap-4">
-              <div className="flex-1">
-                <div className="text-[11px] text-[#363636] font-medium">
-                  Registered Date
-                </div>
-                <div className="text-[12px]">{new Date(trainer.createdAt).toISOString().slice(0, 10)}</div>
-              </div>
-              <div className="flex-1">
-                <div className="text-[11px] text-[#363636] font-medium">
-                  Type
-                </div>
-                <Badge
-                  variant={trainer.isFullTime ? "success" : "destructive"}
-                  className={`p-2 text-[11px] ${
-                    trainer.isFullTime
-                      ? "bg-[#FBD8AD] text-[#BC4412] rounded-[15px] w-[71px] h-[18px]"
-                      : "bg-[#B2FFB9] text-[#0A7117] rounded-[15px] w-[68px] h-[18px]"
-                  }`}
-                >
-                  {trainer.isFullTime ? "Full time" : "Part time"}
-                </Badge>
-              </div>
-              <div className="flex-1">
-                <div className="text-[11px] text-[#363636] font-medium">
-                  Status
-                </div>
-                <Badge
-                  variant={trainer.isActive ? "success" : "destructive"}
-                  className={`p-2 text-[11px] ${
-                    trainer.isActive 
-                      ? "bg-[#B2FFB9] text-[#0A7117] rounded-[15px] w-[54px] h-[18px]"
-                      : "bg-[#D32F2F] text-[#FFFFFF] rounded-[15px] w-[63px] h-[19px]"
-                  }`}
-                >
-                  {trainer.isActive ? "Active":"not active"} 
-                </Badge>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 ">
-            <div className="flex items-center gap-3 mt-1 ">
-              {/* <Avatar className="h-[36px] w-[36px] rounded-[12px]">
-                <AvatarImage
-                  src={trainer.profileImage || "/images/trainer.png"}
-                  alt={trainer.firstName}
-                />
-                <AvatarFallback>{trainer.firstName.charAt(0)}</AvatarFallback>
-              </Avatar> */}
-              <div>
-                <div className="text-[11px] text-[#363636] font-medium">
-                  Trainer Name
-                </div>
-                <div className="text-[12px]">{trainer.firstName} {trainer.lastName}</div>
-              </div>
-            </div>
-
-              <div>
-                <div className="text-[11px] text-[#363636] font-medium">NIC</div>
-                <div className="text-[12px]">{trainer.nic}</div>
-              </div>
-            
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-2 mt-1">
-              <div>
-                <div className="text-[11px] text-[#363636] font-medium mb-1">
-                  Email
-                </div>
-                <div className="text-[12px]">
-                  {trainer.email}
-                </div>
-              </div>
-
-
-            </div>
-              <div>
-                <div className="text-[11px] text-[#363636] font-medium mb-1">
-                  Mobile
-                </div>
-                <div className="text-[12px]">
-                  {trainer.mobile}
-                </div>
-              </div>
-          </div>
-
-          <TrainerRegistrationCard />
-          {/* <PaymentHistory 
-            trainerId={trainer._id} 
-          /> */}
-          <SessionHistory 
-            trainerId={trainer._id}
-            trainerName={trainer.firstName} 
+      {/* ⚡ PERFORMANCE: Use memoized TrainerCard component */}
+      <div className="flex flex-col w-full max-w-md mx-auto">
+        {trainers.map((trainer) => (
+          <TrainerCard
+            key={trainer._id}
+            trainer={trainer}
+            onDeactivate={handleTrainerDeactivated}
           />
-          <UserCancel 
-            trainerId={trainer._id} 
-            onDeactivate={() => handleTrainerDeactivated(trainer._id)}
-          />
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
     </div>
   );
 };

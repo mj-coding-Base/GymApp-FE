@@ -1,5 +1,6 @@
 "use server";
 import axios from "@/utils/axios";
+import { deduplicatedRequest } from "@/utils/requestDeduplication";
 
 export type DashboardData = {
   trainer: {
@@ -17,12 +18,16 @@ export type DashboardData = {
   }>;
 };
 
+// ⚡ PERFORMANCE OPTIMIZATION: Deduplicate dashboard requests
 export const fetchDashboardData = async (): Promise<DashboardData> => {
-  try {
-    const res = await axios.get("/admin/admin-management/dashboard");
-    return res.data.data;
-  } catch (error) {
-    console.error("API request failed. Returning dummy data.", error);
+  return deduplicatedRequest('dashboard-data', async () => {
+    try {
+      const res = await axios.get("/admin/admin-management/dashboard");
+      return res.data.data;
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("API request failed. Returning dummy data.", error);
+      }
 
     // Dummy fallback data
     const dummyData: DashboardData = {
@@ -45,8 +50,9 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
       ],
     };
 
-    return dummyData;
-  }
+      return dummyData;
+    }
+  });
 };
 
 // Types for daily attendance data

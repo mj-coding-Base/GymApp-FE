@@ -4,7 +4,7 @@ import { deactivateCustomer } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import { IndividualCustomer } from "@/types/Customer";
-import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import AddNewMember from "./AddNewMember";
 import ViewClientProfile from "./ClientProfile";
 
@@ -12,15 +12,25 @@ interface Props {
   customer: IndividualCustomer;
 }
 
-const IndividualCard = ({ customer }: Props) => {
+// ⚡ PERFORMANCE OPTIMIZATION: Memoize to prevent unnecessary re-renders
+const IndividualCard = React.memo(({ customer }: Props) => {
   const [isClientProfileOpen, setIsClientProfileOpen] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { handleAction } = useActions();
   const [isActive, setIsActive] = useState(customer.isActive);
 
-  const formatedDate = new Date(customer.createdAt).toISOString().split("T")[0];
- 
-  console.log(customer);
+  // ⚡ PERFORMANCE: Memoize date formatting (runs only when createdAt changes)
+  const formattedDate = useMemo(
+    () => new Date(customer.createdAt).toISOString().split("T")[0],
+    [customer.createdAt]
+  );
+
+  // ⚡ PERFORMANCE: Memoize full name (runs only when names change)
+  const fullName = useMemo(
+    () => `${customer.firstName} ${customer.lastName}`,
+    [customer.firstName, customer.lastName]
+  );
+
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
       <div className="flex flex-col gap-[15px]">
@@ -30,7 +40,7 @@ const IndividualCard = ({ customer }: Props) => {
               Date Registered
             </p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {formatedDate}
+              {formattedDate}
             </p>
           </div>
           <div className="flex flex-col gap-[5px]">
@@ -58,7 +68,7 @@ const IndividualCard = ({ customer }: Props) => {
             Client Name
           </p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {`${customer.firstName} ${customer.lastName}`}
+            {fullName}
           </p>
         </div>
 
@@ -128,6 +138,9 @@ const IndividualCard = ({ customer }: Props) => {
       />
     </div>
   );
-};
+});
+
+// Set display name for debugging
+IndividualCard.displayName = 'IndividualCard';
 
 export default IndividualCard;

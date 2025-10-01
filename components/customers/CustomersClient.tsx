@@ -7,6 +7,12 @@ import { useEffect, useState } from "react";
 import Customers from "./Customers";
 import CustomersSkeleton from "./CustomersSkeleton";
 
+// ⚡ PERFORMANCE: Shared empty result objects to avoid creating new objects
+const EMPTY_INDIVIDUAL_RESULT: { results: IndividualCustomer[]; totalResults: number } = 
+  { results: [], totalResults: 0 };
+const EMPTY_GROUP_RESULT: { results: GroupShort[]; totalResults: number } = 
+  { results: [], totalResults: 0 };
+
 interface CustomersClientProps {
   readonly searchParams: {
     page?: string;
@@ -33,33 +39,32 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
         const size = searchParams.size ?? "10";
         const search = searchParams.search;
 
-        let individualCustomers: {
-          results: IndividualCustomer[];
-          totalResults: number;
-        } = { results: [], totalResults: 0 };
+        // ⚡ PERFORMANCE: Only fetch what's needed, avoid creating empty objects
+        let freshData: CustomersData;
 
-        let groupCustomers: {
-          results: GroupShort[];
-          totalResults: number;
-        } = { results: [], totalResults: 0 };
-
-        // Fetch based on type
         if (type === "group") {
-          groupCustomers = await fetchGroups(page, size, search, undefined, true);
+          const groupCustomers = await fetchGroups(page, size, search, undefined, true);
+          freshData = {
+            individuals: EMPTY_INDIVIDUAL_RESULT,
+            groups: groupCustomers,
+            searchParams,
+          };
         } else {
-          individualCustomers = await fetchIndividualCustomers(page, size, search);
+          const individualCustomers = await fetchIndividualCustomers(page, size, search);
+          freshData = {
+            individuals: individualCustomers,
+            groups: EMPTY_GROUP_RESULT,
+            searchParams,
+          };
         }
 
-        const freshData: CustomersData = {
-          individuals: individualCustomers,
-          groups: groupCustomers,
-          searchParams,
-        };
-
+        // ⚡ PERFORMANCE: Batch state updates (single render)
         setData(freshData);
         customersCache.set(freshData);
       } catch (err) {
-        console.error("Error fetching customers data:", err);
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("Error fetching customers data:", err);
+        }
       } finally {
         setIsRefreshing(false);
       }

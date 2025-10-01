@@ -1,21 +1,25 @@
 "use client";
+import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { Toaster } from "react-hot-toast";
-import AddNewGroup from "../customers/group/AddNewGroup";
-import ViewGroupMemberProfile from "../customers/group/GroupMemberProfile";
-import TransferMemberToAGroup from "../customers/group/TransferMemberToAGroup";
-import TransferMemberToExistingGroup from "../customers/group/TransferMemberToExistingGroup";
-import UpdateGroupMember from "../customers/group/UpdateGroupMemberDetails";
-import ViewGroupDetails from "../customers/group/ViewGroupDetails";
-import CollectPaymentGroup from "../dashboard/sheets/CollectPaymentGroup";
-import CollectPaymentIndividual from "../dashboard/sheets/CollectPaymentIndividual";
-import CollectPaymentSuccessGroup from "../dashboard/sheets/CollectPaymentSuccessGroup";
-import MarkAttendanceGroup from "../dashboard/sheets/MarkAttendanceGroup";
-import MarkAttendanceIndividual from "../dashboard/sheets/MarkAttendanceIndividual";
-import ProfileDetails from "../dashboard/sheets/ProfileDetails";
-import ResetPassword from "../dashboard/sheets/ResetPassword";
-import SuccessModal from "./SuccessModal";
-import WarningModal from "./WarningModal";
+
+// ⚡ PERFORMANCE OPTIMIZATION: Dynamic imports to reduce initial bundle size
+// These components are only loaded when actually needed (sheet/modal opens)
+const AddNewGroup = dynamic(() => import("../customers/group/AddNewGroup"), { ssr: false });
+const ViewGroupMemberProfile = dynamic(() => import("../customers/group/GroupMemberProfile"), { ssr: false });
+const TransferMemberToAGroup = dynamic(() => import("../customers/group/TransferMemberToAGroup"), { ssr: false });
+const TransferMemberToExistingGroup = dynamic(() => import("../customers/group/TransferMemberToExistingGroup"), { ssr: false });
+const UpdateGroupMember = dynamic(() => import("../customers/group/UpdateGroupMemberDetails"), { ssr: false });
+const ViewGroupDetails = dynamic(() => import("../customers/group/ViewGroupDetails"), { ssr: false });
+const CollectPaymentGroup = dynamic(() => import("../dashboard/sheets/CollectPaymentGroup"), { ssr: false });
+const CollectPaymentIndividual = dynamic(() => import("../dashboard/sheets/CollectPaymentIndividual"), { ssr: false });
+const CollectPaymentSuccessGroup = dynamic(() => import("../dashboard/sheets/CollectPaymentSuccessGroup"), { ssr: false });
+const MarkAttendanceGroup = dynamic(() => import("../dashboard/sheets/MarkAttendanceGroup"), { ssr: false });
+const MarkAttendanceIndividual = dynamic(() => import("../dashboard/sheets/MarkAttendanceIndividual"), { ssr: false });
+const ProfileDetails = dynamic(() => import("../dashboard/sheets/ProfileDetails"), { ssr: false });
+const ResetPassword = dynamic(() => import("../dashboard/sheets/ResetPassword"), { ssr: false });
+const SuccessModal = dynamic(() => import("./SuccessModal"), { ssr: false });
+const WarningModal = dynamic(() => import("./WarningModal"), { ssr: false });
 
 const Providers =  () => {
   return (

@@ -65,23 +65,40 @@ export default function PackagePage() {
     fetchPackages();
   }, []);
 
-  // Fetch members when drawer opens
-const [membersCount, setMembersCount] = React.useState<Record<string, number>>({});
+  // ⚡ PERFORMANCE: Memoize members count to avoid recomputation
+  const [membersCount, setMembersCount] = React.useState<Record<string, number>>({});
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [totalMembers, setTotalMembers] = React.useState(0);
+  const PAGE_SIZE = 50; // Render 50 at a time instead of 1000
 
-const handleOpenMembersDrawer = async (packageId: string) => {
-  setIsDrawerOpen(true);
-  setIsLoading(prev => ({ ...prev, members: true }));
+  const handleOpenMembersDrawer = async (packageId: string, page = 1) => {
+    setIsDrawerOpen(true);
+    setIsLoading(prev => ({ ...prev, members: true }));
 
-  try {
-    const data = await fetchIndividualCustomers("1", "1000", packageId);
-    setMembers(data.results);
-    setMembersCount(prev => ({ ...prev, [packageId]: data.results.length }));
-  } catch (error) {
-    console.error("Error loading members:", error);
-  } finally {
-    setIsLoading(prev => ({ ...prev, members: false }));
-  }
-};
+    try {
+      // ⚡ PERFORMANCE: Fetch paginated data instead of all 1000 items
+      const data = await fetchIndividualCustomers(page.toString(), PAGE_SIZE.toString(), packageId);
+      
+      if (page === 1) {
+        // First page: replace members
+        setMembers(data.results);
+        setTotalMembers(data.totalResults);
+        setCurrentPage(1);
+      } else {
+        // Subsequent pages: append members
+        setMembers(prev => [...prev, ...data.results]);
+        setCurrentPage(page);
+      }
+      
+      setMembersCount(prev => ({ ...prev, [packageId]: data.totalResults }));
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error loading members:", error);
+      }
+    } finally {
+      setIsLoading(prev => ({ ...prev, members: false }));
+    }
+  };
 
   if (isLoading.packages) {
     return (
@@ -166,7 +183,7 @@ const handleOpenMembersDrawer = async (packageId: string) => {
                       </div>
                       <Button
                         className="bg-[#6BBD78] px-2 text-black py-2 rounded-[11px] flex items-center w-[120px] h-[35px]"
-                        onClick={() => handleOpenMembersDrawer(pkg.packageId)}
+                        onClick={() => handleOpenMembersDrawer(pkg.packageId, 1)}
                       >
                         <span className="text-[13px] mr-2">Members</span>
                         <span className="text-[13px] font-bold">

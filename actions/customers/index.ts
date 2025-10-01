@@ -4,12 +4,13 @@
 import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
-  PaymentHistory,
   GroupFull,
   GroupShort,
   IndividualCustomer,
+  PaymentHistory,
 } from "@/types/Customer";
 import axios from "@/utils/axios";
+import { deduplicatedRequest } from "@/utils/requestDeduplication";
 import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
 const cacheBuster = Date.now();
@@ -24,81 +25,91 @@ interface FetchCustomersParams {
   ids?: string[];
 }
 
-export const fetchIndividualCustomers = async (
+// ⚡ PERFORMANCE OPTIMIZATION: Deduplicated fetch for individual customers
+export async function fetchIndividualCustomers(
   page?: string,
   size?: string,
   searchTerm?: string
-): Promise<{ results: IndividualCustomer[]; totalResults: number }> => {
-  try {
-    const response = await axios.get("/customers/get-all", {
-      params: {
-        page: page || "1",
-        size: size || "10",
-        searchTerm: searchTerm || undefined,
-    _: cacheBuster,
-      },
-    });
+): Promise<{ results: IndividualCustomer[]; totalResults: number }> {
+  const cacheKey = `customers-individual-${page || "1"}-${size || "10"}-${searchTerm || ""}`;
+  
+  return deduplicatedRequest(cacheKey, async () => {
+    try {
+      const response = await axios.get("/customers/get-all", {
+        params: {
+          page: page || "1",
+          size: size || "10",
+          searchTerm: searchTerm || undefined,
+          _: cacheBuster,
+        },
+      });
 
-    // 🔍 Debug raw response
-    // console.log("Raw API Response:",response.data?.data?.data?.results);
+      // Safely extract results
+      const results = response.data?.data?.data?.results;
+      
+      // Safely extract totalResults
+      const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
 
-    // Safely extract results
-    const results = response.data?.data?.data?.results;
-console.log("fetched customer is", results)
-    // Safely extract totalResults
-    const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
+      // If no results found in development, log structure
+      if (process.env.NODE_ENV !== 'production' && !results.length && totalResults === 0) {
+        console.warn("No data returned. Full response:", response.data);
+      }
 
-    // If no results found, log structure again
-    if (!results.length && totalResults === 0) {
-      console.warn("No data returned. Full response:", response.data);
+      return {
+        results,
+        totalResults,
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Error fetching individual customers:", error);
+      }
+      return { results: [], totalResults: 0 };
     }
-
-    return {
-      results,
-      totalResults,
-    };
-  } catch (error) {
-    console.error("Error fetching individual customers:", error);
-    return { results: [], totalResults: 0 };
-  }
-};
+  });
+}
 
 
 
 
-export const fetchGroups = async (
+// ⚡ PERFORMANCE OPTIMIZATION: Deduplicated fetch for groups
+export async function fetchGroups(
   page?: string,
   size?: string,
   searchTerm?: string,
   group_id?: string,
   isPrimaryMembersOnly?: boolean
-): Promise<{ results: GroupShort[]; totalResults: number }> => {
-  try {
-    const response = await axios.get("/customers/get-all?customer_type=group",
-      {
-        params: {
-          page,
-          size,
-          searchTerm,
-          group_id,
-          isPrimaryMembersOnly,
-        },
-      }
-    );
-  // console.log("API Response:", response.data.data);
+): Promise<{ results: GroupShort[]; totalResults: number }> {
+  const cacheKey = `customers-groups-${page || ""}-${size || ""}-${searchTerm || ""}-${group_id || ""}-${isPrimaryMembersOnly || false}`;
+  
+  return deduplicatedRequest(cacheKey, async () => {
+    try {
+      const response = await axios.get("/customers/get-all?customer_type=group",
+        {
+          params: {
+            page,
+            size,
+            searchTerm,
+            group_id,
+            isPrimaryMembersOnly,
+          },
+        }
+      );
+      
       return {
-    results: response.data?.data ?? [],
-    totalResults: response?.data?.totalResults ?? 0,
-  };
-  } catch (error) {
-    console.error(error);
-
-    return {
-      results: [],
-      totalResults: 0,
-    };
-  }
-};
+        results: response.data?.data ?? [],
+        totalResults: response?.data?.totalResults ?? 0,
+      };
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error(error);
+      }
+      return {
+        results: [],
+        totalResults: 0,
+      };
+    }
+  });
+}
 
 export const fetchGroupCustomers = async (
   page?: string,
@@ -119,10 +130,10 @@ export const fetchGroupCustomers = async (
         },
       }
     );
-  // console.log("API Response:", response.data.data);
-      return {
-    results: response.data.data ,
-  };
+    
+    return {
+      results: response.data.data,
+    };
   } catch (error) {
     console.error(error);
 
@@ -179,8 +190,6 @@ export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | 
     const response = await axios.get(
       `/clientsPayment/userPayments/${id}`
     );
-    
-    // console.log("`/clientsPayment/userPayments/${id}`",response.data);
 
     return response.data.data;
   } catch (error) {
@@ -250,15 +259,13 @@ export const updateCustomer = async (
 // Toggle customer active status
 export const toggleCustomerStatus = async (customerId: string) => {
   try {
-    const res = await axios.patch(
+    await axios.patch(
       `/admin/customer-management/${customerId}/toggleStatus`
     );
 
     revalidatePath(`/customers`);
 
-    // console.log(res.data);
-
-    return (" successfully deactivated");
+    return "successfully deactivated";
   } catch (error) {
     console.error(error);
 

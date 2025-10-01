@@ -3,18 +3,18 @@
 import { Card, CardContent } from "@/components/ui/card";
 import type { ChartConfig } from "@/components/ui/chart";
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
 } from "@/components/ui/chart";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 const chartConfig = {
@@ -38,15 +38,16 @@ interface ChartDataProps {
 const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
   const [selectedYear, setSelectedYear] = useState(years[0]);
 
-  const formattedChartData = Object.values(chartData).map(({ month, amount }) => ({
-  month,
-   earnings: amount, 
-}));
+  // ⚡ PERFORMANCE OPTIMIZATION: Memoize data transformation
+  // Only recompute when chartData changes, not on every render
+  const formattedChartData = useMemo(
+    () => chartData.map(({ month, amount }) => ({
+      month,
+      earnings: amount,
+    })),
+    [chartData]
+  );
 
-
-  // Ensure data is always an array and has the correct structure
-
-// console.log("Chart Data:", formattedChartData);
   return (
     <div className="mb-[32px]">
       <div className="flex items-center justify-between mb-4">
