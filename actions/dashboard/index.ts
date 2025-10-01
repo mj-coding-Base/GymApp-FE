@@ -17,6 +17,16 @@ type DashboardData = {
   }>;
 };
 
+export type DailyAttendanceData = {
+  date: string;
+  attendances: Array<{
+    customerId: string | number;
+    firstName: string;
+    lastName: string;
+    time: string;
+  }>;
+};
+
 export const fetchDashboardData = async (): Promise<DashboardData> => {
   try {
     const res = await axios.get("/admin/admin-management/dashboard");
@@ -45,6 +55,44 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
         { month: "June", amount: 10500 },
       ],
     };
+
+    return dummyData;
+  }
+};
+
+export const fetchDailyAttendance = async (
+  startDate: string,
+  endDate: string
+): Promise<DailyAttendanceData[]> => {
+  try {
+    const res = await axios.get(
+      `/admin/admin-management/daily-attendance?startDate=${startDate}&endDate=${endDate}`
+    );
+    console.log(res.data);
+    return res.data.data;
+  } catch (error) {
+    console.error("API request failed. Returning dummy data.", error);
+
+    // Dummy fallback data
+    const dummyData: DailyAttendanceData[] = [
+      {
+        date: startDate,
+        attendances: [
+          {
+            customerId: "C001",
+            firstName: "John",
+            lastName: "Doe",
+            time: "08:00 AM",
+          },
+          {
+            customerId: "C002",
+            firstName: "Jane",
+            lastName: "Smith",
+            time: "09:30 AM",
+          },
+        ],
+      },
+    ];
 
     return dummyData;
   }

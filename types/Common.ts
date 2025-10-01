@@ -1,5 +1,5 @@
-export type CommonResponseDataType = {
+export type CommonResponseDataType<T = unknown> = {
   status: "SUCCESS" | "FAIL";
   message: string;
-  data: unknown | null;
+  data: T;
 };

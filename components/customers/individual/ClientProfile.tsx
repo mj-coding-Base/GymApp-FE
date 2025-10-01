@@ -3,13 +3,13 @@
 import { getUserPaymentsId } from "@/actions/customers";
 import { getUserAttendance } from "@/actions/session";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
-import { PaymentHistory,AttendanceHistory, IndividualCustomer } from "@/types/Customer";
+import { AttendanceHistory, IndividualCustomer, PaymentHistory } from "@/types/Customer";
 import { useEffect, useState } from "react";
 
 interface ViewClientProfileProps {
@@ -24,7 +24,7 @@ const ViewClientProfile = ({
   customer,
 }: ViewClientProfileProps) => {
   const [paymentData, setPaymentData] = useState<PaymentHistory[] | null>(null);
-  const [attendanceData, setAttendance] = useState<AttendanceHistory[] | null>(null);
+  const [attendanceData, setAttendanceData] = useState<AttendanceHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const ViewClientProfile = ({
         setPaymentData(response);
       })
       .finally(() => setLoading(false));
-  }, [customer._id, isOpen]);
+  }, [customer._id, customer.clientId, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -46,7 +46,7 @@ const ViewClientProfile = ({
 
     getUserAttendance(customer._id)
       .then((response) => {
-        setAttendance(response);
+        setAttendanceData(response);
       })
       .finally(() => setLoading(false));
   }, [customer._id, isOpen]);

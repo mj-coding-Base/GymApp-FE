@@ -1,25 +1,21 @@
 "use client";
 import { Suspense } from 'react';
-import React from "react";
 import { Toaster } from "react-hot-toast";
-import CollectPaymentIndividual from "../dashboard/sheets/CollectPaymentIndividual";
+import AddNewGroup from "../customers/group/AddNewGroup";
+import ViewGroupMemberProfile from "../customers/group/GroupMemberProfile";
+import TransferMemberToAGroup from "../customers/group/TransferMemberToAGroup";
+import TransferMemberToExistingGroup from "../customers/group/TransferMemberToExistingGroup";
+import UpdateGroupMember from "../customers/group/UpdateGroupMemberDetails";
+import ViewGroupDetails from "../customers/group/ViewGroupDetails";
 import CollectPaymentGroup from "../dashboard/sheets/CollectPaymentGroup";
+import CollectPaymentIndividual from "../dashboard/sheets/CollectPaymentIndividual";
+import CollectPaymentSuccessGroup from "../dashboard/sheets/CollectPaymentSuccessGroup";
+import MarkAttendanceGroup from "../dashboard/sheets/MarkAttendanceGroup";
 import MarkAttendanceIndividual from "../dashboard/sheets/MarkAttendanceIndividual";
 import ProfileDetails from "../dashboard/sheets/ProfileDetails";
 import ResetPassword from "../dashboard/sheets/ResetPassword";
-import CollectPaymentSuccessGroup from "../dashboard/sheets/CollectPaymentSuccessGroup";
-import ViewGroupDetails from "../customers/group/ViewGroupDetails";
-import ViewGroupMemberProfile from "../customers/group/GroupMemberProfile";
-import AddNewGroup from "../customers/group/AddNewGroup";
-import UpdateGroupMember from "../customers/group/UpdateGroupMemberDetails";
-import TransferMemberToAGroup from "../customers/group/TransferMemberToAGroup";
-import TransferMemberToExistingGroup from "../customers/group/TransferMemberToExistingGroup";
 import SuccessModal from "./SuccessModal";
 import WarningModal from "./WarningModal";
-import PaymentCollectionIndividual from "@/components/dashboard/sheets/CollectPaymentIndividual"
-// import {PaymentCollectionExtra} from "@/components/dashboard/sheets/PaymentCollectionExtra"
-import PaymentCollectionGroup from "@/components/dashboard/sheets/MarkAttendanceGroup"
-// import { sampleNotifications } from "@/data/notifications";
 
 const Providers =  () => {
   return (
@@ -28,9 +24,7 @@ const Providers =  () => {
       <CollectPaymentIndividual  />
       <CollectPaymentGroup />
       <MarkAttendanceIndividual />
-      <PaymentCollectionIndividual />
-      {/* <PaymentCollectionExtra /> */}
-      <PaymentCollectionGroup />
+      <MarkAttendanceGroup />
       <ProfileDetails  />
       <ResetPassword />
       <CollectPaymentSuccessGroup />

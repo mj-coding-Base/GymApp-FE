@@ -1,14 +1,13 @@
 export const dynamic = 'force-dynamic';
 import {
-  fetchIndividualCustomers,
-  fetchGroups,
+    fetchGroups,
+    fetchIndividualCustomers,
 } from "@/actions/customers";
 import Customers from "@/components/customers/Customers";
 import { GroupShort, IndividualCustomer } from "@/types/Customer";
-import React from "react";
 
 interface Props {
-  searchParams: Promise<{
+  readonly searchParams: Promise<{
     page?: string;
     size?: string;
     search?: string;
@@ -47,7 +46,7 @@ export default async function Page({ searchParams }: Props) {
       "10",
       searchparams.search
     );
-      console.log("fuck ",individualCustomers.totalResults );
+      console.log("Individual customers total results: ", individualCustomers.totalResults);
   }
   console.log(groupCustomers);
   return (

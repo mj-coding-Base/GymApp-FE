@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { CommonResponseDataType } from "./Common";
+
 export interface Customer {
   _id: string;
   name: string;
@@ -60,12 +62,6 @@ export interface FetchedGroupCustomer {
   availableSessionQuota?: number;
 
   groupMembersNames?: string[];
-}
-
-export interface CommonResponseDataType<T = null> {
-  status: "SUCCESS" | "FAIL";
-  message: string;
-  data: T;
 }
 
 // For the deactivateCustomer response
