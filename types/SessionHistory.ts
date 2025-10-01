@@ -58,6 +58,9 @@ export interface FetchSessionsParams {
   month?: number;
   year?: number;
   customer_id?: string;
+  customerId?: string;
+  trainerId?: string;
+  isAttended?: boolean;
   page?: number;
   size?: number;
 }
