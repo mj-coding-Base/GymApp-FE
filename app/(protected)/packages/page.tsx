@@ -67,8 +67,6 @@ export default function PackagePage() {
 
   // ⚡ PERFORMANCE: Memoize members count to avoid recomputation
   const [membersCount, setMembersCount] = React.useState<Record<string, number>>({});
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const [totalMembers, setTotalMembers] = React.useState(0);
   const PAGE_SIZE = 50; // Render 50 at a time instead of 1000
 
   const handleOpenMembersDrawer = async (packageId: string, page = 1) => {
@@ -79,17 +77,8 @@ export default function PackagePage() {
       // ⚡ PERFORMANCE: Fetch paginated data instead of all 1000 items
       const data = await fetchIndividualCustomers(page.toString(), PAGE_SIZE.toString(), packageId);
       
-      if (page === 1) {
-        // First page: replace members
-        setMembers(data.results);
-        setTotalMembers(data.totalResults);
-        setCurrentPage(1);
-      } else {
-        // Subsequent pages: append members
-        setMembers(prev => [...prev, ...data.results]);
-        setCurrentPage(page);
-      }
-      
+      // Always replace members for now (pagination UI can be added later)
+      setMembers(data.results);
       setMembersCount(prev => ({ ...prev, [packageId]: data.totalResults }));
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
