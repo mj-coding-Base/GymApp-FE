@@ -1,6 +1,6 @@
 import Navbar from "@/components/common/navbar/Navbar";
 import MobileSidebar from "@/components/common/sidebar/MobileSidebar";
-import { sampleNotifications } from "@/data/notifications";
+// import { sampleNotifications } from "@/data/notifications";
 import { getSession } from "@/lib/authentication";
 
 export default async function RootLayout({
@@ -10,8 +10,8 @@ export default async function RootLayout({
 }>) {
   const session = await getSession();
   // const notifications = await getNotifications();
-  const notifications = sampleNotifications;
-  console.log(notifications)
+  // const notifications = sampleNotifications;
+  // console.log(notifications)
   if (!session) {
     return (
       <div className="m-auto flex items-center justify-center w-screen h-screen bg-[#FAFAFA]">

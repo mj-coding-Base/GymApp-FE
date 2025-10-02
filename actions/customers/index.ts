@@ -46,8 +46,8 @@ export async function fetchIndividualCustomers(
 
       // Safely extract results
       const results = response.data?.data?.data?.results;
-      
-      // Safely extract totalResults
+      // Safely ex  tract totalResults
+      console.log(response.data?.data?.data?.totalResults);
       const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
 
       // If no results found in development, log structure
@@ -94,7 +94,7 @@ export async function fetchGroups(
           },
         }
       );
-      
+            
       return {
         results: response.data?.data ?? [],
         totalResults: response?.data?.totalResults ?? 0,
@@ -130,7 +130,7 @@ export const fetchGroupCustomers = async (
         },
       }
     );
-    
+    console.log(response.data.data);
     return {
       results: response.data.data,
     };
@@ -169,7 +169,7 @@ export const fetchAllCustomers = async (
     const res = await axios.get("/admin/customer-management/get-all", {
       params: safeParams,
     });
-
+    console.log(res.data?.data);
     return {
       data: Array.isArray(res.data?.data) ? res.data.data : [],
       total: res.data?.total || 0,
@@ -186,14 +186,28 @@ export const fetchAllCustomers = async (
 
 export const getUserPaymentsId = async (id: string): Promise<PaymentHistory[] | null> => {
   try {
-    console.log(id)
     const response = await axios.get(
       `/clientsPayment/userPayments/${id}`
     );
 
     return response.data.data;
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    // Handle "no payments" as a valid case, not an error
+    const errorMessage = error?.response?.data?.message || error?.message || '';
+    
+    if (errorMessage.includes("hasn't made any payments") || 
+        errorMessage.includes("no payments")) {
+      // This is expected - user simply has no payment history yet
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`User ${id} has no payment history yet`);
+      }
+      return [];
+    }
+    
+    // Log actual errors
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error fetching user payments:', errorMessage);
+    }
 
     return null;
   }
@@ -214,6 +228,7 @@ export interface CustomerRegistrationData {
   dob: string;
   isMale : boolean,
   isMarried : boolean,
+  deactivateAt: string;
 }
 
 export const createIndividualCustomer = async (
@@ -228,10 +243,18 @@ export const createIndividualCustomer = async (
     revalidatePath(`/customers`);
 
     return res.data;
-  } catch (error) {
-    console.error("Customer creation error:", error);
-
-    return error as CommonResponseDataType;
+  } catch (error: any) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Customer creation error:", error);
+    }
+    
+    // Return proper error response
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to create customer";
+    return {
+      status: 'FAIL',
+      message: errorMessage,
+      data: null
+    };
   }
 };
 
@@ -241,18 +264,29 @@ export const updateCustomer = async (
   updatedData: Partial<CustomerRegistrationData>
 ): Promise<CommonResponseDataType> => {
   try {
+    // Remove clientId from update data as it's auto-generated and read-only
+    const { clientId, ...dataToSend } = updatedData as any;
+    
     const res = await axios.patch(
       `/customers/${customerId}`,
-      updatedData
+      dataToSend
     );
 
     revalidatePath(`/customers`);
 
     return res.data;
-  } catch (error) {
-    console.error(error);
-
-    return error as CommonResponseDataType;
+  } catch (error: any) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Update customer error:", error);
+    }
+    
+    // Return proper error response
+    const errorMessage = error?.response?.data?.message || error?.message || "Failed to update customer";
+    return {
+      status: 'FAIL',
+      message: errorMessage,
+      data: null
+    };
   }
 };
 

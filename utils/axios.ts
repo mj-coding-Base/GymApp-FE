@@ -82,15 +82,24 @@ axiosInstance.interceptors.response.use(
       serverAuthCache = null;
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.error("[Axios Error]", resData || error.message);
-    }
-    
-    // Always return proper Error object for Promise rejection
+    // Extract error message
     const errorMessage = (resData && typeof resData === 'object' && 'message' in resData) 
       ? (resData as any).message 
       : error.message || 'API request failed';
     
+    // Don't log "no data" responses as errors - these are expected business cases
+    const isBusinessResponse = errorMessage && (
+      errorMessage.includes("hasn't made any payments") ||
+      errorMessage.includes("no payments") ||
+      errorMessage.includes("not found") ||
+      errorMessage.includes("No data found")
+    );
+    
+    if (process.env.NODE_ENV !== 'production' && !isBusinessResponse) {
+      console.error("[Axios Error]", resData || error.message);
+    }
+    
+    // Always return proper Error object for Promise rejection
     const err = new Error(errorMessage) as any;
     if (resData && typeof resData === 'object') {
       err.response = resData;

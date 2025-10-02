@@ -3,32 +3,31 @@
 
 import { createIndividualCustomer, updateCustomer } from "@/actions/customers";
 import { fetchAllPackages } from "@/actions/package";
-import { ErrorToast } from "@/components/common/toast";
 import { Button } from "@/components/ui/button";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { NewIndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
@@ -88,6 +87,11 @@ const formSchema = z.object({
     month: z.string({ required_error: "Month is required" }),
     day: z.string({ required_error: "Day is required" }),
   }),
+  deactivateAt: z.object({
+    year: z.string().optional(),
+    month: z.string().optional(),
+    day: z.string().optional(),
+  }).optional(),
   whyJoin: z.enum([
     "Bulking", 
     "Strength", 
@@ -139,6 +143,11 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         month: "",
         day: "",
       },
+      deactivateAt: {
+        year: "not-set",
+        month: "not-set",
+        day: "not-set",
+      },
       whyJoin: "Regular Fitness",
       profession: "",
     },
@@ -186,6 +195,11 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
           month: data.dob ? (new Date(data.dob).getMonth() + 1).toString().padStart(2, '0') : "",
           day: data.dob ? new Date(data.dob).getDate().toString().padStart(2, '0') : "",
         },
+        deactivateAt: {
+          year: data.deactivateAt ? new Date(data.deactivateAt).getFullYear().toString() : "not-set",
+          month: data.deactivateAt ? (new Date(data.deactivateAt).getMonth() + 1).toString().padStart(2, '0') : "not-set",
+          day: data.deactivateAt ? new Date(data.deactivateAt).getDate().toString().padStart(2, '0') : "not-set",
+        },
         whyJoin: data.whyJoin as any,
         profession: data.profession || "",
       });
@@ -198,10 +212,37 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
     setIsSubmitting(true);
     try {
+      // Build deactivateAt date if all fields are provided and not "not-set"
+      let deactivateAtDate = "";
+      if (
+        values.deactivateAt?.year && 
+        values.deactivateAt?.month && 
+        values.deactivateAt?.day &&
+        values.deactivateAt.year !== "not-set" &&
+        values.deactivateAt.month !== "not-set" &&
+        values.deactivateAt.day !== "not-set"
+      ) {
+        deactivateAtDate = new Date(
+          `${values.deactivateAt.year}-${values.deactivateAt.month}-${values.deactivateAt.day}`
+        ).toISOString();
+      }
+
+      // Build customerData with only the fields we need to send
       const customerData = {
-        ...values,
-        dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
+        firstName: values.firstName,
+        lastName: values.lastName,
+        mobileNumber: values.mobileNumber,
+        email: values.email,
+        nic: values.nic,
+        addressLine1: values.addressLine1,
         addressLine2: values.addressLine2 ?? "",
+        packageId: values.packageId,
+        isMale: values.isMale,
+        isMarried: values.isMarried,
+        whyJoin: values.whyJoin,
+        profession: values.profession,
+        dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
+        deactivateAt: deactivateAtDate,
       };
 
       if (data) {
@@ -225,11 +266,22 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         });
         setOpenSuccessModal(true);
       } else {
-        toast.error(response.message || "Operation failed");
+        // Show user-friendly error message
+        const errorMsg = response.message || "Operation failed";
+        toast.error(errorMsg);
+        
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("Customer operation error:", response);
+        }
       }
     } catch (error: any) {
-      console.error("Operation failed:", error);
-      ErrorToast(error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error("Operation failed:", error);
+      }
+      
+      // Extract user-friendly error message
+      const errorMessage = error?.response?.data?.message || error?.message || "An unexpected error occurred";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -508,6 +560,76 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {days.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="deactivateAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deactivation Date (Optional)</FormLabel>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, year: value })}
+                        value={field.value?.year || "not-set"}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Year" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="not-set">Not Set</SelectItem>
+                          {years.map((year) => (
+                            <SelectItem key={year} value={year}>
+                              {year}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, month: value })}
+                        value={field.value?.month || "not-set"}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Month" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="not-set">Not Set</SelectItem>
+                          {months.map((month) => (
+                            <SelectItem key={month} value={month}>
+                              {month}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        onValueChange={(value) => field.onChange({ ...field.value, day: value })}
+                        value={field.value?.day || "not-set"}
+                        disabled={isSubmitting}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="rounded-[10px] h-[41px]">
+                            <SelectValue placeholder="Day" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="not-set">Not Set</SelectItem>
                           {days.map((day) => (
                             <SelectItem key={day} value={day}>
                               {day}

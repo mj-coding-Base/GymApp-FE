@@ -82,9 +82,9 @@ const IndividualCard = React.memo(({ customer }: Props) => {
         </div>
 
         <div className="flex flex-col gap-[5px]">
-          <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">Email</p>
+          <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">Dactivation Date</p>
           <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.email}
+            {customer.deactivateAt?.slice(0, 10)}
           </p>
         </div>
       </div>

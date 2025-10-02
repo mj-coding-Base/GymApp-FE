@@ -101,10 +101,16 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
             Payment Status
           </p>
           <Badge
-            variant={groupMember.isPaid ? "success" : "destructive"}
+            variant={
+              groupMember.deactivateAt && new Date(groupMember.deactivateAt) < new Date()
+                ? "destructive"
+                : "success"
+            }
             className="rounded-[15px] text-[11px]/[13px] font-semibold"
           >
-            {groupMember.isPaid ? "Paid" : "Not Paid"}
+            {groupMember.deactivateAt && new Date(groupMember.deactivateAt) < new Date()
+              ? "Not Paid"
+              : "Paid"}
           </Badge>
         </div>
       </div>

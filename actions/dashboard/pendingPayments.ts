@@ -9,7 +9,7 @@ export type PendingPaymentCustomer = {
   email: string;
   mobileNumber: string;
   packageName: string;
-  deactivatedDate: string;
+  deactivateAt: string;
   daysPending: number;
   amountDue?: number;
   fee?: number;
@@ -24,9 +24,9 @@ export type PendingPaymentsResponse = {
 };
 
 // Calculate days between deactivated date and today
-const calculateDaysPending = (deactivatedDate: string): number => {
+const calculateDaysPending = (deactivateAt: string): number => {
   const today = new Date();
-  const deactivated = new Date(deactivatedDate);
+  const deactivated = new Date(deactivateAt);
   const diffTime = today.getTime() - deactivated.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays > 0 ? diffDays : 0;
@@ -55,13 +55,13 @@ export const fetchPendingPaymentCustomers = async (): Promise<PendingPaymentsRes
     // Filter customers with deactivated date earlier than today
     const pendingCustomers = results
       .filter((customer: any) => {
-        // Check if customer has a deactivatedDate field
-        if (customer.deactivatedDate) {
-          const deactivatedDate = new Date(customer.deactivatedDate);
-          deactivatedDate.setHours(0, 0, 0, 0);
-          return deactivatedDate < today;
+        // Check if customer has a deactivateAt field
+        if (customer.deactivateAt) {
+          const deactivateAt = new Date(customer.deactivateAt);
+          deactivateAt.setHours(0, 0, 0, 0);
+          return deactivateAt < today;
         }
-        // Alternative: if no deactivatedDate, check for inactive and unpaid customers
+        // Alternative: if no deactivateAt, check for inactive and unpaid customers
         return customer.isActive === false && customer.isPaid === false;
       })
       .map((customer: any) => ({
@@ -72,9 +72,9 @@ export const fetchPendingPaymentCustomers = async (): Promise<PendingPaymentsRes
         email: customer.email || '',
         mobileNumber: customer.mobileNumber || '',
         packageName: customer.package_name || 'N/A',
-        deactivatedDate: customer.deactivatedDate || customer.updatedAt || '',
-        daysPending: customer.deactivatedDate 
-          ? calculateDaysPending(customer.deactivatedDate)
+        deactivateAt: customer.deactivateAt || customer.updatedAt || '',
+        daysPending: customer.deactivateAt 
+          ? calculateDaysPending(customer.deactivateAt)
           : 0,
         amountDue: customer.fee || 0,
         fee: customer.fee,

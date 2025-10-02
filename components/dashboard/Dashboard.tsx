@@ -34,11 +34,14 @@ type DashboardProps = {
 
 const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
   // Destructure the data for easier access
+  // ⚡ SAFETY: Ensure chartData is always an array
   const {
     trainer,
     client,
-    paymentHistory: chartData
+    paymentHistory
   } = data;
+  
+  const chartData = Array.isArray(paymentHistory) ? paymentHistory : [];
   
   const { setOpenDailyAttendanceSheet } = useDailyAttendanceSheet();
   const { setOpenPendingPaymentsSheet } = usePendingPaymentsSheet();

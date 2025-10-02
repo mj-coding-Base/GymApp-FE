@@ -1,26 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { fetchIndividualCustomers, getUserPaymentsId } from "@/actions/customers";
+import CommonSearch from "@/components/common/Search";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import CommonSearch from "@/components/common/Search";
 import { useCollectPaymentIndividualSheet } from "@/hooks/useCollectPaymentIndividualSheet";
 import { useExtraPaymentCollectionSheet } from "@/hooks/usePaymentCollectionExtra";
 import { usePaymentCollectionIndividualSheet } from "@/hooks/usePaymentCollectionIndividualSheet";
-import { fetchIndividualCustomers } from "@/actions/customers";
-import { PaymentHistory, IndividualCustomer } from "@/types/Customer";
-import { getUserPaymentsId } from "@/actions/customers";
-import PaymentCollectionIndividual from "./PaymentCollectionIndividual";
+import { IndividualCustomer, PaymentHistory } from "@/types/Customer";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { PaymentCollectionExtra } from "./PaymentCollectionExtra";
-import { Suspense } from 'react';
+import PaymentCollectionIndividual from "./PaymentCollectionIndividual";
 
 const CollectPaymentIndividual = () => {
   // State management
@@ -136,59 +133,68 @@ console.log(foundCustomer.clientId)
           <SheetTitle className="text-[14px] font-semibold text-[#363636] text-center">
             Collect Payment
           </SheetTitle>
-          <SheetDescription className="relative w-full max-w-sm">
-            
+          <div className="relative w-full max-w-sm">
             <Suspense fallback={<div>Loading...</div>}>
               <CommonSearch />
             </Suspense>
-          </SheetDescription>
+          </div>
         </SheetHeader>
 
         <div className="px-4 overflow-y-auto">
           {customer ? (
-            <div className={`mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden 
-              ${customer.isActive ? "" : "bg-[#fac1be]" }`}>
-              <div className="flex border-b-[1px] border-b-[#000000]">
-                <div className="flex-[35%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">
-                    {customer.availableSessionQuota ?? "--"}
-                  </p>
+            (() => {
+              // Check if deactivation date is earlier than today
+              const isPaymentOverdue = customer.deactivateAt 
+                ? new Date(customer.deactivateAt) < new Date()
+                : false;
+              
+              const paymentStatus = isPaymentOverdue ? "Not Paid" : "Paid";
+              const paymentBgColor = isPaymentOverdue ? "bg-[#D32F2F]" : "bg-[#4CAF50]";
+              
+              return (
+                <div className={`mt-[10px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden 
+                  ${customer.isActive ? "" : "bg-[#fac1be]" }`}>
+                  <div className="flex border-b-[1px] border-b-[#000000]">
+                    <div className="flex-[35%] px-[10px] py-[7.8px]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
+                      <p className="text-[#3D3D3D] text-[12px] font-semibold">
+                        {customer.availableSessionQuota ?? "--"}
+                      </p>
+                    </div>
+                    <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Customer ID</p>
+                      <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.clientId ?? "--"}</p>
+                    </div>
+                    <div className="flex-[30%] px-[10px] py-[7.8px]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Dactivation Date</p>
+                      <p className="text-[#3D3D3D] text-[12px] font-semibold">
+                        {customer.deactivateAt?.slice(0, 10) ?? "-"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex">
+                    <div className="flex-[35%] px-[10px] py-[7.8px]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Name</p>
+                      <p className="text-[#3D3D3D] text-[12px] font-semibold">
+                        {customer.firstName} {customer.lastName}
+                      </p>
+                    </div>
+                    <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">NIC</p>
+                      <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.nic}</p>
+                    </div>
+                    <div className="flex-[30%] px-[10px] py-[7.8px]">
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Payment</p>
+                      <p
+                        className={`${paymentBgColor} text-center rounded-[15px] px-[0px] py-[5px] text-[#FFFFFF] text-[12px]/[100%] font-semibold`}
+                      >
+                        {paymentStatus}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Customer ID</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.clientId ?? "--"}</p>
-                </div>
-                <div className="flex-[30%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Today</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">
-                    {new Date().toLocaleDateString("en-GB")}
-                  </p>
-                </div>
-              </div>
-              <div className="flex">
-                <div className="flex-[35%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Name</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">
-                    {customer.firstName} {customer.lastName}
-                  </p>
-                </div>
-                <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">NIC</p>
-                  <p className="text-[#3D3D3D] text-[12px] font-semibold">{customer.nic}</p>
-                </div>
-                <div className="flex-[30%] px-[10px] py-[7.8px]">
-                  <p className="text-[#6D6D6D] text-[12px] font-medium">Payment</p>
-                  <p
-                    className={`bg-${
-                      customer.isPaid == null ?  "[#D32F2F]" : customer.isPaid ? "[#4CAF50]" : "[#D32F2F]"
-                    } text-center rounded-[15px] px-[0px] py-[5px] text-[#FFFFFF] text-[12px]/[100%] font-semibold`}
-                  >
-                    {customer.isPaid == null ?  "Not Paid" : customer.isPaid ? "Paid" : "Not Paid"}
-                  </p>
-                </div>
-              </div>
-            </div>
+              );
+            })()
           ) : (
             <p className="text-center mt-4 text-xs text-gray-400">Search user for data</p>
           )}
@@ -217,6 +223,11 @@ console.log(foundCustomer.clientId)
                   Amount
                 </p>
               </div>
+              {paymentData && paymentData.length === 0 && (
+                <div className="px-[13.5px] py-[32px] text-center border-t-[#E7E7E7] border-t-[1px]">
+                  <p className="text-[12px] text-[#888888]">No payment history found</p>
+                </div>
+              )}
               {paymentData && paymentData.length > 0 ? (
                 paymentData.map((item) => (
                   <div

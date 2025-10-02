@@ -41,16 +41,10 @@ const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
   // ⚡ PERFORMANCE OPTIMIZATION: Memoize data transformation
   // Only recompute when chartData changes, not on every render
   const formattedChartData = useMemo(
-    () => {
-      // Safety check: ensure chartData is an array before mapping
-      if (!Array.isArray(chartData)) {
-        return [];
-      }
-      return chartData.map(({ month, amount }) => ({
-        month,
-        earnings: amount,
-      }));
-    },
+    () => chartData.map(({ month, amount }) => ({
+      month,
+      earnings: amount,
+    })),
     [chartData]
   );
 

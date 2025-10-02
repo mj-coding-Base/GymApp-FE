@@ -3,11 +3,11 @@
 import { getUserPaymentsId } from "@/actions/customers";
 import { getUserAttendance } from "@/actions/session";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { AttendanceHistory, IndividualCustomer, PaymentHistory } from "@/types/Customer";
 import { useEffect, useState } from "react";
@@ -109,10 +109,10 @@ const ViewClientProfile = ({
               </div>
               <div className="flex-[25%] shrink-0 px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000] content-center flex flex-col gap-[9px]">
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                  Session count
+                  Dactivation Date
                 </p>
                 <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.availableSessionQuota}
+                  {customer.deactivateAt?.slice(0, 10)}
                 </p>
               </div>
               <div className="flex-[40%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
@@ -148,6 +148,11 @@ const ViewClientProfile = ({
                   Amount
                 </p>
               </div>
+              {paymentData && paymentData.length === 0 && (
+                <div className="px-[13.5px] py-[32px] text-center border-t-[#E7E7E7] border-t-[1px]">
+                  <p className="text-[12px] text-[#888888]">No payment history found</p>
+                </div>
+              )}
               {paymentData?.map((item) => (
                 <div
                   key={item._id}

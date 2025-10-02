@@ -2,10 +2,10 @@
 
 import { fetchPendingPaymentCustomers, PendingPaymentCustomer } from "@/actions/dashboard/pendingPayments";
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { usePendingPaymentsSheet } from "@/hooks/usePendingPaymentsSheet";
 import { format } from "date-fns";
@@ -112,7 +112,7 @@ const PendingPayments = () => {
                       <div>
                         <p className="text-[10px] text-[#6D6D6D] mb-1">Deactivated Date</p>
                         <p className="text-[12px] font-medium text-[#F04237]">
-                          {formatDate(customer.deactivatedDate)}
+                          {formatDate(customer.deactivateAt)}
                         </p>
                       </div>
                       <div>

@@ -32,7 +32,17 @@ export const dashboardCache = {
         return null;
       }
 
-      return JSON.parse(cachedData) as DashboardData;
+      const data = JSON.parse(cachedData) as DashboardData;
+      
+      // ⚡ SAFETY: Validate and fix corrupted cache data
+      if (!Array.isArray(data?.paymentHistory)) {
+        return {
+          ...data,
+          paymentHistory: []
+        };
+      }
+      
+      return data;
     } catch (error) {
       console.error("Error reading dashboard cache:", error);
       return null;
@@ -46,8 +56,14 @@ export const dashboardCache = {
     if (typeof window === "undefined") return;
 
     try {
+      // ⚡ SAFETY: Ensure paymentHistory is always an array before caching
+      const safeData = {
+        ...data,
+        paymentHistory: Array.isArray(data?.paymentHistory) ? data.paymentHistory : []
+      };
+      
       const expiry = Date.now() + CACHE_DURATION;
-      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(safeData));
       localStorage.setItem(CACHE_EXPIRY_KEY, expiry.toString());
     } catch (error) {
       console.error("Error setting dashboard cache:", error);

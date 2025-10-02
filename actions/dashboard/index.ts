@@ -23,7 +23,13 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
   return deduplicatedRequest('dashboard-data', async () => {
     try {
       const res = await axios.get("/admin/admin-management/dashboard");
-      return res.data.data;
+      const apiData = res.data.data;
+      
+      // ⚡ SAFETY: Ensure paymentHistory is always an array
+      return {
+        ...apiData,
+        paymentHistory: Array.isArray(apiData?.paymentHistory) ? apiData.paymentHistory : []
+      };
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
         console.error("API request failed. Returning dummy data.", error);
