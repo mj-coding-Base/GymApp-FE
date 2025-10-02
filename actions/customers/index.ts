@@ -263,6 +263,7 @@ export const updateCustomer = async (
   customerId: string,
   updatedData: Partial<CustomerRegistrationData>
 ): Promise<CommonResponseDataType> => {
+  console.log("Customer hoding ID "+customerId+" is updated");
   try {
     // Remove clientId from update data as it's auto-generated and read-only
     const { clientId, ...dataToSend } = updatedData as any;
