@@ -1,6 +1,6 @@
 "use client";
 import { fetchIndividualCustomers } from "@/actions/customers";
-import { getPackages } from "@/actions/package";
+import { fetchAllPackages, getPackages } from "@/actions/package";
 import CustomPagination from "@/components/common/CustomPagination";
 import AddNewPackage from "@/components/packages/AddNewPackage";
 import PackagesSkeleton from "@/components/packages/PackagesSkeleton";
@@ -50,7 +50,7 @@ export default function PackagePage() {
       }
 
       try {
-        const data = await getPackages();
+        const data = await fetchAllPackages();
         setPackages(data);
         // Cache the fresh data
         packagesCache.set(data);
@@ -148,7 +148,7 @@ export default function PackagePage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-[11px] text-gray-500 max-w-[40]">Package Name</p>
+                        <p className="text-[11px] text-gray-500 max-w-[50]">Package ID</p>
                         <p className="text-[12px] font-medium">
                           {pkg.packageId}
                         </p>
@@ -163,8 +163,8 @@ export default function PackagePage() {
 
                     <div className="flex gap-14 mb-3">
                       <div>
-                        <p className="text-[11px] text-gray-500">Sessions</p>
-                        <p className="text-[12px] font-medium">{pkg.sessions}</p>
+                        <p className="text-[11px] text-gray-500">Period</p>
+                        <p className="text-[12px] font-medium">{pkg.durationDays}</p>
                       </div>
                       <div>
                         <p className="text-[11px] text-gray-500">Price</p>

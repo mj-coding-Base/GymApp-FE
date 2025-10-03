@@ -156,9 +156,9 @@ console.log(foundCustomer.clientId)
                   ${customer.isActive ? "" : "bg-[#fac1be]" }`}>
                   <div className="flex border-b-[1px] border-b-[#000000]">
                     <div className="flex-[35%] px-[10px] py-[7.8px]">
-                      <p className="text-[#6D6D6D] text-[12px] font-medium">Avilable sessions</p>
+                      <p className="text-[#6D6D6D] text-[12px] font-medium">Package ID</p>
                       <p className="text-[#3D3D3D] text-[12px] font-semibold">
-                        {customer.availableSessionQuota ?? "--"}
+                        {customer.packageId ?? "--"}
                       </p>
                     </div>
                     <div className="flex-[35%] px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000]">

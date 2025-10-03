@@ -32,7 +32,7 @@ export async function fetchIndividualCustomers(
   searchTerm?: string
 ): Promise<{ results: IndividualCustomer[]; totalResults: number }> {
   const cacheKey = `customers-individual-${page || "1"}-${size || "10"}-${searchTerm || ""}`;
-  
+
   return deduplicatedRequest(cacheKey, async () => {
     try {
       const response = await axios.get("/customers/get-all", {
