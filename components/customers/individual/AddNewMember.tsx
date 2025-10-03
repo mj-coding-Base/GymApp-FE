@@ -43,13 +43,13 @@ const formSchema = z.object({
   firstName: z
     .string({ required_error: "First name is required" })
     .min(1, "First name is required")
-    .max(100, "First name too long")
-    .regex(/^[a-zA-Z\s]+$/, "Only alphabets and spaces allowed"),
+    .max(100, "First name too long"),
+    // .regex(/^[a-zA-Z\s]+$/, "Only alphabets and spaces allowed"),
   lastName: z
     .string({ required_error: "Last name is required" })
     .min(1, "Last name is required")
-    .max(100, "Last name too long")
-    .regex(/^[a-zA-Z\s]+$/, "Only alphabets and spaces allowed"),
+    .max(100, "Last name too long"),
+    // .regex(/^[a-zA-Z\s]+$/, "Only alphabets and spaces allowed"),
   mobileNumber: z
     .string({ required_error: "Mobile number is required" })
     .regex(
@@ -243,11 +243,15 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         profession: values.profession,
         dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
         deactivateAt: deactivateAtDate,
+        clientId: data?.clientId || undefined,
+      
       };
 
       if (data) {
         // Update existing customer
-        response = await updateCustomer(data._id, customerData);
+        // console.log("Updating customer with data:", customerData);
+        // console.log("Updating customer with data:", data.clientId);
+        response = await updateCustomer(data.clientId, customerData);
       } else {
         // Create new customer
         response = await createIndividualCustomer(customerData);

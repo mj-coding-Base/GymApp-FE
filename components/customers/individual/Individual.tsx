@@ -33,7 +33,7 @@ const Individual = ({
 
           {individualCustomers.results.length > 0 ? (
             individualCustomers.results.map((customer) => (
-              <IndividualCard key={customer._id} customer={customer} />
+              <IndividualCard key={customer.clientId} customer={customer} />
             ))
           ) : (
             <div className="p-4 text-center text-sm text-gray-500">

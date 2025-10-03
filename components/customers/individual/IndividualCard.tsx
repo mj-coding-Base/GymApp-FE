@@ -25,12 +25,12 @@ const IndividualCard = React.memo(({ customer }: Props) => {
     [customer.createdAt]
   );
 
+  console.log("Rendering IndividualCard for:", customer.clientId);
   // ⚡ PERFORMANCE: Memoize full name (runs only when names change)
   const fullName = useMemo(
     () => `${customer.firstName} ${customer.lastName}`,
-    [customer.firstName, customer.lastName]
+    [customer.firstName, customer.lastName],
   );
-
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
       <div className="flex flex-col gap-[15px]">

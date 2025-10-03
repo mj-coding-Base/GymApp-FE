@@ -3,7 +3,7 @@ import axios, { AxiosError } from "axios";
 
 const isServer = typeof window === "undefined";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1" ; //|| "https://api.payzhe.fit/api/v1"
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,

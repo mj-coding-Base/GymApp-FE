@@ -113,6 +113,7 @@ export type NewIndividualCustomer ={
   isMarried : true,
   whyJoin :  string ,
   profession :  string,
+  clientId :  string,
   deactivateAt?: string
 }
 
