@@ -44,12 +44,12 @@ const ViewClientProfile = ({
 
     setLoading(true);
 
-    getUserAttendance(customer._id)
+    getUserAttendance(customer.clientId)
       .then((response) => {
         setAttendanceData(response);
       })
       .finally(() => setLoading(false));
-  }, [customer._id, isOpen]);
+  }, [customer.clientId, isOpen]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
