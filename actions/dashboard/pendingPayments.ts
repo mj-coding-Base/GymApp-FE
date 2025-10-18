@@ -8,94 +8,111 @@ export type PendingPaymentCustomer = {
   lastName: string;
   email: string;
   mobileNumber: string;
-  packageName: string;
-  deactivateAt: string;
-  daysPending: number;
-  amountDue?: number;
-  fee?: number;
+  packageId: string;
+  nic: string;
+  addressLine1: string;
+  addressLine2: string;
+  isMale: boolean;
+  isMarried: boolean;
+  whyJoin: string;
+  profession: string;
+  dob: string;
+  status: string;
   isActive: boolean;
   isPaid: boolean;
-  package_name?: string;
+  availableSessionQuota: number;
+  isOnFPmachine: boolean;
+  deactivateAt?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PendingPaymentsResponse = {
   customers: PendingPaymentCustomer[];
   totalCount: number;
+  currentPage: number;
+  totalPages: number;
 };
 
-// Calculate days between deactivated date and today
-const calculateDaysPending = (deactivateAt: string): number => {
-  const today = new Date();
-  const deactivated = new Date(deactivateAt);
-  const diffTime = today.getTime() - deactivated.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 0 ? diffDays : 0;
-};
-
-export const fetchPendingPaymentCustomers = async (): Promise<PendingPaymentsResponse> => {
+export const fetchPendingPaymentCustomers = async (
+  page: number = 1, 
+  size: number = 10,
+  searchTerm: string = ""
+): Promise<PendingPaymentsResponse> => {
   try {
-    // Fetch all customers with a larger page size to get potential pending customers
-    const res = await axios.get("/admin/customer-management/get-all", {
+    // Use the new /customers/expired endpoint
+    const res = await axios.get("/customers/expired", {
       params: {
-        page: 1,
-        size: 1000, // Large size to get all potential pending customers
-        searchTerm: undefined
-      },
-      headers: {
-        'gym-id': 'Hiru-Fitness'
+        page,
+        size,
+        searchTerm: searchTerm.trim() || " "
       }
     });
 
-    console.log("Pending Payments API Response:", res.data);
+    console.log("Pending Payments API Response:", JSON.stringify(res.data, null, 2));
 
-    const results = res.data?.data?.results || [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
-    // Filter customers with deactivated date earlier than today
-    const pendingCustomers = results
-      .filter((customer: any) => {
-        // Check if customer has a deactivateAt field
-        if (customer.deactivateAt) {
-          const deactivateAt = new Date(customer.deactivateAt);
-          deactivateAt.setHours(0, 0, 0, 0);
-          return deactivateAt < today;
-        }
-        // Alternative: if no deactivateAt, check for inactive and unpaid customers
-        return customer.isActive === false && customer.isPaid === false;
-      })
-      .map((customer: any) => ({
-        _id: customer._id,
-        clientId: customer.clientId || customer._id,
-        firstName: customer.firstName || '',
-        lastName: customer.lastName || '',
-        email: customer.email || '',
-        mobileNumber: customer.mobileNumber || '',
-        packageName: customer.package_name || 'N/A',
-        deactivateAt: customer.deactivateAt || customer.updatedAt || '',
-        daysPending: customer.deactivateAt 
-          ? calculateDaysPending(customer.deactivateAt)
-          : 0,
-        amountDue: customer.fee || 0,
-        fee: customer.fee,
-        isActive: customer.isActive,
-        isPaid: customer.isPaid,
-        package_name: customer.package_name,
-      }))
-      // Sort by days pending (most overdue first)
-      .sort((a: any, b: any) => b.daysPending - a.daysPending);
+    // Try multiple possible paths for the API response
+    let results = [];
+    let totalRecords = 0;
+    
+    if (res.data?.data?.data?.results) {
+      results = res.data.data.data.results;
+      totalRecords = res.data.data.data.totalRecords || res.data.data.data.results.length;
+    } else if (res.data?.data?.results) {
+      results = res.data.data.results;
+      totalRecords = res.data.data.totalRecords || res.data.data.results.length;
+    } else if (Array.isArray(res.data?.data)) {
+      results = res.data.data;
+      totalRecords = res.data.data.length;
+    }
+    
+    console.log("Extracted results:", results.length, "Total records:", totalRecords);
+    
+    // Map the API response to our type
+    const customers: PendingPaymentCustomer[] = results.map((customer: any) => ({
+      _id: customer._id,
+      clientId: customer.clientId,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      mobileNumber: customer.mobileNumber,
+      packageId: customer.packageId,
+      nic: customer.nic,
+      addressLine1: customer.addressLine1,
+      addressLine2: customer.addressLine2,
+      isMale: customer.isMale,
+      isMarried: customer.isMarried,
+      whyJoin: customer.whyJoin,
+      profession: customer.profession,
+      dob: customer.dob,
+      status: customer.status,
+      isActive: customer.isActive,
+      isPaid: customer.isPaid,
+      availableSessionQuota: customer.availableSessionQuota,
+      isOnFPmachine: customer.isOnFPmachine,
+      deactivateAt: customer.deactivateAt,
+      createdAt: customer.createdAt,
+      updatedAt: customer.updatedAt,
+    }));
+    
+    // Use customers.length as fallback if totalRecords is 0
+    const actualTotalCount = totalRecords > 0 ? totalRecords : customers.length;
     
     return {
-      customers: pendingCustomers,
-      totalCount: pendingCustomers.length,
+      customers,
+      totalCount: actualTotalCount,
+      currentPage: page,
+      totalPages: Math.ceil(actualTotalCount / size),
     };
   } catch (error) {
     console.error("Failed to fetch pending payment customers:", error);
     
-    // Return empty array on error
+    // Return empty response on error
     return {
       customers: [],
       totalCount: 0,
+      currentPage: 1,
+      totalPages: 0,
     };
   }
 };

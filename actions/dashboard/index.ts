@@ -24,11 +24,29 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
     try {
       const res = await axios.get("/admin/admin-management/dashboard");
       const apiData = res.data.data;
+      console.log("Dashboard API Response:", apiData);
       
-      // ⚡ SAFETY: Ensure paymentHistory is always an array
+      // Transform paymentHistory from object to array
+      let paymentHistory: Array<{ month: string; amount: number }> = [];
+      
+      if (apiData?.paymentHistory) {
+        if (Array.isArray(apiData.paymentHistory)) {
+          // Already an array
+          paymentHistory = apiData.paymentHistory;
+        } else if (typeof apiData.paymentHistory === 'object') {
+          // Convert object to array and filter out empty months
+          paymentHistory = Object.values(apiData.paymentHistory)
+            .filter((item: any) => item?.month && item.month.trim() !== '')
+            .map((item: any) => ({
+              month: item.month,
+              amount: item.amount || 0
+            }));
+        }
+      }
+      
       return {
         ...apiData,
-        paymentHistory: Array.isArray(apiData?.paymentHistory) ? apiData.paymentHistory : []
+        paymentHistory
       };
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {

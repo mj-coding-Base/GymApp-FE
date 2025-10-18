@@ -24,7 +24,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const years = [2022, 2023, 2024, 2025];
+const years = [ 2025];
 
 interface ChartDataPoint {
   month: string;
@@ -91,21 +91,38 @@ const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
                 dataKey="earnings"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={-2}
-                tickCount={-1}
-                tickFormatter={(value) => value.toLocaleString()}
+                tickMargin={8}
+                tickCount={6}
+                width={80}
+                tickFormatter={(value) => {
+                  if (value >= 1000000) {
+                    return `${(value / 1000000).toFixed(1)}M`;
+                  }
+                  if (value >= 1000) {
+                    return `${(value / 1000).toFixed(0)}K`;
+                  }
+                  return value.toString();
+                }}
               />
               <XAxis
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={0}
-                tickFormatter={(value) => value.slice(0, 4)}
+                minTickGap={32}
+                interval="preserveStartEnd"
+                tickFormatter={(value) => value.slice(0, 3)}
               />
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent indicator="dot" hideLabel />}
+                content={<ChartTooltipContent 
+                  indicator="dot" 
+                  hideLabel
+                  formatter={(value) => {
+                    const numValue = typeof value === 'number' ? value : Number(value);
+                    return numValue.toLocaleString('en-US');
+                  }}
+                />}
               />
               <Area
                 dataKey="earnings"
