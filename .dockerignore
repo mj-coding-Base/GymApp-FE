@@ -47,3 +47,8 @@ coverage
 README.md
 CHANGELOG.md
 LICENSE
+node_modules
+npm-debug.log
+.next
+.DS_Store
+.env
