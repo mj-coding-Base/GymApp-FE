@@ -2,12 +2,23 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
+# Install python and build tools for native dependencies
+RUN apt-get update && apt-get install -y python3 make g++ git && rm -rf /var/lib/apt/lists/*
+
 # Copy package files and install dependencies with npm
 COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+RUN npm cache clean --force
+RUN npm install --legacy-peer-deps --include=optional
+RUN npm rebuild
 
-# Copy all source files and build the Next.js app
+# Copy all source files
 COPY . .
+
+# Clean build environment
+RUN rm -rf .next node_modules/.cache
+
+# Build the app
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ─── production stage ───────────────────────
