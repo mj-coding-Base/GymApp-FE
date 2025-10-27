@@ -1,19 +1,20 @@
 "use client";
 
-import { searchCustomers } from "@/actions/customers";
+import { fetchIndividualCustomers } from "@/actions/customers";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
-import { Customer } from "@/types/Customer";
+import { IndividualCustomer } from "@/types/Customer";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,51 +27,38 @@ const TransferMemberToAGroup = () => {
   } = useViewGroupDetails();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [clients, setClients] = useState<Customer[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [clients, setClients] = useState<IndividualCustomer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
 
-useEffect(() => {
-  const fetchClientData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await searchCustomers(searchTerm);
-      setClients(response || []);
-    } catch (err) {
-      console.error("Error fetching clients:", err);
-      setError("Failed to load clients");
-      toast.error("Failed to load client data");
-    } finally {
-      setLoading(false);
+  // Fetch clients when modal opens or search term changes
+  useEffect(() => {
+    const fetchClientData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetchIndividualCustomers(
+          "1", 
+          "100", // Fetch more results for better search experience
+          debouncedSearchTerm || undefined
+        );
+        setClients(response?.results || []);
+      } catch (err) {
+        console.error("Error fetching clients:", err);
+        setError("Failed to load clients");
+        toast.error("Failed to load client data");
+        setClients([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (openTransferMemberToAGroup) {
+      fetchClientData();
     }
-  };
-
-  if (openTransferMemberToAGroup) {
-    fetchClientData();
-  }
-}, [openTransferMemberToAGroup, searchTerm]);
-
-  // const fetchClientData = async () => {
-  //   try {
-  //     setLoading(true);
-  //     setError(null);
-  //     const response = await searchCustomers(searchTerm);
-  //     setClients(response || []);
-  //   } catch (err) {
-  //     console.error("Error fetching clients:", err);
-  //     setError("Failed to load clients");
-  //     toast.error("Failed to load client data");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.nic?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  }, [openTransferMemberToAGroup, debouncedSearchTerm]);
 
   const handleTransferToExisting = () => {
     if (!selectedClient) {
@@ -134,41 +122,50 @@ useEffect(() => {
         <div className="overflow-y-auto flex-1">
           {loading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              {new Array(5).fill(0).map((_, i) => (
+                <Skeleton key={`skeleton-${i}`} className="h-16 w-full rounded-lg" />
               ))}
-            </div>
-          ) : error ? (
-            <div className="text-center text-red-500 py-4">{error}</div>
-          ) : filteredClients.length === 0 ? (
-            <div className="text-center text-gray-500 py-4">
-              {searchTerm ? "No matching clients found" : "No clients available"}
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredClients.map((client) => (
-                <div 
-                  key={client._id}
-                  className={`p-3 rounded-lg border ${selectedClient === client._id ? 'border-[#363636] bg-gray-50' : 'border-transparent'}`}
-                  onClick={() => setSelectedClient(client._id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <Checkbox 
-                      checked={selectedClient === client._id}
-                      onCheckedChange={() => setSelectedClient(client._id)}
-                    />
-                    <div className="flex-1">
-                      <p className="text-[13px] font-medium text-[#363636]">
-                        {client.name}
-                      </p>
-                      <p className="text-[11px] text-[#6D6D6D]">
-                        NIC: {client.nic || 'N/A'}
-                      </p>
-                    </div>
-                  </div>
+            <>
+              {error && (
+                <div className="text-center text-red-500 py-4">{error}</div>
+              )}
+              {!error && clients.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  {debouncedSearchTerm ? "No matching clients found" : "No clients available"}
                 </div>
-              ))}
-            </div>
+              )}
+              {!error && clients.length > 0 && (
+                <div className="space-y-2">
+                  {clients.map((client) => (
+                    <button
+                      key={client._id}
+                      type="button"
+                      className={`w-full p-3 rounded-lg border cursor-pointer text-left ${
+                        selectedClient === client._id ? 'border-[#363636] bg-gray-50' : 'border-transparent'
+                      }`}
+                      onClick={() => setSelectedClient(client._id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox 
+                          checked={selectedClient === client._id}
+                          onCheckedChange={() => setSelectedClient(client._id)}
+                        />
+                        <div className="flex-1">
+                          <p className="text-[13px] font-medium text-[#363636]">
+                            {client.firstName} {client.lastName}
+                          </p>
+                          <p className="text-[11px] text-[#6D6D6D]">
+                            NIC: {client.nic || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
         

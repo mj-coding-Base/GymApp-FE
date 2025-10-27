@@ -81,6 +81,10 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
     return <CustomersSkeleton />;
   }
 
+  // Ensure data structure is complete to avoid undefined errors
+  const individuals = data.individuals || EMPTY_INDIVIDUAL_RESULT;
+  const groups = data.groups || EMPTY_GROUP_RESULT;
+
   return (
     <div className="relative">
       {/* Show subtle loading indicator when refreshing in background */}
@@ -95,7 +99,8 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
       
       <Customers
         searchParams={data.searchParams}
-        individuals={data.individuals}
+        individuals={individuals}
+        groups={groups}
       />
     </div>
   );

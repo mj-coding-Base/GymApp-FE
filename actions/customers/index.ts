@@ -94,14 +94,37 @@ export async function fetchGroups(
           },
         }
       );
-            
+      
+      // Ensure we handle the response structure correctly
+      // The API response might be at response.data.data.results or response.data.data directly
+      let results = [];
+      let totalResults = 0;
+      
+      if (response.data?.data) {
+        // Check if it's an array directly
+        if (Array.isArray(response.data.data)) {
+          results = response.data.data;
+          totalResults = response.data.totalResults ?? response.data.data.length;
+        } 
+        // Check if it's an object with results property
+        else if (response.data.data.results && Array.isArray(response.data.data.results)) {
+          results = response.data.data.results;
+          totalResults = response.data.data.totalResults ?? response.data.totalResults ?? 0;
+        }
+        // Check nested structure like individuals
+        else if (response.data.data.data && Array.isArray(response.data.data.data)) {
+          results = response.data.data.data;
+          totalResults = response.data.data.totalResults ?? 0;
+        }
+      }
+      
       return {
-        results: response.data?.data ?? [],
-        totalResults: response?.data?.totalResults ?? 0,
+        results,
+        totalResults,
       };
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
-        console.error(error);
+        console.error("Error fetching groups:", error);
       }
       return {
         results: [],

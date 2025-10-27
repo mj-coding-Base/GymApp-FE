@@ -13,6 +13,22 @@ const nextConfig: NextConfig = {
     } : false,
   },
   
+  // Transpile packages that need special handling
+  transpilePackages: ['jspdf', 'jspdf-autotable'],
+  
+  // Add webpack config for jspdf and jspdf-autotable
+  webpack: (config: any, { isServer }: any) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
+  
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],

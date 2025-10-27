@@ -1,13 +1,13 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import React, { useState } from "react";
-import { IndividualCustomer } from "@/types/Customer";
-import IndividualCard from "./IndividualCard";
-import { Button } from "@/components/ui/button";
-import AddNewMember from "./AddNewMember";
 import CustomPagination from "@/components/common/CustomPagination";
 import CommonSearch from "@/components/common/Search";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { IndividualCustomer } from "@/types/Customer";
+import { useState } from "react";
+import AddNewMember from "./AddNewMember";
+import IndividualCard from "./IndividualCard";
 
 const Individual = ({
   individualCustomers,
@@ -15,6 +15,12 @@ const Individual = ({
   individualCustomers: { results: IndividualCustomer[]; totalResults: number };
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Safety check to prevent errors if individualCustomers is undefined
+  if (!individualCustomers?.results || !Array.isArray(individualCustomers.results)) {
+    return null;
+  }
+
   return (
     <div className="w-full">
       <Card>

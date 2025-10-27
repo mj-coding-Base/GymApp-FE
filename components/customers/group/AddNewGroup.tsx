@@ -1,18 +1,9 @@
 "use client";
 
-import React from "react";
+import { fetchIndividualCustomers } from "@/actions/customers";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -21,7 +12,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -29,17 +20,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+} from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
+import { IndividualCustomer } from "@/types/Customer";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Trash2, UserCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const formSchema = z.object({
   package: z
@@ -47,88 +43,102 @@ const formSchema = z.object({
       required_error: "Please select a package",
     })
     .min(1, "Please select a package"),
-  feePerMember: z.string({
-    required_error: "Please enter fee per member",
-  }),
 });
 
 function AddNewGroup() {
   const { openAddNewGroup, setOpenAddNewGroup } = useViewGroupDetails();
-  const { newUserGroupRegisterData } = useGroupDetailsStore();
   const { setOpenSuccessModal, setSuccessData } = useSuccessModal();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
-  const onSubmit = async () => {
-    // let response;
+  // State for user search
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const [availableCustomers, setAvailableCustomers] = useState<IndividualCustomer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  const [selectedCustomers, setSelectedCustomers] = useState<IndividualCustomer[]>([]);
+  
+  // Track which step we're on
+  const [currentStep, setCurrentStep] = useState<"package" | "select">("package");
 
-    if (newUserGroupRegisterData) {
-      // If update
-      setSuccessData({
-        title: `Registration Successful!`,
-        description: `The group has been successfully registered!`,
-        backButtonText: "Done",
-        function: () => {},
-      });
-      setOpenAddNewGroup(false);
-      setOpenSuccessModal(true);
-    } else {
-      // If create new
-      setSuccessData({
-        title: `Registration Successful!`,
-        description: `The group has been successfully registered!`,
-        backButtonText: "Done",
-        function: () => {},
-      });
-      setOpenAddNewGroup(false);
-      setOpenSuccessModal(true);
+  // Fetch customers when entering select step
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      if (currentStep === "select") {
+        try {
+          setLoadingCustomers(true);
+          const response = await fetchIndividualCustomers(
+            "1",
+            "100",
+            debouncedSearchTerm || undefined
+          );
+          setAvailableCustomers(response?.results || []);
+        } catch (err) {
+          console.error("Error fetching customers:", err);
+        } finally {
+          setLoadingCustomers(false);
+        }
+      }
+    };
+
+    fetchCustomers();
+  }, [debouncedSearchTerm, currentStep]);
+
+  const handleToggleCustomer = (customer: IndividualCustomer) => {
+    if (selectedCustomers.length >= 10 && !selectedCustomers.some(c => c._id === customer._id)) {
+      alert("Maximum 10 customers allowed");
+      return;
     }
-
-    // if (response.status === "SUCCESS") {
-    //   const itemName = form.getValues("name");
-
-    //   form.reset({
-    //     name: undefined,
-    //     availableUnits: undefined,
-    //     unitPrice: undefined,
-    //     description: undefined,
-    //     images: [],
-    //     pricePer: undefined,
-    //   });
-    //   setOpen(false);
-    //   setSuccessData({
-    //     title: !data
-    //       ? `Item ${itemName} has been successfully added to ${categoryName}.`
-    //       : `Item ${data.name} has been successfully updated.`,
-    //     backButtonText: "Done",
-    //     function: () => {},
-    //   });
-
-    //   setOpenSuccessModal(true);
-    // } else {
-    //   toast({
-    //     title: response.message,
-    //     variant: "error",
-    //   });
-    // }
+    
+    setSelectedCustomers(prev => {
+      const exists = prev.some(c => c._id === customer._id);
+      if (exists) {
+        return prev.filter(c => c._id !== customer._id);
+      }
+      return [...prev, customer];
+    });
   };
 
-  // useEffect(() => {
-  //   if (openAddNewGroup && newUserGroupRegisterData) {
-  //     form.reset({
-  //       firstName: data.name,
-  //       lastName: data.name,
-  //       mobileNumber: +94778765433,
-  //       email: "test@gmail.com",
-  //       nic: "986654556V",
-  //       programFee: 7800,
-  //       package: "Boxfit Extreme",
-  //     });
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [newUserGroupRegisterData, openAddNewGroup]);
+  const handleRemoveCustomer = (customerId: string) => {
+    setSelectedCustomers(prev => prev.filter(c => c._id !== customerId));
+  };
+
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    if (selectedCustomers.length === 0) {
+      alert("Please select at least one customer");
+      return;
+    }
+
+    // Log the API request
+    const apiRequest = {
+      package: data.package,
+      members: selectedCustomers.map((customer, index) => ({
+        customerId: customer._id,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        mobileNumber: customer.mobileNumber,
+        email: customer.email,
+        nic: customer.nic,
+        isPrimaryMember: index === 0,
+        packageId: customer.packageId,
+      })),
+    };
+
+    console.log("API Request:", JSON.stringify(apiRequest, null, 2));
+
+      setSuccessData({
+        title: `Registration Successful!`,
+        description: `The group has been successfully registered!`,
+        backButtonText: "Done",
+        function: () => {},
+      });
+      setOpenAddNewGroup(false);
+      setOpenSuccessModal(true);
+  };
+
+  const selectedPackage = form.watch("package");
 
   return (
     <div className="">
@@ -143,23 +153,24 @@ function AddNewGroup() {
           </SheetHeader>
 
           <h1 className="text-[16px]/[19px] font-medium text-[#212121] text-center">
-            {"New User Group Registration"}
+            New User Group Registration
           </h1>
 
-          <div className="flex flex-col">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="flex flex-col h-full gap-[15px]"
               >
-                <div className="flex flex-1 flex-col gap-[15px]">
+              {/* Step 1: Package Selection */}
+              {currentStep === "package" && (
+                <div className="flex flex-col gap-[15px]">
                   <FormField
                     control={form.control}
                     name="package"
                     render={({ field }) => (
                       <FormItem className="flex flex-col gap-[4px]">
                         <FormLabel className="font-normal text-[14px]/[17px]">
-                          Package
+                          Package *
                         </FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -192,366 +203,160 @@ function AddNewGroup() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="feePerMember"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col gap-[4px]">
-                        <FormLabel className="font-normal text-[14px]/[17px]">
-                          Fee Per Member
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            placeholder="Add"
-                            className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+
+                  <Button
+                    type="button"
+                    onClick={() => selectedPackage && setCurrentStep("select")}
+                    disabled={!selectedPackage}
+                    className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
+                  >
+                    Next: Select Customers
+                  </Button>
+                          </div>
+              )}
+
+              {/* Step 2: Customer Selection */}
+              {currentStep === "select" && (
+                <div className="flex flex-col h-full gap-[15px]">
+                  <div className="flex flex-col gap-[10px]">
+                    <p className="text-[14px]/[17px] font-medium">
+                      Search and Select Customers (Max 10)
+                    </p>
+                    <div className="relative w-full h-[40px]">
+                      <i className="search-icon w-[16.54px] h-[18.9px] text-[#6D6D6D] absolute left-3 top-1/2 -translate-y-1/2" />
+                              <Input
+                        type="search"
+                        placeholder="Search by Name / NIC"
+                        className="pl-10 text-[11px] font-normal text-[#4F4F4F] h-[40px] border-[0.9px] border-[#6D6D6D]"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                  {/* Available Customers List */}
+                  <div className="flex-1 overflow-y-auto border-[0.9px] border-[#5D5D5D] rounded-[9px] p-3">
+                    {loadingCustomers && (
+                      <div className="space-y-2">
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                            </div>
                     )}
-                  />
-
-                  <div className="border-[0.9px] border-[#5D5D5D] flex items-center px-[13.5px] rounded-[9px] overflow-hidden">
-                    <Accordion
-                      type="single"
-                      collapsible
-                      className="w-full"
-                      defaultValue="item-1"
-                    >
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger className="text-[12.6px] font-medium text-[#212121]">
-                          Primary Member
-                        </AccordionTrigger>
-                        <AccordionContent className="flex flex-col gap-[13.5px]">
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              First Name
-                            </Label>
-                            <Input
-                              placeholder="First Name"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
+                    {!loadingCustomers && availableCustomers.length === 0 && (
+                      <div className="text-center text-gray-500 py-4">
+                        {searchTerm ? "No customers found" : "Type to search for customers"}
+                            </div>
+                    )}
+                    {!loadingCustomers && availableCustomers.length > 0 && (
+                      <div className="space-y-2">
+                        {availableCustomers.map((customer) => (
+                          <button
+                            key={customer._id}
+                            type="button"
+                            onClick={() => handleToggleCustomer(customer)}
+                            className={`w-full p-3 rounded-lg border text-left ${
+                              selectedCustomers.some(c => c._id === customer._id)
+                                ? 'border-[#378644] bg-green-50'
+                                : 'border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={selectedCustomers.some(c => c._id === customer._id)}
+                                onCheckedChange={() => handleToggleCustomer(customer)}
+                              />
+                              <div className="flex-1">
+                                <p className="text-[13px] font-medium text-[#363636]">
+                                  {customer.firstName} {customer.lastName}
+                                </p>
+                                <p className="text-[11px] text-[#6D6D6D]">
+                                  NIC: {customer.nic || 'N/A'} • {customer.mobileNumber}
+                                </p>
+                            </div>
                           </div>
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Last Name
-                            </Label>
-                            <Input
-                              placeholder="Last Name"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Mobile Number
-                            </Label>
-                            <Input
-                              placeholder=""
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              NIC
-                            </Label>
-                            <Input
-                              placeholder="NIC"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Email
-                            </Label>
-                            <Input
-                              placeholder="Email"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
+                          </button>
+                        ))}
                   </div>
-
-                  <div className="border-[0.9px] border-[#5D5D5D] flex items-center px-[13.5px] rounded-[9px] overflow-hidden">
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger className="text-[12.6px] font-medium text-[#212121]">
-                          Member 2
-                        </AccordionTrigger>
-                        <AccordionContent className="flex flex-col gap-[13.5px]">
-                          <div className="flex gap-[9px]">
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                First Name
-                              </Label>
-                              <Input
-                                placeholder="First Name"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                Last Name
-                              </Label>
-                              <Input
-                                placeholder="Last Name"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
+                    )}
                           </div>
 
-                          <div className="flex gap-[9px]">
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                Mobile Number
-                              </Label>
-                              <Input
-                                placeholder=""
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                NIC
-                              </Label>
-                              <Input
-                                placeholder="NIC"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
+                  {/* Selected Customers Preview */}
+                  {selectedCustomers.length > 0 && (
+                    <div className="border-[0.9px] border-[#378644] rounded-[9px] p-3 bg-green-50">
+                      <p className="text-[12px] font-medium mb-2 text-[#378644]">
+                        Selected Customers ({selectedCustomers.length}/10)
+                      </p>
+                      <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                        {selectedCustomers.map((customer, index) => {
+                          const isPrimaryMember = index === 0;
+                          return (
+                          <Card
+                            key={customer._id}
+                            className={`p-2 ${
+                              isPrimaryMember ? 'bg-yellow-100 border-yellow-400' : 'bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 flex-1">
+                                {index === 0 && (
+                                  <UserCheck className="w-4 h-4 text-yellow-600" />
+                                )}
+                                <div>
+                                  <p className="text-[12px] font-medium">
+                                    {index === 0 && "🏆 Primary: "}
+                                    {customer.firstName} {customer.lastName}
+                                  </p>
+                                  <p className="text-[10px] text-gray-600">
+                                    {customer.email}
+                                  </p>
                             </div>
                           </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveCustomer(customer._id)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Trash2 className="h-3 w-3 text-red-500" />
+                              </Button>
+                                </div>
+                          </Card>
+                          );
+                        })}
+                            </div>
+                          </div>
+                  )}
 
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Email
-                            </Label>
-                            <Input
-                              placeholder="Email"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Relationship
-                            </Label>
-                            <div className="rounded-md border-[#BDBDBD] border-[1px] p-[12px]">
-                              <RadioGroup defaultValue="noRelation">
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="noRelation"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    1. No relation
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="noRelation"
-                                    id="noRelation"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="husbandWife"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    2. Husband/Wife
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="husbandWife"
-                                    id="husbandWife"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="brother"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    3. Brother
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="brother"
-                                    id="brother"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="sister"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    4. Sister
-                                  </Label>
-                                  <RadioGroupItem value="sister" id="sister" />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="friend"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    5. Friend
-                                  </Label>
-                                  <RadioGroupItem value="friend" id="friend" />
-                                </div>
-                              </RadioGroup>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </div>
-                  <div className="border-[0.9px] border-[#5D5D5D] flex items-center px-[13.5px] rounded-[9px] overflow-hidden">
-                    <Accordion type="single" collapsible className="w-full">
-                      <AccordionItem value="item-1">
-                        <AccordionTrigger className="text-[12.6px] font-medium text-[#212121]">
-                          Member 3
-                        </AccordionTrigger>
-                        <AccordionContent className="flex flex-col gap-[13.5px]">
-                          <div className="flex gap-[9px]">
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                First Name
-                              </Label>
-                              <Input
-                                placeholder="First Name"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                Last Name
-                              </Label>
-                              <Input
-                                placeholder="Last Name"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex gap-[9px]">
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                Mobile Number
-                              </Label>
-                              <Input
-                                placeholder=""
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                            <div className="flex flex-col gap-[9px]">
-                              <Label className="font-normal text-[14px]/[17px]">
-                                NIC
-                              </Label>
-                              <Input
-                                placeholder="NIC"
-                                className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Email
-                            </Label>
-                            <Input
-                              placeholder="Email"
-                              className="rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]"
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-[9px]">
-                            <Label className="font-normal text-[14px]/[17px]">
-                              Relationship
-                            </Label>
-                            <div className="rounded-md border-[#BDBDBD] border-[1px] p-[12px]">
-                              <RadioGroup defaultValue="noRelation">
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="noRelation"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    1. No relation
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="noRelation"
-                                    id="noRelation"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="husbandWife"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    2. Husband/Wife
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="husbandWife"
-                                    id="husbandWife"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="brother"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    3. Brother
-                                  </Label>
-                                  <RadioGroupItem
-                                    value="brother"
-                                    id="brother"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="sister"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    4. Sister
-                                  </Label>
-                                  <RadioGroupItem value="sister" id="sister" />
-                                </div>
-                                <div className="flex items-center justify-between space-x-2">
-                                  <Label
-                                    htmlFor="friend"
-                                    className="flex-1 text-[#3D3D3D] text-[14px]/[17px]"
-                                  >
-                                    5. Friend
-                                  </Label>
-                                  <RadioGroupItem value="friend" id="friend" />
-                                </div>
-                              </RadioGroup>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </div>
-                </div>
-
+                  {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-[15px]">
-                  <SheetClose asChild className="flex">
                     <Button
-                      variant={"outline"}
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep("package")}
                       className="border-[#69716C] rounded-[10px] text-[13px] font-semibold text-[#69716C] h-[40px]"
                     >
-                      Cancel
+                      Back
                     </Button>
-                  </SheetClose>
                   <Button
-                    disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || selectedCustomers.length === 0}
                     type="submit"
-                    className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF]  h-[40px]"
+                      className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
                   >
                     {form.formState.isSubmitting ? (
                       <Loader2 className="size-6 animate-spin" />
                     ) : (
-                      "Create"
+                        "Create Group"
                     )}
                   </Button>
                 </div>
+                </div>
+              )}
               </form>
             </Form>
-          </div>
         </SheetContent>
       </Sheet>
     </div>

@@ -131,3 +131,87 @@ export const fetchGroupPaymentDetails = async (params: GroupPaymentDetailsParams
     };
   }
 }
+
+export interface FetchPaymentsFilters {
+  page?: number;
+  size?: number;
+  searchTerm?: string;
+  paymentId?: string;
+  paidFor?: string;
+  paidBy?: string;
+  month?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  accessgiven?: boolean;
+  isExtra?: boolean;
+}
+
+export interface PaymentResponse {
+  _id: string;
+  amount: number;
+  reference: string;
+  month: string;
+  paidFor: string;
+  paymentId: string;
+  paidBy: string;
+  gymId: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+  isExtra: boolean;
+  accessgiven: boolean;
+}
+
+export interface FetchPaymentsResult {
+  payments: PaymentResponse[];
+  totalCount: number;
+  page: number;
+  size: number;
+  totalPages: number;
+}
+
+export const fetchAllPayments = async (filters: FetchPaymentsFilters): Promise<FetchPaymentsResult> => {
+  try {
+    const params: Record<string, any> = {};
+    
+    // Only add defined filters to params
+    if (filters.page !== undefined) params.page = filters.page;
+    if (filters.size !== undefined) params.size = filters.size;
+    if (filters.searchTerm) params.searchTerm = filters.searchTerm;
+    if (filters.paymentId) params.paymentId = filters.paymentId;
+    if (filters.paidFor) params.paidFor = filters.paidFor;
+    if (filters.paidBy) params.paidBy = filters.paidBy;
+    if (filters.month) params.month = filters.month;
+    if (filters.minAmount !== undefined) params.minAmount = filters.minAmount;
+    if (filters.maxAmount !== undefined) params.maxAmount = filters.maxAmount;
+    if (filters.startDate) params.startDate = filters.startDate;
+    if (filters.endDate) params.endDate = filters.endDate;
+    if (filters.sortBy) params.sortBy = filters.sortBy;
+    if (filters.sortOrder) params.sortOrder = filters.sortOrder;
+    if (filters.accessgiven !== undefined) params.accessgiven = filters.accessgiven;
+    if (filters.isExtra !== undefined) params.isExtra = filters.isExtra;
+
+    const response = await axios.get("/clientsPayment/get-all", { params });
+    
+    return {
+      payments: response.data?.data?.payments || [],
+      totalCount: response.data?.data?.totalCount || 0,
+      page: response.data?.data?.page || 1,
+      size: response.data?.data?.size || 10,
+      totalPages: response.data?.data?.totalPages || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    return {
+      payments: [],
+      totalCount: 0,
+      page: 1,
+      size: 10,
+      totalPages: 0,
+    };
+  }
+};
