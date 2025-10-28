@@ -1,3 +1,5 @@
+
+
 name: CI/CD – Deploy GymApp-FE
 
 on:
@@ -34,3 +36,7 @@ jobs:
 
       - name: Notify
         run: echo "✅ Deployed branch Monolothic-2 to ${{ secrets.VPS_HOST }}"
+
+
+
+
