@@ -20,14 +20,17 @@ RUN apt-get update && apt-get install -y \
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install all dependencies (including devDependencies for build)
-RUN npm ci --legacy-peer-deps
+# Install all dependencies (including devDependencies and optional dependencies for native modules)
+RUN npm ci --legacy-peer-deps --include=optional
 
 # =============================================================================
 # Stage 2: Builder
 # =============================================================================
 FROM node:20-slim AS builder
 WORKDIR /app
+
+# Install curl for downloading binaries
+RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -39,9 +42,15 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Rebuild lightningcss to ensure correct native binaries for glibc (Debian)
-RUN npm rebuild lightningcss --update-binary || \
-    npm install lightningcss@latest --no-save --legacy-peer-deps || true
+# Fix lightningcss native binary issue
+# Ensure we have the correct native binary for linux-x64-gnu (Debian glibc)
+RUN echo "Checking current lightningcss installation..." && \
+    ls node_modules/lightningcss/ 2>/dev/null || echo "lightningcss not found" && \
+    echo "Installing latest lightningcss with proper binaries..." && \
+    npm install lightningcss@latest --no-save --legacy-peer-deps && \
+    echo "Verifying lightningcss binaries..." && \
+    ls -la node_modules/lightningcss/linux-x64-gnu/ 2>/dev/null && \
+    echo "✓ lightningcss ready for build"
 
 # Build the application
 RUN npm run build
