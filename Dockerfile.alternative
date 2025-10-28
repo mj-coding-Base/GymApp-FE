@@ -1,6 +1,9 @@
+# Alternative Dockerfile without standalone mode
+# Use this if the main Dockerfile fails due to lightningcss issues
+
 # syntax=docker/dockerfile:1
 # ────────────────────────────────────────────────────────────────
-# Optimized production Dockerfile for Next.js 15.3.2
+# Alternative production Dockerfile for Next.js 15.3.2
 # ────────────────────────────────────────────────────────────────
 
 # =============================================================================
@@ -29,9 +32,6 @@ RUN npm ci --legacy-peer-deps --include=optional
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Install curl for downloading binaries
-RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*
-
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
@@ -43,7 +43,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build the application
-# Note: lightningcss should work automatically with correct platform binaries
 RUN npm run build
 
 # =============================================================================
@@ -67,12 +66,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Expose port
 EXPOSE 3002
 
-# Copy standalone output (includes all necessary files and node_modules)
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy application files
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts ./next.config.ts
 
-# Note: Runtime dependencies are included in standalone output
+# Verify lightningcss binary exists
+RUN find ./node_modules/lightningcss -name "*.node" -ls && echo "✓ lightningcss binary found"
 
 # Switch to non-root user
 USER nextjs
@@ -82,4 +84,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["node_modules/.bin/next", "start", "-p", "3002"]
+
