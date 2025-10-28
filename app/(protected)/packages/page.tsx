@@ -1,6 +1,7 @@
 "use client";
 import { fetchIndividualCustomers } from "@/actions/customers";
 import { fetchAllPackages, getPackages } from "@/actions/package";
+import { AdminGuard } from "@/components/common/AdminGuard";
 import CustomPagination from "@/components/common/CustomPagination";
 import AddNewPackage from "@/components/packages/AddNewPackage";
 import PackagesSkeleton from "@/components/packages/PackagesSkeleton";
@@ -91,17 +92,20 @@ export default function PackagePage() {
 
   if (isLoading.packages) {
     return (
-      <div className="w-full">
-        <Card className="py-3 mt-2">
-          <CardContent className="pl-0 pr-0">
-            <PackagesSkeleton />
-          </CardContent>
-        </Card>
-      </div>
+      <AdminGuard>
+        <div className="w-full">
+          <Card className="py-3 mt-2">
+            <CardContent className="pl-0 pr-0">
+              <PackagesSkeleton />
+            </CardContent>
+          </Card>
+        </div>
+      </AdminGuard>
     );
   }
 
   return (
+    <AdminGuard>
     <div className="w-full relative">
       {/* Show subtle loading indicator when refreshing in background */}
       {isRefreshing && (
@@ -310,5 +314,6 @@ export default function PackagePage() {
         </DrawerContent>
       </Drawer>
     </div>
+    </AdminGuard>
   );
 }

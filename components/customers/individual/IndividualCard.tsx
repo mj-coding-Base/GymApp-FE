@@ -3,6 +3,7 @@
 import { deactivateCustomer } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
+import useUserDetails from "@/hooks/useUserDetails";
 import { IndividualCustomer } from "@/types/Customer";
 import React, { useMemo, useState } from "react";
 import AddNewMember from "./AddNewMember";
@@ -18,6 +19,8 @@ const IndividualCard = React.memo(({ customer }: Props) => {
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const { handleAction } = useActions();
   const [isActive, setIsActive] = useState(customer.isActive);
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
 
   // ⚡ PERFORMANCE: Memoize date formatting (runs only when createdAt changes)
   const formattedDate = useMemo(
@@ -56,12 +59,14 @@ const IndividualCard = React.memo(({ customer }: Props) => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-[5px]">
-          <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">NIC</p>
-          <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.nic}
-          </p>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-[5px]">
+            <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">NIC</p>
+            <p className="text-[12px]/[15px] text-[#434745] font-medium">
+              {customer.nic}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[5px]">
           <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
@@ -72,14 +77,16 @@ const IndividualCard = React.memo(({ customer }: Props) => {
           </p>
         </div>
 
-        <div className="flex flex-col gap-[5px]">
-          <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
-            Mobile Number
-          </p>
-          <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {customer.mobileNumber}
-          </p>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-[5px]">
+            <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
+              Mobile Number
+            </p>
+            <p className="text-[12px]/[15px] text-[#434745] font-medium">
+              {customer.mobileNumber}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[5px]">
           <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">Dactivation Date</p>
@@ -96,32 +103,36 @@ const IndividualCard = React.memo(({ customer }: Props) => {
           }}
           className="view-details w-[36.26px] h-[50px]"
         />
-        <i
-          onClick={() => {
-            setIsUpdateOpen(true);
-          }}
-          className="edit-with-bg w-[36.26px] h-[50px]"
-        />
-        <button
-          type="button"
-          aria-label="Deactivate customer"
-          onClick={() => {
-            handleAction(
-              async () => {
-                const res = await deactivateCustomer(customer._id);
-                setIsActive(false); // ✅ update state on success
-                return res;
-              },
-              `Are you sure you want to deactivate this client?`,
-              `The client has been successfully deactivated!`,
-              "Deactivate",
-              "Done",
-              undefined,
-              "red"
-            );
-          }}
-          className="deactivate-customer w-[36.26px] h-[50px] bg-transparent border-none p-0"
-        />
+        {isAdmin && (
+          <>
+            <i
+              onClick={() => {
+                setIsUpdateOpen(true);
+              }}
+              className="edit-with-bg w-[36.26px] h-[50px]"
+            />
+            <button
+              type="button"
+              aria-label="Deactivate customer"
+              onClick={() => {
+                handleAction(
+                  async () => {
+                    const res = await deactivateCustomer(customer._id);
+                    setIsActive(false); // ✅ update state on success
+                    return res;
+                  },
+                  `Are you sure you want to deactivate this client?`,
+                  `The client has been successfully deactivated!`,
+                  "Deactivate",
+                  "Done",
+                  undefined,
+                  "red"
+                );
+              }}
+              className="deactivate-customer w-[36.26px] h-[50px] bg-transparent border-none p-0"
+            />
+          </>
+        )}
 
       </div>
 
@@ -131,11 +142,13 @@ const IndividualCard = React.memo(({ customer }: Props) => {
         customer={customer}
       />
 
-      <AddNewMember
-        open={isUpdateOpen}
-        setOpen={setIsUpdateOpen}
-        data={customer}
-      />
+      {isAdmin && (
+        <AddNewMember
+          open={isUpdateOpen}
+          setOpen={setIsUpdateOpen}
+          data={customer}
+        />
+      )}
     </div>
   );
 });

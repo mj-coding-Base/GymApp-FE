@@ -3,12 +3,13 @@
 import { getUserPaymentsId } from "@/actions/customers";
 import { getUserAttendance } from "@/actions/session";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
+import useUserDetails from "@/hooks/useUserDetails";
 import { AttendanceHistory, IndividualCustomer, PaymentHistory } from "@/types/Customer";
 import { useEffect, useState } from "react";
 
@@ -26,6 +27,8 @@ const ViewClientProfile = ({
   const [paymentData, setPaymentData] = useState<PaymentHistory[] | null>(null);
   const [attendanceData, setAttendanceData] = useState<AttendanceHistory[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -81,7 +84,7 @@ const ViewClientProfile = ({
                   {`${customer.firstName} ${customer.lastName}`}
                 </p>
               </div>
-              <div className="flex-[20%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
+              <div className={`flex-[20%] shrink-0 px-[10px] py-[7.8px] ${isAdmin ? 'border-l-[1px] border-l-[#000000]' : ''} content-center flex flex-col gap-[9px]`}>
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   User ID
                 </p>
@@ -89,25 +92,29 @@ const ViewClientProfile = ({
                   {customer.clientId}
                 </p>
               </div>
-              <div className="flex-[45%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
-                <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                  Email
-                </p>
-                <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.email}
-                </p>
-              </div>
+              {isAdmin && (
+                <div className="flex-[45%] shrink-0 px-[10px] py-[7.8px] border-l-[1px] border-l-[#000000] content-center flex flex-col gap-[9px]">
+                  <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                    Email
+                  </p>
+                  <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
+                    {customer.email}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex">
-              <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                  NIC
-                </p>
-                <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.nic}
-                </p>
-              </div>
-              <div className="flex-[25%] shrink-0 px-[10px] py-[7.8px] border-x-[1px] border-x-[#000000] content-center flex flex-col gap-[9px]">
+              {isAdmin && (
+                <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                  <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                    NIC
+                  </p>
+                  <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
+                    {customer.nic}
+                  </p>
+                </div>
+              )}
+              <div className={`flex-[25%] shrink-0 px-[10px] py-[7.8px] ${isAdmin ? 'border-x-[1px] border-x-[#000000]' : ''} content-center flex flex-col gap-[9px]`}>
                 <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
                   Dactivation Date
                 </p>
@@ -115,14 +122,16 @@ const ViewClientProfile = ({
                   {customer.deactivateAt?.slice(0, 10)}
                 </p>
               </div>
-              <div className="flex-[40%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                  Mobile
-                </p>
-                <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
-                  {customer.mobileNumber}
-                </p>
-              </div>
+              {isAdmin && (
+                <div className="flex-[40%] shrink-0 px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                  <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                    Mobile
+                  </p>
+                  <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold">
+                    {customer.mobileNumber}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">

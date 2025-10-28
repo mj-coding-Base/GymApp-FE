@@ -2,18 +2,21 @@
 
 import { fetchPendingPaymentCustomers, PendingPaymentCustomer } from "@/actions/dashboard/pendingPayments";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { usePendingPaymentsSheet } from "@/hooks/usePendingPaymentsSheet";
+import useUserDetails from "@/hooks/useUserDetails";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import WhiteCard from "./WhiteCard";
 
 const PendingPayments = () => {
   const { openPendingPaymentsSheet, setOpenPendingPaymentsSheet } = usePendingPaymentsSheet();
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
   
   const [allCustomers, setAllCustomers] = useState<PendingPaymentCustomer[]>([]); // Store all customers
   const [isLoading, setIsLoading] = useState(false);
@@ -305,18 +308,22 @@ const PendingPayments = () => {
                           {customer.status}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-[10px] text-[#6D6D6D] mb-1">Mobile</p>
-                        <p className="text-[12px] font-medium text-[#3D3D3D]">
-                          {customer.mobileNumber}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[#6D6D6D] mb-1">Email</p>
-                        <p className="text-[12px] font-medium text-[#3D3D3D] truncate">
-                          {customer.email}
-                        </p>
-                      </div>
+                      {isAdmin && (
+                        <div>
+                          <p className="text-[10px] text-[#6D6D6D] mb-1">Mobile</p>
+                          <p className="text-[12px] font-medium text-[#3D3D3D]">
+                            {customer.mobileNumber}
+                          </p>
+                        </div>
+                      )}
+                      {isAdmin && (
+                        <div>
+                          <p className="text-[10px] text-[#6D6D6D] mb-1">Email</p>
+                          <p className="text-[12px] font-medium text-[#3D3D3D] truncate">
+                            {customer.email}
+                          </p>
+                        </div>
+                      )}
                       <div>
                         <p className="text-[10px] text-[#6D6D6D] mb-1">Deactivate Date</p>
                         <p className="text-[12px] font-medium text-[#F04237]">

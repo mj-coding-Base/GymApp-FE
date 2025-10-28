@@ -1,8 +1,10 @@
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
+import useUserDetails from "@/hooks/useUserDetails";
 import { CommonResponseDataType } from "@/types/Common";
 import { GroupCustomer } from "@/types/Customer";
 
@@ -19,6 +21,8 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
 
   const { setUpdateGroupMemberData } = useGroupDetailsStore();
   const { handleAction } = useActions();
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
 
   const dummyAsyncFunction = async (): Promise<CommonResponseDataType> => {
     // Simulate API call delay
@@ -58,12 +62,14 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
           </div>
         </div>
 
-        <div className="flex flex-col gap-[5px]">
-          <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">NIC</p>
-          <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {groupMember.nic}
-          </p>
-        </div>
+        {isAdmin && (
+          <div className="flex flex-col gap-[5px]">
+            <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">NIC</p>
+            <p className="text-[12px]/[15px] text-[#434745] font-medium">
+              {groupMember.nic}
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-[5px]">
           <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
@@ -75,14 +81,16 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
         </div>
 
         <div className="flex gap-9">
-          <div className="flex flex-col gap-[5px]">
-            <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
-              Mobile Number
-            </p>
-            <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {groupMember.mobileNumber}
-            </p>
-          </div>
+          {isAdmin && (
+            <div className="flex flex-col gap-[5px]">
+              <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
+                Mobile Number
+              </p>
+              <p className="text-[12px]/[15px] text-[#434745] font-medium">
+                {groupMember.mobileNumber}
+              </p>
+            </div>
+          )}
 
           <div className="flex flex-col gap-[5px]">
             <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
@@ -123,44 +131,48 @@ const GroupDetailsCard = ({ groupMember }: Props) => {
           }}
           className="view-details w-[32.63px] h-[45px]"
         />
-        <i
-          onClick={() => {
-            setUpdateGroupMemberData(null);
-            setOpenViewGroupDetails(false);
-            setOpenUpdateGroupMember(true);
-          }}
-          className="edit-with-bg w-[32.63px] h-[45px]"
-        />
-        <i
-          onClick={() => {
-            handleAction(
-              async () => dummyAsyncFunction(),
-              `Are you sure you want to remove this member from group? This client will move as a individual user.`,
-              `Group Member Removed!`,
-              "Remove",
-              "Done",
-              undefined,
-              "red",
-              `Remove from Group?`,
-              `The group member has been successfully removed!`
-            );
-          }}
-          className="remove-from-group w-[32.63px] h-[45px]"
-        />
-        <i
-          onClick={() => {
-            handleAction(
-              async () => dummyAsyncFunction(),
-              `Are you sure you want to deactivate this client?`,
-              `The client has been successfully deactivated!`,
-              "Deactivate",
-              "Done",
-              undefined,
-              "red"
-            );
-          }}
-          className="deactivate-customer w-[32.63px] h-[45px]"
-        />
+        {isAdmin && (
+          <>
+            <i
+              onClick={() => {
+                setUpdateGroupMemberData(null);
+                setOpenViewGroupDetails(false);
+                setOpenUpdateGroupMember(true);
+              }}
+              className="edit-with-bg w-[32.63px] h-[45px]"
+            />
+            <i
+              onClick={() => {
+                handleAction(
+                  async () => dummyAsyncFunction(),
+                  `Are you sure you want to remove this member from group? This client will move as a individual user.`,
+                  `Group Member Removed!`,
+                  "Remove",
+                  "Done",
+                  undefined,
+                  "red",
+                  `Remove from Group?`,
+                  `The group member has been successfully removed!`
+                );
+              }}
+              className="remove-from-group w-[32.63px] h-[45px]"
+            />
+            <i
+              onClick={() => {
+                handleAction(
+                  async () => dummyAsyncFunction(),
+                  `Are you sure you want to deactivate this client?`,
+                  `The client has been successfully deactivated!`,
+                  "Deactivate",
+                  "Done",
+                  undefined,
+                  "red"
+                );
+              }}
+              className="deactivate-customer w-[32.63px] h-[45px]"
+            />
+          </>
+        )}
       </div>
     </div>
   );

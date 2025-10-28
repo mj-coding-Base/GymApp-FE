@@ -1,17 +1,31 @@
-import FinancesClient from "@/components/finance/FinancesClient";
-import FinancesSkeleton from "@/components/finance/FinancesSkeleton";
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
-import { getSession } from "@/lib/authentication";
+import useUserDetails from "@/hooks/useUserDetails";
 import { AlertCircle } from "lucide-react";
-import { Suspense } from "react";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+interface AdminGuardProps {
+  readonly children: React.ReactNode;
+}
 
-export default async function FinancesPage() {
-  const session = await getSession();
-  
-  if (!session?.user?.isAdmin) {
+export function AdminGuard({ children }: AdminGuardProps) {
+  const { user, loading } = useUserDetails();
+
+  // Show loading state while checking
+  if (loading) {
+    return null;
+  }
+
+  // Debug: Log user data to console
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('AdminGuard - User data:', user);
+    console.log('AdminGuard - isAdmin value:', user?.isAdmin, typeof user?.isAdmin);
+  }
+
+  // Check if user is admin (convert to boolean to handle both string and boolean values)
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
+
+  if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Card className="max-w-md w-full">
@@ -31,9 +45,6 @@ export default async function FinancesPage() {
     );
   }
 
-  return (
-    <Suspense fallback={<FinancesSkeleton />}>
-      <FinancesClient />
-    </Suspense>
-  );
+  return <>{children}</>;
 }
+

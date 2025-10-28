@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Status, Trainer } from "@/types/TrainerDetails";
+import { Trainer } from "@/types/TrainerDetails";
 import React, { useMemo } from "react";
 import { SessionHistory } from "./SessionHistory";
 import { TrainerRegistrationCard } from "./UpdateTrainer";
@@ -60,11 +60,11 @@ const TrainerCard = React.memo(({ trainer, onDeactivate }: TrainerCardProps) => 
             </div>
             <Badge
               variant={
-                trainer.status === Status.ACTIVE ? "success" : "destructive"
+                trainer.isActive  ? "success" : "destructive"
               }
               className="rounded-[15px] text-[11px]/[13px] font-semibold"
             >
-              {trainer.status === Status.ACTIVE ? "Active" : "Inactive"}
+              {trainer.isActive ? "Active" : "Inactive"}
             </Badge>
           </div>
         </div>

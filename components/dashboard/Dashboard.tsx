@@ -2,12 +2,14 @@
 
 import { useDailyAttendanceSheet } from "@/hooks/useDailyAttendanceSheet";
 import { usePendingPaymentsSheet } from "@/hooks/usePendingPaymentsSheet";
+import useUserDetails from "@/hooks/useUserDetails";
 import React from "react";
 import CollectPayment from "./CollectPayment";
 import DailyAttendance from "./DailyAttendance";
 import MarkAttendance from "./MarkAttendance";
 import PendingPayments from "./PendingPayments";
 import TotalEarningChart from "./TotalEarningsChart";
+import UnpaidCustomers from "./UnpaidCustomers";
 import WhiteCard from "./WhiteCard";
 
 // Define types for the backend data
@@ -45,6 +47,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
   
   const { setOpenDailyAttendanceSheet } = useDailyAttendanceSheet();
   const { setOpenPendingPaymentsSheet } = usePendingPaymentsSheet();
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
   
   return (
     <div>
@@ -165,8 +169,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </button>
         </WhiteCard>
 
-        {/* Earnings chart - properly passed with TypeScript props */}
-        <TotalEarningChart chartData={chartData} />
+        {/* Earnings chart for admins, Unpaid customers for trainers */}
+        {isAdmin ? (
+          <TotalEarningChart chartData={chartData} />
+        ) : (
+          <UnpaidCustomers pendingPayments={client.pendingPayments} />
+        )}
       </div>
       
       {/* Daily Attendance Sheet */}

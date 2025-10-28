@@ -1,30 +1,31 @@
 "use client";
 
-import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
+import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import { useGroupDetailsStore } from "@/hooks/useGroupDetailsStore";
-import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
+import useUserDetails from "@/hooks/useUserDetails";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const formSchema = z.object({
   firstName: z
@@ -72,6 +73,8 @@ function UpdateGroupMember() {
     useViewGroupDetails();
   const { updateGroupMemberData } = useGroupDetailsStore();
   const { setOpenSuccessModal, setSuccessData } = useSuccessModal();
+  const { user } = useUserDetails();
+  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -130,6 +133,13 @@ function UpdateGroupMember() {
     //   });
     // }
   };
+
+  // Prevent trainers from accessing the update modal
+  useEffect(() => {
+    if (openUpdateGroupMember && !isAdmin) {
+      setOpenUpdateGroupMember(false);
+    }
+  }, [openUpdateGroupMember, isAdmin, setOpenUpdateGroupMember]);
 
   useEffect(() => {
     if (openUpdateGroupMember && updateGroupMemberData) {
