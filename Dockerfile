@@ -61,16 +61,15 @@ RUN npm ci --legacy-peer-deps --include=optional
 COPY . .
 
 # Ensure platform-specific SWC for glibc (linux-x64-gnu)
-# DO NOT try to install the musl package on glibc host (we skip the musl variant).
 RUN npm install --no-audit --no-fund @next/swc-linux-x64-gnu@latest || true
 
-# Ensure lightningcss native binaries are present
-RUN npm rebuild --update-binary || true
-RUN npm rebuild lightningcss --update-binary || true
+# Force reinstall lightningcss to ensure native binaries are present
+RUN npm uninstall lightningcss || true
+RUN npm install --no-audit --no-fund lightningcss@latest
 
-# Debug: list lightningcss native folder so CI logs show the exact files
-RUN echo "---- lightningcss node dir contents ----" \
- && ls -la node_modules/lightningcss/node || echo "lightningcss node folder missing"
+# Debug: Check if lightningcss binary exists
+RUN echo "---- lightningcss native binary check ----" && \
+    find node_modules/lightningcss -name "*.node" -type f || echo "WARNING: No .node files found in lightningcss"
 
 # Build
 RUN npm run build
