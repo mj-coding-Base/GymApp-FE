@@ -1,168 +1,94 @@
 # syntax=docker/dockerfile:1
-# ─── builder ───────────────────────────────────────────────────────────────
+# ────────────────────────────────────────────────────────────────
+# Optimized production Dockerfile for Next.js 15.3.2
+# ────────────────────────────────────────────────────────────────
+
+# =============================================================================
+# Stage 1: Dependencies Installation
+# =============================================================================
+FROM node:20-slim AS deps
+WORKDIR /app
+
+# Install necessary build tools for native dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install all dependencies (including devDependencies for build)
+RUN npm ci --legacy-peer-deps
+
+# =============================================================================
+# Stage 2: Builder
+# =============================================================================
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Ensure we do NOT run install in production mode so devDependencies are installed
-ENV NODE_ENV=development
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
 
-# Copy package files first for caching
-COPY package.json package-lock.json* ./
-
-# Install all deps (including dev deps needed for building Next/Tailwind)
-RUN npm ci --legacy-peer-deps
-
-# Force lightningcss binary to be rebuilt/downloaded for the container platform.
-# If lightningcss isn't present this will attempt a direct install as a fallback.
-RUN if [ -d node_modules/lightningcss ]; then \
-      npm rebuild lightningcss --update-binary || npm install lightningcss --no-save ; \
-    else \
-      npm install lightningcss --no-save ; \
-    fi
-
-# Optional: debug listing to verify native binary presence (remove after confirming)
-RUN node -e "const fs=require('fs'); const p='./node_modules/lightningcss/node'; console.log('lightningcss node dir exists:', fs.existsSync(p)); if (fs.existsSync(p)) console.log('files:', fs.readdirSync(p));"
-
-# Copy all sources and build
+# Copy source code
 COPY . .
+
+# Disable telemetry during build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+# Rebuild lightningcss to ensure correct native binaries for glibc (Debian)
+RUN npm rebuild lightningcss --update-binary || \
+    npm install lightningcss@latest --no-save --legacy-peer-deps || true
+
+# Build the application
 RUN npm run build
 
-# ─── production / runtime ──────────────────────────────────────────────────
+# Verify lightningcss binaries after build
+RUN find . -name "*.node" -path "*/lightningcss/*" -ls || echo "Checking lightningcss binaries..."
+
+# =============================================================================
+# Stage 3: Production Runtime
+# =============================================================================
 FROM node:20-slim AS runner
 WORKDIR /app
 
+# Install ca-certificates for HTTPS requests
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 nextjs
+
+# Set production environment
 ENV NODE_ENV=production
 ENV PORT=3002
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose port
 EXPOSE 3002
 
-# Copy build artifacts and node_modules from builder
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
+# Copy standalone output (includes all necessary files and node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-CMD ["npm", "run", "start", "--", "-p", "3002"]
+# Verify lightningcss binary exists
+RUN if [ -f "./node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      echo "✓ lightningcss binary found"; \
+    else \
+      echo "✗ lightningcss binary NOT found - checking..."; \
+      find ./node_modules -name "*lightningcss*.node" -ls || echo "No lightningcss binaries found"; \
+    fi
 
-# # # ─── builder stage ──────────────────────────
-# # FROM node:20-slim AS builder
-# # WORKDIR /app
+# Switch to non-root user
+USER nextjs
 
-# # # Install python and build tools for native dependencies
-# # RUN apt-get update && apt-get install -y python3 make g++ git && rm -rf /var/lib/apt/lists/*
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
-# # # Copy package files and install dependencies with npm
-# # COPY package.json package-lock.json* ./
-# # RUN npm cache clean --force
-# # RUN npm install --legacy-peer-deps --include=optional
-# # RUN npm rebuild
-
-# # # Copy all source files
-# # COPY . .
-
-# # # Clean build environment
-# # RUN rm -rf .next node_modules/.cache
-
-# # # Build the app
-# # ENV NEXT_TELEMETRY_DISABLED=1
-# # RUN npm run build
-
-# # # ─── production stage ───────────────────────
-# # FROM node:20-slim
-# # WORKDIR /app
-
-# # # Copy necessary build artifacts and dependencies
-# # COPY --from=builder /app/.next ./.next
-# # COPY --from=builder /app/public ./public
-# # COPY --from=builder /app/node_modules ./node_modules
-# # COPY --from=builder /app/package.json ./package.json
-# # COPY --from=builder /app/next.config.ts ./next.config.ts
-
-# # # Use production mode
-# # ENV NODE_ENV=production
-# # ENV PORT=3002
-# # EXPOSE 3002
-
-# # # Start with npm (using run to pass arguments correctly)
-# # CMD ["npm", "run", "start", "--", "-p", "3002"]
-# # ---------- builder ----------
-# # ---------- builder ----------
-#  # ---------- builder ----------
-# FROM node:20-bullseye AS builder
-# WORKDIR /app
-# ENV NEXT_TELEMETRY_DISABLED=1
-
-# # install build tools
-# RUN apt-get update && apt-get install -y python3 build-essential git curl ca-certificates \
-#   && rm -rf /var/lib/apt/lists/*
-
-# # copy package files for deterministic install
-# COPY package*.json ./
-
-# # install dependencies inside container (use npm install instead of npm ci to get optional deps)
-# RUN npm install --legacy-peer-deps --include=optional
-
-# # copy app
-# COPY . .
-
-# # Explicitly install lightningcss with its optional native dependencies
-# RUN npm install --no-save lightningcss@latest --legacy-peer-deps || true
-
-# # Ensure platform-specific SWC for glibc (linux-x64-gnu)
-# # DO NOT try to install the musl package on glibc host (we skip the musl variant).
-# RUN npm install --no-audit --no-fund @next/swc-linux-x64-gnu@latest || true
-
-# # Rebuild native dependencies to ensure platform-specific binaries are available
-# RUN npm rebuild --update-binary lightningcss || true
-
-# # Debug: check what native binaries are available
-# RUN echo "---- Checking for lightningcss .node files ----" \
-#  && find node_modules -path "*lightningcss*" -name "*.node" -ls || echo "No .node files found" \
-#  && ls -la node_modules/lightningcss/ 2>/dev/null || echo "lightningcss not found"
-
-# # Build
-# RUN npm run build
-
-# # ---------- production ----------
-# FROM node:20-bullseye-slim AS production
-# WORKDIR /app
-# RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-
-# COPY --from=builder /app/.next ./.next
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/package*.json ./
-# COPY --from=builder /app/public ./public
-
-# ENV NODE_ENV=production
-# EXPOSE 3000
-# CMD ["npm", "start"]
-# ─── builder stage ──────────────────────────
-# FROM node:20-slim AS builder
-# WORKDIR /app
-
-# # Copy package files and install dependencies with npm
-# COPY package.json package-lock.json* ./
-# RUN npm install --legacy-peer-deps
-
-# # Copy all source files and build the Next.js app
-# COPY . .
-# RUN npm run build
-
-# # ─── production stage ───────────────────────
-# FROM node:20-slim
-# WORKDIR /app
-
-# # Copy necessary build artifacts and dependencies
-# COPY --from=builder /app/.next ./.next
-# COPY --from=builder /app/public ./public
-# COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/package.json ./package.json
-# COPY --from=builder /app/next.config.ts ./next.config.ts
-
-# # Use production mode
-# ENV NODE_ENV=production
-# ENV PORT=3002
-# EXPOSE 3002
-
-# # Start with npm (using run to pass arguments correctly)
-# CMD ["npm", "run", "start", "--", "-p", "3002"]
+# Start the application
+CMD ["node", "server.js"]

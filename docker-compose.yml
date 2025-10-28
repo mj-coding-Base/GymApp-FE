@@ -1,10 +1,42 @@
 version: '3.8'
+
 services:
   gymapp-fe:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gymapp-frontend
     ports:
       - "3002:3002"
-    restart: always
     environment:
       - NODE_ENV=production
       - PORT=3002
+      - NEXT_TELEMETRY_DISABLED=1
+      # Add your environment variables here
+      # - DATABASE_URL=your_database_url
+      # - API_URL=your_api_url
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    # Resource limits (optional, adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
