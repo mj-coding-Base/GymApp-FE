@@ -82,29 +82,70 @@ axiosInstance.interceptors.response.use(
       serverAuthCache = null;
     }
 
-    // Extract error message
-    const errorMessage = (resData && typeof resData === 'object' && 'message' in resData) 
-      ? (resData as any).message 
-      : error.message || 'API request failed';
+    // Extract error message - use a function to ensure we always get a valid string
+    const getErrorMessage = (): string => {
+      try {
+        if (resData && typeof resData === 'object' && 'message' in resData && (resData as any).message) {
+          const msg = String((resData as any).message);
+          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+            return msg;
+          }
+        }
+      } catch (e) {
+        // Continue to next option
+      }
+
+      try {
+        if (error.message) {
+          const msg = String(error.message);
+          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+            return msg;
+          }
+        }
+      } catch (e) {
+        // Continue to next option
+      }
+
+      try {
+        if (error.response?.statusText) {
+          const msg = String(error.response.statusText);
+          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+            return msg;
+          }
+        }
+      } catch (e) {
+        // Use default
+      }
+
+      return 'API request failed';
+    };
+
+    const errorMessage: string = getErrorMessage();
     
     // Don't log "no data" responses as errors - these are expected business cases
-    const isBusinessResponse = errorMessage && (
-      errorMessage.includes("hasn't made any payments") ||
+    const isBusinessResponse = errorMessage.includes("hasn't made any payments") ||
       errorMessage.includes("no payments") ||
       errorMessage.includes("not found") ||
-      errorMessage.includes("No data found")
-    );
+      errorMessage.includes("No data found");
     
     if (process.env.NODE_ENV !== 'production' && !isBusinessResponse) {
       console.error("[Axios Error]", resData || error.message);
     }
     
     // Always return proper Error object for Promise rejection
-    const err = new Error(errorMessage) as any;
-    if (resData && typeof resData === 'object') {
-      err.response = resData;
+    // The errorMessage is guaranteed to be a valid string from getErrorMessage()
+    try {
+      const err = new Error(errorMessage) as any;
+      if (resData && typeof resData === 'object') {
+        err.response = resData;
+      }
+      return Promise.reject(err as Error);
+    } catch (createError) {
+      // Fallback: even if Error creation somehow fails, create a basic one
+      const finalErr = new Error('API request failed');
+      (finalErr as any).response = resData;
+      return Promise.reject(finalErr);
     }
-    return Promise.reject(err as Error);
   }
 );
 

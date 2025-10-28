@@ -41,46 +41,50 @@
 # CMD ["npm", "run", "start", "--", "-p", "3002"]
 # ---------- builder ----------
 # ---------- builder ----------
-    FROM node:20-bullseye AS builder
-    WORKDIR /app
-    ENV NODE_ENV=development
-    ENV NEXT_TELEMETRY_DISABLED=1
-    
-    # Install system build deps required for native modules
-    RUN apt-get update && apt-get install -y \
-        python3 build-essential git curl ca-certificates \
-      && rm -rf /var/lib/apt/lists/*
-    
-    # Copy package files first for deterministic installs
-    COPY package*.json ./
-    
-    # Install dependencies inside the container (reproducible)
-    RUN npm ci --legacy-peer-deps --include=optional
-    
-    # Copy the rest of the source
-    COPY . .
-    
-    # Ensure SWC / lightningcss binaries for this platform are present:
-    # - install @next/swc platform packages
-    # - force-rebuild native modules and lightningcss
-    RUN npm install --no-audit --no-fund @next/swc-linux-x64-gnu@latest @next/swc-linux-x64-musl@latest || true
-    RUN npm rebuild --update-binary || true
-    RUN npm rebuild lightningcss --update-binary || true
-    
-    # Build the app
-    RUN npm run build
-    
-    # ---------- production ----------
-    FROM node:20-bullseye-slim AS production
-    WORKDIR /app
-    RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-    
-    COPY --from=builder /app/.next ./.next
-    COPY --from=builder /app/node_modules ./node_modules
-    COPY --from=builder /app/package*.json ./
-    COPY --from=builder /app/public ./public
-    
-    ENV NODE_ENV=production
-    EXPOSE 3000
-    CMD ["npm", "start"]
-    
+ # ---------- builder ----------
+FROM node:20-bullseye AS builder
+WORKDIR /app
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# install build tools
+RUN apt-get update && apt-get install -y python3 build-essential git curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# copy package files for deterministic install
+COPY package*.json ./
+
+# install dependencies inside container
+RUN npm ci --legacy-peer-deps --include=optional
+
+# copy app
+COPY . .
+
+# Ensure platform-specific SWC for glibc (linux-x64-gnu)
+# DO NOT try to install the musl package on glibc host (we skip the musl variant).
+RUN npm install --no-audit --no-fund @next/swc-linux-x64-gnu@latest || true
+
+# Ensure lightningcss native binaries are present
+RUN npm rebuild --update-binary || true
+RUN npm rebuild lightningcss --update-binary || true
+
+# Debug: list lightningcss native folder so CI logs show the exact files
+RUN echo "---- lightningcss node dir contents ----" \
+ && ls -la node_modules/lightningcss/node || echo "lightningcss node folder missing"
+
+# Build
+RUN npm run build
+
+# ---------- production ----------
+FROM node:20-bullseye-slim AS production
+WORKDIR /app
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/public ./public
+
+ENV NODE_ENV=production
+EXPOSE 3000
+CMD ["npm", "start"]

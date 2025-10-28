@@ -16,18 +16,20 @@ const nextConfig: NextConfig = {
   // Transpile packages that need special handling
   transpilePackages: ['jspdf', 'jspdf-autotable'],
   
-  // Add webpack config for jspdf and jspdf-autotable
-  webpack: (config: any, { isServer }: any) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        path: false,
-        crypto: false,
-      };
-    }
-    return config;
-  },
+  // Add webpack config for jspdf and jspdf-autotable (only when not using Turbopack)
+  ...(process.env.TURBOPACK !== '1' && {
+    webpack: (config: any, { isServer }: any) => {
+      if (!isServer) {
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          fs: false,
+          path: false,
+          crypto: false,
+        };
+      }
+      return config;
+    },
+  }),
   
   // Optimize images
   images: {
@@ -64,6 +66,11 @@ const nextConfig: NextConfig = {
       'date-fns',
       'recharts',
     ],
+  },
+
+  // Turbopack configuration (stable, moved from experimental)
+  turbopack: {
+    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
   },
   
   // Optimize headers for caching

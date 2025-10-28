@@ -50,6 +50,11 @@ const LoginForm = () => {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+    mode: "onBlur", // Validate on blur to prevent constant validation during typing
   });
 
   const { isRemembered, setIsRemembered } = useSecureCredentials();
@@ -198,7 +203,7 @@ const LoginForm = () => {
         </div>
         <Button
           type="submit"
-          disabled={loading || !form.watch().email || !form.watch().password}
+          disabled={loading || form.formState.isSubmitting}
           className="w-full rounded-[10px] font-semibold text-lg h-[42px] bg-[#F04237] text-white"
         >
           Login
