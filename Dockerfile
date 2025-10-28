@@ -42,8 +42,44 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Fix lightningcss - The most reliable fix for native binary issues
+RUN echo "=== FIXING LIGHTNINGCSS BINARY ===" && \
+    echo "Checking current structure..." && \
+    find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || echo "No binaries found yet" && \
+    echo "" && \
+    echo "Checking where lightningcss expects the binary..." && \
+    grep -r "require.*lightningcss.*\.node" node_modules/lightningcss/node/ 2>/dev/null || true && \
+    echo "" && \
+    echo "Attempting multiple fix strategies..." && \
+    \
+    # Strategy 1: Copy from linux-x64-gnu subdirectory to parent
+    (if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      echo "Strategy 1: Copying from linux-x64-gnu subdirectory..." && \
+      cp node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      echo "✓ Copied to parent directory"; \
+    fi) && \
+    \
+    # Strategy 2: Reinstall lightningcss
+    echo "Strategy 2: Reinstalling lightningcss..." && \
+    (cd node_modules/lightningcss && npm install 2>&1 || true) && \
+    \
+    # Strategy 3: Manual download if needed
+    echo "Strategy 3: Checking if manual download needed..." && \
+    (if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+      echo "Downloading binary manually..." && \
+      cd node_modules/lightningcss && \
+      mkdir -p linux-x64-gnu && \
+      curl -fsSL https://github.com/parcel-bundler/lightningcss/releases/latest/download/lightningcss-linux-x64-gnu.tar.gz | tar -xz -C linux-x64-gnu/ 2>/dev/null || true && \
+      cp linux-x64-gnu/lightningcss.linux-x64-gnu.node lightningcss.linux-x64-gnu.node 2>/dev/null || true; \
+    fi) && \
+    \
+    echo "" && \
+    echo "=== FINAL CHECK ===" && \
+    find node_modules/lightningcss -name "*.node" -ls && \
+    echo "✓ LightningCSS fix complete"
+
 # Build the application
-# Note: lightningcss should work automatically with correct platform binaries
 RUN npm run build
 
 # =============================================================================

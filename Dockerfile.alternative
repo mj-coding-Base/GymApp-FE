@@ -42,6 +42,13 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Explicitly install lightningcss binary for linux-x64-gnu
+RUN echo "Checking lightningcss..." && \
+    ls -la node_modules/lightningcss/ && \
+    echo "Installing lightningcss binary..." && \
+    cd node_modules/lightningcss && \
+    npm rebuild --force || npm install --force || true
+
 # Build the application
 RUN npm run build
 
