@@ -1,3 +1,49 @@
+# syntax=docker/dockerfile:1
+# ─── builder ───────────────────────────────────────────────────────────────
+FROM node:20-slim AS builder
+WORKDIR /app
+
+# Ensure we do NOT run install in production mode so devDependencies are installed
+ENV NODE_ENV=development
+
+# Copy package files first for caching
+COPY package.json package-lock.json* ./
+
+# Install all deps (including dev deps needed for building Next/Tailwind)
+RUN npm ci --legacy-peer-deps
+
+# Force lightningcss binary to be rebuilt/downloaded for the container platform.
+# If lightningcss isn't present this will attempt a direct install as a fallback.
+RUN if [ -d node_modules/lightningcss ]; then \
+      npm rebuild lightningcss --update-binary || npm install lightningcss --no-save ; \
+    else \
+      npm install lightningcss --no-save ; \
+    fi
+
+# Optional: debug listing to verify native binary presence (remove after confirming)
+RUN node -e "const fs=require('fs'); const p='./node_modules/lightningcss/node'; console.log('lightningcss node dir exists:', fs.existsSync(p)); if (fs.existsSync(p)) console.log('files:', fs.readdirSync(p));"
+
+# Copy all sources and build
+COPY . .
+RUN npm run build
+
+# ─── production / runtime ──────────────────────────────────────────────────
+FROM node:20-slim AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=3002
+EXPOSE 3002
+
+# Copy build artifacts and node_modules from builder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/next.config.ts ./next.config.ts
+
+CMD ["npm", "run", "start", "--", "-p", "3002"]
+
 # # # ─── builder stage ──────────────────────────
 # # FROM node:20-slim AS builder
 # # WORKDIR /app
@@ -91,32 +137,32 @@
 # EXPOSE 3000
 # CMD ["npm", "start"]
 # ─── builder stage ──────────────────────────
-FROM node:20-slim AS builder
-WORKDIR /app
+# FROM node:20-slim AS builder
+# WORKDIR /app
 
-# Copy package files and install dependencies with npm
-COPY package.json package-lock.json* ./
-RUN npm install --legacy-peer-deps
+# # Copy package files and install dependencies with npm
+# COPY package.json package-lock.json* ./
+# RUN npm install --legacy-peer-deps
 
-# Copy all source files and build the Next.js app
-COPY . .
-RUN npm run build
+# # Copy all source files and build the Next.js app
+# COPY . .
+# RUN npm run build
 
-# ─── production stage ───────────────────────
-FROM node:20-slim
-WORKDIR /app
+# # ─── production stage ───────────────────────
+# FROM node:20-slim
+# WORKDIR /app
 
-# Copy necessary build artifacts and dependencies
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
+# # Copy necessary build artifacts and dependencies
+# COPY --from=builder /app/.next ./.next
+# COPY --from=builder /app/public ./public
+# COPY --from=builder /app/node_modules ./node_modules
+# COPY --from=builder /app/package.json ./package.json
+# COPY --from=builder /app/next.config.ts ./next.config.ts
 
-# Use production mode
-ENV NODE_ENV=production
-ENV PORT=3002
-EXPOSE 3002
+# # Use production mode
+# ENV NODE_ENV=production
+# ENV PORT=3002
+# EXPOSE 3002
 
-# Start with npm (using run to pass arguments correctly)
-CMD ["npm", "run", "start", "--", "-p", "3002"]
+# # Start with npm (using run to pass arguments correctly)
+# CMD ["npm", "run", "start", "--", "-p", "3002"]
