@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "npm run fix-lightningcss && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "npm run fix-lightningcss",
+    "fix-lightningcss": "node -e \"const fs=require('fs');const path=require('path');const src=path.join(process.cwd(),'node_modules','lightningcss','linux-x64-gnu','lightningcss.linux-x64-gnu.node');const dst=path.join(process.cwd(),'node_modules','lightningcss','lightningcss.linux-x64-gnu.node');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.copyFileSync(src,dst);console.log('✓ Fixed lightningcss binary');}\""
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
