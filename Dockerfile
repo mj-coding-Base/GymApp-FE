@@ -44,7 +44,6 @@
  # ---------- builder ----------
 FROM node:20-bullseye AS builder
 WORKDIR /app
-ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # install build tools
@@ -54,22 +53,26 @@ RUN apt-get update && apt-get install -y python3 build-essential git curl ca-cer
 # copy package files for deterministic install
 COPY package*.json ./
 
-# install dependencies inside container
-RUN npm ci --legacy-peer-deps --include=optional
+# install dependencies inside container (use npm install instead of npm ci to get optional deps)
+RUN npm install --legacy-peer-deps --include=optional
 
 # copy app
 COPY . .
 
+# Explicitly install lightningcss with its optional native dependencies
+RUN npm install --no-save lightningcss@latest --legacy-peer-deps || true
+
 # Ensure platform-specific SWC for glibc (linux-x64-gnu)
+# DO NOT try to install the musl package on glibc host (we skip the musl variant).
 RUN npm install --no-audit --no-fund @next/swc-linux-x64-gnu@latest || true
 
-# Force reinstall lightningcss to ensure native binaries are present
-RUN npm uninstall lightningcss || true
-RUN npm install --no-audit --no-fund lightningcss@latest
+# Rebuild native dependencies to ensure platform-specific binaries are available
+RUN npm rebuild --update-binary lightningcss || true
 
-# Debug: Check if lightningcss binary exists
-RUN echo "---- lightningcss native binary check ----" && \
-    find node_modules/lightningcss -name "*.node" -type f || echo "WARNING: No .node files found in lightningcss"
+# Debug: check what native binaries are available
+RUN echo "---- Checking for lightningcss .node files ----" \
+ && find node_modules -path "*lightningcss*" -name "*.node" -ls || echo "No .node files found" \
+ && ls -la node_modules/lightningcss/ 2>/dev/null || echo "lightningcss not found"
 
 # Build
 RUN npm run build
