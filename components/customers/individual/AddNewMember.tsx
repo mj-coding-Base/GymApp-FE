@@ -6,33 +6,33 @@ import { fetchAllPackages } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { cn } from "@/lib/utils";
@@ -130,6 +130,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deactivateDate, setDeactivateDate] = useState<Date | undefined>(undefined);
   const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
+  const [dobCalendarMonth, setDobCalendarMonth] = useState<Date>(new Date());
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -180,6 +181,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         form.reset();
         setDeactivateDate(undefined);
         setDobDate(undefined);
+        setDobCalendarMonth(new Date());
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,6 +193,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       const dobDateValue = data.dob ? new Date(data.dob) : undefined;
       setDeactivateDate(deactivateDateValue);
       setDobDate(dobDateValue);
+      setDobCalendarMonth(dobDateValue || new Date());
       
       form.reset({
         firstName: data.firstName,
@@ -219,6 +222,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     } else if (open && !data) {
       setDeactivateDate(undefined);
       setDobDate(undefined);
+      setDobCalendarMonth(new Date());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
@@ -551,12 +555,94 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
                           <div className="p-3">
+                            <div className="flex gap-2 mb-3">
+                              <Select
+                                value={dobCalendarMonth.getFullYear().toString()}
+                                onValueChange={(year) => {
+                                  const yearNum = Number.parseInt(year, 10);
+                                  const newMonth = new Date(
+                                    yearNum,
+                                    dobCalendarMonth.getMonth(),
+                                    1
+                                  );
+                                  setDobCalendarMonth(newMonth);
+                                  if (dobDate) {
+                                    const newDate = new Date(
+                                      yearNum,
+                                      dobDate.getMonth(),
+                                      Math.min(dobDate.getDate(), new Date(yearNum, dobDate.getMonth() + 1, 0).getDate())
+                                    );
+                                    setDobDate(newDate);
+                                    form.setValue("dob", {
+                                      year: year,
+                                      month: (newDate.getMonth() + 1).toString().padStart(2, '0'),
+                                      day: newDate.getDate().toString().padStart(2, '0'),
+                                    });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                  {Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => {
+                                    const year = new Date().getFullYear() - i;
+                                    return (
+                                      <SelectItem key={year} value={year.toString()}>
+                                        {year}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                              <Select
+                                value={(dobCalendarMonth.getMonth() + 1).toString().padStart(2, '0')}
+                                onValueChange={(month) => {
+                                  const monthNum = Number.parseInt(month, 10) - 1;
+                                  const newMonth = new Date(
+                                    dobCalendarMonth.getFullYear(),
+                                    monthNum,
+                                    1
+                                  );
+                                  setDobCalendarMonth(newMonth);
+                                  if (dobDate) {
+                                    const newDate = new Date(
+                                      dobDate.getFullYear(),
+                                      monthNum,
+                                      Math.min(dobDate.getDate(), new Date(dobDate.getFullYear(), monthNum + 1, 0).getDate())
+                                    );
+                                    setDobDate(newDate);
+                                    form.setValue("dob", {
+                                      year: newDate.getFullYear().toString(),
+                                      month: month,
+                                      day: newDate.getDate().toString().padStart(2, '0'),
+                                    });
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Array.from({ length: 12 }, (_, i) => {
+                                    const month = i + 1;
+                                    const date = new Date(2000, month - 1, 1);
+                                    return (
+                                      <SelectItem key={month} value={month.toString().padStart(2, '0')}>
+                                        {format(date, "MMMM")}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <Calendar
                               mode="single"
                               selected={dobDate}
                               onSelect={(date) => {
                                 setDobDate(date);
                                 if (date) {
+                                  setDobCalendarMonth(date);
                                   form.setValue("dob", {
                                     year: date.getFullYear().toString(),
                                     month: (date.getMonth() + 1).toString().padStart(2, '0'),
@@ -565,7 +651,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                                 }
                               }}
                               disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                              defaultMonth={dobDate || new Date()}
+                              month={dobCalendarMonth}
+                              onMonthChange={setDobCalendarMonth}
                               initialFocus
                             />
                           </div>
