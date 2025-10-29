@@ -37,6 +37,14 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -124,6 +132,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deactivateDate, setDeactivateDate] = useState<Date | undefined>(undefined);
+  const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -172,6 +182,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       // Reset form when opening
       if (!data) {
         form.reset();
+        setDeactivateDate(undefined);
+        setDobDate(undefined);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,6 +191,11 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
   useEffect(() => {
     if (open && data) {
+      const deactivateDateValue = data.deactivateAt ? new Date(data.deactivateAt) : undefined;
+      const dobDateValue = data.dob ? new Date(data.dob) : undefined;
+      setDeactivateDate(deactivateDateValue);
+      setDobDate(dobDateValue);
+      
       form.reset({
         firstName: data.firstName,
         lastName: data.lastName,
@@ -203,6 +220,9 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         whyJoin: data.whyJoin as any,
         profession: data.profession || "",
       });
+    } else if (open && !data) {
+      setDeactivateDate(undefined);
+      setDobDate(undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
@@ -212,19 +232,16 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
     setIsSubmitting(true);
     try {
-      // Build deactivateAt date if all fields are provided and not "not-set"
+      // Build dates from calendar selections
       let deactivateAtDate = "";
-      if (
-        values.deactivateAt?.year && 
-        values.deactivateAt?.month && 
-        values.deactivateAt?.day &&
-        values.deactivateAt.year !== "not-set" &&
-        values.deactivateAt.month !== "not-set" &&
-        values.deactivateAt.day !== "not-set"
-      ) {
-        deactivateAtDate = new Date(
-          `${values.deactivateAt.year}-${values.deactivateAt.month}-${values.deactivateAt.day}`
-        ).toISOString();
+      if (deactivateDate) {
+        deactivateAtDate = deactivateDate.toISOString();
+      }
+
+      if (!dobDate) {
+        toast.error("Please select a date of birth");
+        setIsSubmitting(false);
+        return;
       }
 
       // Build customerData with only the fields we need to send
@@ -241,7 +258,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         isMarried: values.isMarried,
         whyJoin: values.whyJoin,
         profession: values.profession,
-        dob: new Date(`${values.dob.year}-${values.dob.month}-${values.dob.day}`).toISOString(),
+        dob: dobDate.toISOString(),
         deactivateAt: deactivateAtDate,
         clientId: data?.clientId || undefined,
       
@@ -510,142 +527,134 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="dob"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth*</FormLabel>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, year: value })}
-                        value={field.value.year}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Year" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {years.map((year) => (
-                            <SelectItem key={year} value={year}>
-                              {year}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, month: value })}
-                        value={field.value.month}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Month" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {months.map((month) => (
-                            <SelectItem key={month} value={month}>
-                              {month}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, day: value })}
-                        value={field.value.day}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Day" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {days.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="dob"
+                  render={() => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date of Birth*</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "rounded-[10px] h-[41px] text-left font-normal",
+                                !dobDate && "text-muted-foreground"
+                              )}
+                              disabled={isSubmitting}
+                            >
+                              {dobDate ? (
+                                format(dobDate, "MM/dd/yyyy")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <div className="p-3">
+                            <Calendar
+                              mode="single"
+                              selected={dobDate}
+                              onSelect={(date) => {
+                                setDobDate(date);
+                                if (date) {
+                                  form.setValue("dob", {
+                                    year: date.getFullYear().toString(),
+                                    month: (date.getMonth() + 1).toString().padStart(2, '0'),
+                                    day: date.getDate().toString().padStart(2, '0'),
+                                  });
+                                }
+                              }}
+                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                              defaultMonth={dobDate || new Date()}
+                              initialFocus
+                            />
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="deactivateAt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Deactivation Date (Optional)</FormLabel>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, year: value })}
-                        value={field.value?.year || "not-set"}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Year" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="not-set">Not Set</SelectItem>
-                          {years.map((year) => (
-                            <SelectItem key={year} value={year}>
-                              {year}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, month: value })}
-                        value={field.value?.month || "not-set"}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Month" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="not-set">Not Set</SelectItem>
-                          {months.map((month) => (
-                            <SelectItem key={month} value={month}>
-                              {month}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        onValueChange={(value) => field.onChange({ ...field.value, day: value })}
-                        value={field.value?.day || "not-set"}
-                        disabled={isSubmitting}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="rounded-[10px] h-[41px]">
-                            <SelectValue placeholder="Day" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="not-set">Not Set</SelectItem>
-                          {days.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="deactivateAt"
+                  render={() => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Deactivation Date (Optional)</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "rounded-[10px] h-[41px] text-left font-normal",
+                                !deactivateDate && "text-muted-foreground"
+                              )}
+                              disabled={isSubmitting}
+                            >
+                              {deactivateDate ? (
+                                format(deactivateDate, "MM/dd/yyyy")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <div className="p-3">
+                            <Calendar
+                              mode="single"
+                              selected={deactivateDate}
+                              onSelect={(date) => {
+                                setDeactivateDate(date);
+                                if (date) {
+                                  form.setValue("deactivateAt", {
+                                    year: date.getFullYear().toString(),
+                                    month: (date.getMonth() + 1).toString().padStart(2, '0'),
+                                    day: date.getDate().toString().padStart(2, '0'),
+                                  });
+                                } else {
+                                  form.setValue("deactivateAt", {
+                                    year: "not-set",
+                                    month: "not-set",
+                                    day: "not-set",
+                                  });
+                                }
+                              }}
+                              disabled={(date) => date < new Date("2000-01-01") || date > new Date("2027-12-31")}
+                              defaultMonth={deactivateDate || new Date()}
+                              initialFocus
+                            />
+                            {deactivateDate && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="w-full mt-2 text-xs"
+                                onClick={() => {
+                                  setDeactivateDate(undefined);
+                                  form.setValue("deactivateAt", {
+                                    year: "not-set",
+                                    month: "not-set",
+                                    day: "not-set",
+                                  });
+                                }}
+                              >
+                                Clear date
+                              </Button>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
