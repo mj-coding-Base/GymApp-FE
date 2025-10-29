@@ -28,12 +28,16 @@ RUN echo "=== Fixing lightningcss in deps stage ===" && \
     if [ -d "node_modules/lightningcss" ]; then \
       echo "Checking lightningcss structure..." && \
       find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || echo "No binaries found yet" && \
-      if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
-        cp node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+      BINARY_PATH=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+      if [ -n "$BINARY_PATH" ] && [ -f "$BINARY_PATH" ]; then \
+        cp -v "$BINARY_PATH" \
            node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
-        echo "✓ Fixed lightningcss binary in deps stage"; \
+        chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        echo "✓ Fixed lightningcss binary in deps stage from: $BINARY_PATH"; \
+      else \
+        echo "⚠ Binary not found in deps stage (will be fixed in builder stage)"; \
       fi && \
-      ls -la node_modules/lightningcss/*.node 2>/dev/null || echo "Binary not in expected location"; \
+      ls -la node_modules/lightningcss/*.node 2>/dev/null || echo "Binary not in expected location yet"; \
     fi
 
 # =============================================================================
@@ -81,7 +85,14 @@ RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
       chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
       echo "✓ Strategy 1: Copied from linux-x64-gnu subdirectory"; \
     fi && \
-    # Strategy 2: Check alternative locations
+    # Strategy 2: Check nested node_modules location (lightningcss installs it here)
+    if [ -f "node_modules/lightningcss/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      cp -v node_modules/lightningcss/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      echo "✓ Strategy 2: Copied from nested node_modules location"; \
+    fi && \
+    # Strategy 2b: Check other alternative locations
     for dir in "node_modules/lightningcss/"*; do \
       if [ -d "$dir" ] && [ -f "$dir/lightningcss.linux-x64-gnu.node" ]; then \
         if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
@@ -92,19 +103,28 @@ RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
         fi; \
       fi; \
     done && \
-    # Strategy 3: If still not found, reinstall lightningcss
+    # Strategy 3: Try to find in any nested lightningcss-linux-x64-gnu package
     if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
-      echo "⚠ Binary not found, attempting to reinstall lightningcss..." && \
-      cd node_modules/lightningcss && \
-      npm install --no-save --legacy-peer-deps --include=optional 2>&1 | head -20 || true && \
-      cd ../.. && \
-      if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
-        cp -v node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+      BINARY_PATH=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+      if [ -n "$BINARY_PATH" ] && [ -f "$BINARY_PATH" ]; then \
+        cp -v "$BINARY_PATH" \
            node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
         chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
-        echo "✓ Strategy 3: Reinstalled and fixed lightningcss"; \
+        echo "✓ Strategy 3: Found and copied from: $BINARY_PATH"; \
       else \
-        echo "⚠ Reinstall did not create expected binary"; \
+        echo "⚠ Binary not found in any location, trying reinstall..." && \
+        cd node_modules/lightningcss && \
+        npm install --no-save --legacy-peer-deps --include=optional --ignore-scripts 2>&1 | head -20 || true && \
+        cd ../.. && \
+        BINARY_PATH_AFTER=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+        if [ -n "$BINARY_PATH_AFTER" ] && [ -f "$BINARY_PATH_AFTER" ]; then \
+          cp -v "$BINARY_PATH_AFTER" \
+             node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          echo "✓ Strategy 3: Reinstalled and fixed lightningcss from: $BINARY_PATH_AFTER"; \
+        else \
+          echo "⚠ Reinstall did not create expected binary"; \
+        fi; \
       fi; \
     fi && \
     echo "" && \
