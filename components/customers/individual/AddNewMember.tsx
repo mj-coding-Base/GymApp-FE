@@ -130,7 +130,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deactivateDate, setDeactivateDate] = useState<Date | undefined>(undefined);
   const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
-  const [dobCalendarMonth, setDobCalendarMonth] = useState<Date>(new Date());
+  const [dobCalendarMonth, setDobCalendarMonth] = useState<Date>(new Date(2014, 11, 1)); // December 2014
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -181,7 +181,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         form.reset();
         setDeactivateDate(undefined);
         setDobDate(undefined);
-        setDobCalendarMonth(new Date());
+        setDobCalendarMonth(new Date(2014, 11, 1)); // December 2014
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -193,7 +193,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       const dobDateValue = data.dob ? new Date(data.dob) : undefined;
       setDeactivateDate(deactivateDateValue);
       setDobDate(dobDateValue);
-      setDobCalendarMonth(dobDateValue || new Date());
+      setDobCalendarMonth(dobDateValue && dobDateValue < new Date("2015-01-01") ? dobDateValue : new Date(2014, 11, 1));
       
       form.reset({
         firstName: data.firstName,
@@ -222,7 +222,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
     } else if (open && !data) {
       setDeactivateDate(undefined);
       setDobDate(undefined);
-      setDobCalendarMonth(new Date());
+      setDobCalendarMonth(new Date(2014, 11, 1)); // December 2014
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
@@ -553,9 +553,9 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <div className="p-3">
-                            <div className="flex gap-2 mb-3">
+                        <PopoverContent className="w-auto p-0 h-[340px] flex flex-col" align="start">
+                          <div className="p-3 flex flex-col h-full">
+                            <div className="flex gap-2 mb-3 flex-shrink-0">
                               <Select
                                 value={dobCalendarMonth.getFullYear().toString()}
                                 onValueChange={(year) => {
@@ -572,6 +572,10 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                                       dobDate.getMonth(),
                                       Math.min(dobDate.getDate(), new Date(yearNum, dobDate.getMonth() + 1, 0).getDate())
                                     );
+                                    // Ensure date is before 2015
+                                    if (newDate >= new Date("2015-01-01")) {
+                                      return;
+                                    }
                                     setDobDate(newDate);
                                     form.setValue("dob", {
                                       year: year,
@@ -584,9 +588,9 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                                 <SelectTrigger className="h-8 text-xs">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent className="max-h-[200px]">
-                                  {Array.from({ length: new Date().getFullYear() - 1899 }, (_, i) => {
-                                    const year = new Date().getFullYear() - i;
+                                <SelectContent className="h-[360px]">
+                                  {Array.from({ length: 2014 - 1899 }, (_, i) => {
+                                    const year = 2014 - i;
                                     return (
                                       <SelectItem key={year} value={year.toString()}>
                                         {year}
@@ -611,6 +615,10 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                                       monthNum,
                                       Math.min(dobDate.getDate(), new Date(dobDate.getFullYear(), monthNum + 1, 0).getDate())
                                     );
+                                    // Ensure date is before 2015
+                                    if (newDate >= new Date("2015-01-01")) {
+                                      return;
+                                    }
                                     setDobDate(newDate);
                                     form.setValue("dob", {
                                       year: newDate.getFullYear().toString(),
@@ -636,25 +644,38 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                                 </SelectContent>
                               </Select>
                             </div>
-                            <Calendar
-                              mode="single"
-                              selected={dobDate}
-                              onSelect={(date) => {
-                                setDobDate(date);
-                                if (date) {
-                                  setDobCalendarMonth(date);
-                                  form.setValue("dob", {
-                                    year: date.getFullYear().toString(),
-                                    month: (date.getMonth() + 1).toString().padStart(2, '0'),
-                                    day: date.getDate().toString().padStart(2, '0'),
-                                  });
-                                }
-                              }}
-                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                              month={dobCalendarMonth}
-                              onMonthChange={setDobCalendarMonth}
-                              initialFocus
-                            />
+                            <div className="flex-1 overflow-hidden">
+                              <Calendar
+                                mode="single"
+                                selected={dobDate}
+                                onSelect={(date) => {
+                                  if (date && date >= new Date("2015-01-01")) {
+                                    toast.error("Date of birth must be earlier than 2015");
+                                    return;
+                                  }
+                                  setDobDate(date || undefined);
+                                  if (date) {
+                                    setDobCalendarMonth(date);
+                                    form.setValue("dob", {
+                                      year: date.getFullYear().toString(),
+                                      month: (date.getMonth() + 1).toString().padStart(2, '0'),
+                                      day: date.getDate().toString().padStart(2, '0'),
+                                    });
+                                  }
+                                }}
+                                disabled={(date) => date >= new Date("2015-01-01") || date < new Date("1900-01-01")}
+                                month={dobCalendarMonth}
+                                onMonthChange={(date) => {
+                                  // Prevent navigating to months in 2015 or later
+                                  if (date >= new Date("2015-01-01")) {
+                                    setDobCalendarMonth(new Date("2014-12-01"));
+                                  } else {
+                                    setDobCalendarMonth(date);
+                                  }
+                                }}
+                                initialFocus
+                              />
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>
@@ -688,36 +709,38 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <div className="p-3">
-                            <Calendar
-                              mode="single"
-                              selected={deactivateDate}
-                              onSelect={(date) => {
-                                setDeactivateDate(date);
-                                if (date) {
-                                  form.setValue("deactivateAt", {
-                                    year: date.getFullYear().toString(),
-                                    month: (date.getMonth() + 1).toString().padStart(2, '0'),
-                                    day: date.getDate().toString().padStart(2, '0'),
-                                  });
-                                } else {
-                                  form.setValue("deactivateAt", {
-                                    year: "not-set",
-                                    month: "not-set",
-                                    day: "not-set",
-                                  });
-                                }
-                              }}
-                              disabled={(date) => date < new Date("2000-01-01") || date > new Date("2027-12-31")}
-                              defaultMonth={deactivateDate || new Date()}
-                              initialFocus
-                            />
+                        <PopoverContent className="w-auto p-0 h-[300px] flex flex-col" align="start">
+                          <div className="p-3 flex flex-col h-full">
+                            <div className="flex-1 overflow-hidden">
+                              <Calendar
+                                mode="single"
+                                selected={deactivateDate}
+                                onSelect={(date) => {
+                                  setDeactivateDate(date);
+                                  if (date) {
+                                    form.setValue("deactivateAt", {
+                                      year: date.getFullYear().toString(),
+                                      month: (date.getMonth() + 1).toString().padStart(2, '0'),
+                                      day: date.getDate().toString().padStart(2, '0'),
+                                    });
+                                  } else {
+                                    form.setValue("deactivateAt", {
+                                      year: "not-set",
+                                      month: "not-set",
+                                      day: "not-set",
+                                    });
+                                  }
+                                }}
+                                disabled={(date) => date < new Date("2000-01-01") || date > new Date("2027-12-31")}
+                                defaultMonth={deactivateDate || new Date()}
+                                initialFocus
+                              />
+                            </div>
                             {deactivateDate && (
                               <Button
                                 type="button"
                                 variant="ghost"
-                                className="w-full mt-2 text-xs"
+                                className="w-full mt-2 text-xs flex-shrink-0"
                                 onClick={() => {
                                   setDeactivateDate(undefined);
                                   form.setValue("deactivateAt", {
