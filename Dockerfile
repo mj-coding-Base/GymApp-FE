@@ -23,6 +23,19 @@ COPY package.json package-lock.json* ./
 # Install all dependencies (including devDependencies and optional dependencies for native modules)
 RUN npm ci --legacy-peer-deps --include=optional
 
+# Fix lightningcss binary location immediately after installation
+RUN echo "=== Fixing lightningcss in deps stage ===" && \
+    if [ -d "node_modules/lightningcss" ]; then \
+      echo "Checking lightningcss structure..." && \
+      find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || echo "No binaries found yet" && \
+      if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+        cp node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+           node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        echo "✓ Fixed lightningcss binary in deps stage"; \
+      fi && \
+      ls -la node_modules/lightningcss/*.node 2>/dev/null || echo "Binary not in expected location"; \
+    fi
+
 # =============================================================================
 # Stage 2: Builder
 # =============================================================================
@@ -48,15 +61,69 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Fix lightningcss binary location
-RUN echo "=== Fixing lightningcss binary ===" && \
-    if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
-      cp node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
-         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
-      echo "✓ Copied lightningcss binary to expected location"; \
+# Fix lightningcss binary location - comprehensive fix with multiple strategies
+RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
+    echo "Platform: $(uname -m) $(uname -s)" && \
+    echo "Checking lightningcss installation..." && \
+    if [ ! -d "node_modules/lightningcss" ]; then \
+      echo "❌ ERROR: lightningcss not installed!" && exit 1; \
     fi && \
-    echo "Verifying binary..." && \
-    ls -la node_modules/lightningcss/*.node 2>/dev/null || echo "No binary found"
+    echo "LightningCSS directory structure:" && \
+    ls -la node_modules/lightningcss/ 2>/dev/null | head -20 || true && \
+    echo "" && \
+    echo "Searching for .node files:" && \
+    find node_modules/lightningcss -name "*.node" -type f -ls 2>/dev/null || echo "No .node files found initially" && \
+    echo "" && \
+    # Strategy 1: Copy from subdirectory to parent if it exists
+    if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      cp -v node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      echo "✓ Strategy 1: Copied from linux-x64-gnu subdirectory"; \
+    fi && \
+    # Strategy 2: Check alternative locations
+    for dir in "node_modules/lightningcss/"*; do \
+      if [ -d "$dir" ] && [ -f "$dir/lightningcss.linux-x64-gnu.node" ]; then \
+        if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+          cp -v "$dir/lightningcss.linux-x64-gnu.node" \
+             "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" && \
+          chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          echo "✓ Found binary in alternative location: $dir"; \
+        fi; \
+      fi; \
+    done && \
+    # Strategy 3: If still not found, reinstall lightningcss
+    if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+      echo "⚠ Binary not found, attempting to reinstall lightningcss..." && \
+      cd node_modules/lightningcss && \
+      npm install --no-save --legacy-peer-deps --include=optional 2>&1 | head -20 || true && \
+      cd ../.. && \
+      if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+        cp -v node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+           node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        echo "✓ Strategy 3: Reinstalled and fixed lightningcss"; \
+      else \
+        echo "⚠ Reinstall did not create expected binary"; \
+      fi; \
+    fi && \
+    echo "" && \
+    echo "=== Final verification ===" && \
+    if [ -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+      ls -lh node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      file node_modules/lightningcss/lightningcss.linux-x64-gnu.node || true && \
+      echo "✓ lightningcss binary verified at expected location"; \
+    else \
+      echo "❌ ERROR: lightningcss binary still not found!" && \
+      echo "Full directory tree:" && \
+      find node_modules/lightningcss -type f -name "*.node" -o -type d -name "*x64*" 2>/dev/null | head -30 || true && \
+      echo "All .node files in lightningcss:" && \
+      find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || true && \
+      exit 1; \
+    fi
+
+# Run fix-lightningcss script explicitly before build (double-check)
+RUN npm run fix-lightningcss || echo "Fix script completed (may have warnings)"
 
 # Build the application
 RUN npm run build

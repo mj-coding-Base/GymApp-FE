@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "npm run fix-lightningcss",
-    "fix-lightningcss": "node -e \"const fs=require('fs');const path=require('path');const src=path.join(process.cwd(),'node_modules','lightningcss','linux-x64-gnu','lightningcss.linux-x64-gnu.node');const dst=path.join(process.cwd(),'node_modules','lightningcss','lightningcss.linux-x64-gnu.node');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.copyFileSync(src,dst);console.log('✓ Fixed lightningcss binary');}\""
+    "fix-lightningcss": "node -e \"const fs=require('fs');const path=require('path');const src=path.join(process.cwd(),'node_modules','lightningcss','linux-x64-gnu','lightningcss.linux-x64-gnu.node');const dst=path.join(process.cwd(),'node_modules','lightningcss','lightningcss.linux-x64-gnu.node');if(fs.existsSync(src)){if(!fs.existsSync(dst)){fs.copyFileSync(src,dst);console.log('✓ Fixed lightningcss binary');}else{console.log('✓ lightningcss binary already in place');}}else{console.log('⚠ lightningcss binary source not found at:',src);const parent=path.dirname(src);if(fs.existsSync(parent)){const files=fs.readdirSync(parent);console.log('Files in parent dir:',files);}}\""
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
