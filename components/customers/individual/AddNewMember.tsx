@@ -4,47 +4,47 @@
 import { createIndividualCustomer, updateCustomer } from "@/actions/customers";
 import { fetchAllPackages } from "@/actions/package";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
+import { cn } from "@/lib/utils";
 import { NewIndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -116,10 +116,6 @@ const formSchema = z.object({
     .max(100, "Profession too long"),
 });
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 100 }, (_, i) => currentYear - i).map(String);
-const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
 
 interface AddNewMemberProps {
   readonly open: boolean;

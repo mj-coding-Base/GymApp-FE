@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { useSecureCredentials } from "@/hooks/useSecureCredentials";
 import { login } from "@/lib/authentication";
 import { cn } from "@/lib/utils";
-import { SuccessToast } from "../common/toast";
+import { ErrorToast, SuccessToast } from "../common/toast";
 import Loading from "./Loading";
 
 
@@ -76,13 +76,21 @@ const LoginForm = () => {
     setLoading(true);
     setUserEngaged(false); 
 
+    // Clear any previous errors
+    form.clearErrors();
+
     const res = await login({ ...values, rememberMe: isRemembered });
 
     if (res.status === "FAIL") {
       setLoading(false);
+      
+      // Show error toast with the actual error message from API
+      ErrorToast(res.message ?? "Invalid email or password. Please try again.");
+      
+      // Set error on email field
       form.setError("email", {
         type: "manual",
-        message: res.message ?? "Something went wrong. Please try again.",
+        message: res.message ?? "Invalid email or password.",
       });
 
       return;
@@ -141,6 +149,12 @@ const LoginForm = () => {
             name="password"
             render={({ field }) => (
               <FormItem>
+                {form.formState.errors.password?.message && (
+                  <div className="text-[10.5px] h-max border-2 border-[#FF5252] bg-[#FF52521A] px-[10px] py-[10px] rounded-[15px] mb-[25px] text-[#FF5252] flex items-center">
+                    <i className="danger-icon size-6 mr-2.5 shrink-0" />
+                    {form.formState.errors.password?.message}
+                  </div>
+                )}
                 <div className="focus:outline-transparent flex h-[54px] w-full rounded-[10px] px-[20px] border-[1.5px] group focus-within:border-[#2D3B64]">
                   <div className="flex flex-row items-center justify-between w-full">
                     <span className="flex flex-col gap-0 h-max my-auto w-full">

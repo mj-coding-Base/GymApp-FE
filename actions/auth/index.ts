@@ -31,7 +31,6 @@ export const signIn = async (
   data: SignInDataType
 ): Promise<SignInResponseDataType> => {
   try {
-
     const res = await axios.post("/admin/admin-management/login", {
       email: data.email,
       password: data.password,
@@ -39,8 +38,19 @@ export const signIn = async (
     }); 
 
     return res.data;
-  } catch (error) {
-    return error as SignInResponseDataType;
+  } catch (error: any) {
+    // Extract proper error message from axios error
+    const errorMessage = 
+      error?.response?.data?.message ||
+      error?.message ||
+      error?.response?.data?.error ||
+      "Invalid email or password. Please try again.";
+
+    return {
+      status: "FAIL",
+      message: errorMessage,
+      data: null,
+    };
   }
 };
 
