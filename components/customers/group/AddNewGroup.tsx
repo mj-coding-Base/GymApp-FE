@@ -1,40 +1,36 @@
 "use client";
 
 import { fetchIndividualCustomers } from "@/actions/customers";
+import { fetchAllPackages } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
+import { cn } from "@/lib/utils";
 import { IndividualCustomer } from "@/types/Customer";
+import type { Package } from "@/types/Packages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Trash2, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -59,6 +55,9 @@ function AddNewGroup() {
   const [availableCustomers, setAvailableCustomers] = useState<IndividualCustomer[]>([]);
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState<IndividualCustomer[]>([]);
+  // Packages
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
   
   // Track which step we're on
   const [currentStep, setCurrentStep] = useState<"package" | "select">("package");
@@ -86,16 +85,46 @@ function AddNewGroup() {
     fetchCustomers();
   }, [debouncedSearchTerm, currentStep]);
 
-  const handleToggleCustomer = (customer: IndividualCustomer) => {
-    if (selectedCustomers.length >= 10 && !selectedCustomers.some(c => c._id === customer._id)) {
-      alert("Maximum 10 customers allowed");
-      return;
+  // Fetch packages when sheet opens (package step)
+  useEffect(() => {
+    const loadPackages = async () => {
+      try {
+        setLoadingPackages(true);
+        const fetchedPackages = await fetchAllPackages();
+        console.log("Fetched packages:", fetchedPackages);
+        if (!fetchedPackages || fetchedPackages.length === 0) {
+          console.warn("No packages returned from API");
+          setPackages([]);
+          return;
+        }
+        const activePackages = fetchedPackages.filter(p => p.isActive !== false);
+        console.log("Active packages count:", activePackages.length, activePackages);
+        setPackages(activePackages);
+      } catch (err) {
+        console.error("Failed to load packages", err);
+        toast.error("Failed to load packages");
+        setPackages([]);
+      } finally {
+        setLoadingPackages(false);
+      }
+    };
+
+    if (openAddNewGroup && currentStep === "package") {
+      loadPackages();
     }
-    
+  }, [openAddNewGroup, currentStep]);
+
+  const handleToggleCustomer = (customer: IndividualCustomer) => {
     setSelectedCustomers(prev => {
       const exists = prev.some(c => c._id === customer._id);
       if (exists) {
+        // Customer is selected, remove them
         return prev.filter(c => c._id !== customer._id);
+      }
+      // Customer is not selected, add them if under limit
+      if (prev.length >= 10) {
+        alert("Maximum 10 customers allowed");
+        return prev; // Return unchanged state
       }
       return [...prev, customer];
     });
@@ -168,37 +197,77 @@ function AddNewGroup() {
                     control={form.control}
                     name="package"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col gap-[4px]">
+                      <FormItem className="flex flex-col gap-[8px]">
                         <FormLabel className="font-normal text-[14px]/[17px]">
                           Package *
                         </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full rounded-[10px] border-[#BDBDBD] text-[14px]/[17px] h-[41px] placeholder:text-[#9E9E9E] placeholder:text-[14px]/[17px]">
-                              <SelectValue placeholder="Select Package" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="boxfitExtreme">
-                              Boxfit Extreme
-                            </SelectItem>
-                            <SelectItem value="boxfitInHealthy">
-                              BoxFit In Healthy
-                            </SelectItem>
-                            <SelectItem value="boxfitBoxer">
-                              BoxFit Boxer
-                            </SelectItem>
-                            <SelectItem value="boxfitCasual">
-                              BoxFit Casual
-                            </SelectItem>
-                            <SelectItem value="boxfitOnline">
-                              BoxFit Online
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+
+                        {loadingPackages ? (
+                          <div className="grid grid-cols-2 gap-3">
+                            <Skeleton className="h-[90px] rounded-lg" />
+                            <Skeleton className="h-[90px] rounded-lg" />
+                            <Skeleton className="h-[90px] rounded-lg" />
+                            <Skeleton className="h-[90px] rounded-lg" />
+                          </div>
+                        ) : packages.length === 0 ? (
+                          <p className="text-[12px] text-[#6D6D6D]">No packages available</p>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-3">
+                            {packages.map((pkg) => {
+                              const isSelected = field.value === pkg.packageId;
+                              return (
+                                <button
+                                  key={pkg.packageId}
+                                  type="button"
+                                  onClick={() => field.onChange(pkg.packageId)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      field.onChange(pkg.packageId);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "p-4 rounded-[10px] border-2 text-left transition-all w-full",
+                                    isSelected
+                                      ? "border-[#378644] bg-[#378644]/10"
+                                      : "border-[#E0E0E0] bg-white hover:border-[#378644]/50"
+                                  )}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <h3 className="text-[14px] font-semibold text-[#363636] mb-1 truncate">
+                                        {pkg.package_name}
+                                      </h3>
+                                      <div className="flex items-center gap-4 text-[12px] text-[#6D6D6D]">
+                                        <span>{pkg.durationDays} days</span>
+                                        <span className="text-[14px] font-bold text-[#378644]">
+                                          LKR {pkg.price.toFixed(2)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {isSelected && (
+                                      <div className="ml-2">
+                                        <div className="w-5 h-5 rounded-full bg-[#378644] flex items-center justify-center">
+                                          <svg
+                                            className="w-3 h-3 text-white"
+                                            fill="none"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                          >
+                                            <path d="M5 13l4 4L19 7"></path>
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -212,7 +281,7 @@ function AddNewGroup() {
                   >
                     Next: Select Customers
                   </Button>
-                          </div>
+                </div>
               )}
 
               {/* Step 2: Customer Selection */}
@@ -252,34 +321,38 @@ function AddNewGroup() {
                     )}
                     {!loadingCustomers && availableCustomers.length > 0 && (
                       <div className="space-y-2">
-                        {availableCustomers.map((customer) => (
-                          <button
-                            key={customer._id}
-                            type="button"
-                            onClick={() => handleToggleCustomer(customer)}
-                            className={`w-full p-3 rounded-lg border text-left ${
-                              selectedCustomers.some(c => c._id === customer._id)
-                                ? 'border-[#378644] bg-green-50'
-                                : 'border-transparent'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={selectedCustomers.some(c => c._id === customer._id)}
-                                onCheckedChange={() => handleToggleCustomer(customer)}
-                              />
-                              <div className="flex-1">
-                                <p className="text-[13px] font-medium text-[#363636]">
-                                  {customer.firstName} {customer.lastName}
-                                </p>
-                                <p className="text-[11px] text-[#6D6D6D]">
-                                  NIC: {customer.nic || 'N/A'} • {customer.mobileNumber}
-                                </p>
-                            </div>
-                          </div>
-                          </button>
-                        ))}
-                  </div>
+                        {availableCustomers.map((customer) => {
+                          const isSelected = selectedCustomers.some(c => c._id === customer._id);
+                          
+                          return (
+                            <label
+                              key={customer._id}
+                              htmlFor={`customer-${customer._id}`}
+                              className={`w-full p-3 rounded-lg border text-left cursor-pointer transition-colors block ${
+                                isSelected
+                                  ? 'border-[#378644] bg-green-50'
+                                  : 'border-transparent hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  id={`customer-${customer._id}`}
+                                  checked={isSelected}
+                                  onCheckedChange={() => handleToggleCustomer(customer)}
+                                />
+                                <div className="flex-1">
+                                  <p className="text-[13px] font-medium text-[#363636]">
+                                    {customer.firstName} {customer.lastName}
+                                  </p>
+                                  <p className="text-[11px] text-[#6D6D6D]">
+                                    NIC: {customer.nic || 'N/A'} • {customer.mobileNumber}
+                                  </p>
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
                     )}
                           </div>
 
