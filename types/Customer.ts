@@ -117,25 +117,44 @@ export type NewIndividualCustomer ={
   deactivateAt?: string
 }
 
-export type GroupShort ={
-  _id: string;
+// API response member structure
+export type GroupMember = {
+  id: string;
+  clientId: string;
+  name: string;
+  relationship: string; // "primary" | "member"
+  packageId: string;
+};
+
+// API response group structure
+export type GroupApiResponse = {
+  groupId: string;
   createdAt: string;
-  updatedAt: string;
-  primaryMember: string;
-  number_of_members: number;
-  package_name: string;
   status: string;
+  members: GroupMember[];
+};
+
+export type GroupShort ={
+  _id: string; // groupId from API
+  createdAt: string;
+  updatedAt?: string; // Not in API, optional
+  primaryMember: string; // Derived from members array
+  number_of_members: number; // Derived from members.length
+  package_name: string; // May need to be derived or fetched
+  status: string;
+  groupId: string; // Added for compatibility
 
 }
 export type GroupFull ={
-  _id: string;
+  _id: string; // groupId from API
   createdAt: string;
-  updatedAt: string;
-  primaryMember: string;
-  number_of_members: number;
-  package_name: string;
+  updatedAt?: string; // Not in API, optional
+  primaryMember: string; // Derived from members array
+  number_of_members: number; // Derived from members.length
+  package_name: string; // May need to be derived or fetched
   status: string;
   members: GroupCustomer[];
+  groupId: string; // Added for compatibility
 
 }
 export type GroupCustomer = {

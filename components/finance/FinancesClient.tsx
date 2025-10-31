@@ -3,16 +3,25 @@
 import { fetchAllPayments, FetchPaymentsFilters, PaymentResponse } from "@/actions/clientPayment";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
+import { useWarningModal } from "@/hooks/modals/useWarningModal";
+import { cn } from "@/lib/utils";
 import { generatePaymentsPDF } from "@/utils/pdfGenerator";
+import { format } from "date-fns";
 import { ChevronDown, ChevronUp, Download, Filter } from "lucide-react";
 import { useEffect, useState } from "react";
 import FinancesSkeleton from "./FinancesSkeleton";
@@ -32,6 +41,14 @@ export default function FinancesClient() {
   const [totalPages, setTotalPages] = useState(0);
   
   const [filters, setFilters] = useState<Partial<FetchPaymentsFilters>>({});
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    filters.startDate ? new Date(filters.startDate) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    filters.endDate ? new Date(filters.endDate) : undefined
+  );
+  
+  const { setOpenWarningModal, setWarningData } = useWarningModal();
 
   useEffect(() => {
     const loadPayments = async () => {
@@ -64,6 +81,8 @@ export default function FinancesClient() {
 
   const handleClearFilters = () => {
     setFilters({});
+    setStartDate(undefined);
+    setEndDate(undefined);
     setPage(1);
     setPageSize(10);
   };
@@ -73,13 +92,41 @@ export default function FinancesClient() {
       alert("No payment data to download");
       return;
     }
-    try {
-      await generatePaymentsPDF(payments, filters);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF. Please make sure all dependencies are installed: npm install jspdf jspdf-autotable");
-    }
+    
+    // Show confirmation dialog
+    setWarningData({
+      title: "Are you sure you want to download the finance report PDF?",
+      description: "This will generate a PDF report with the current filtered payment data.",
+      backButtonText: "Download",
+      color: "yellow",
+      function: async () => {
+        try {
+          await generatePaymentsPDF(payments, filters);
+        } catch (error) {
+          console.error("Error generating PDF:", error);
+          alert("Failed to generate PDF. Please make sure all dependencies are installed: npm install jspdf jspdf-autotable");
+        }
+      },
+    });
+    setOpenWarningModal(true);
   };
+  
+  // Update filters when date changes
+  useEffect(() => {
+    const newFilters = { ...filters };
+    if (startDate) {
+      newFilters.startDate = format(startDate, "yyyy-MM-dd");
+    } else {
+      delete newFilters.startDate;
+    }
+    if (endDate) {
+      newFilters.endDate = format(endDate, "yyyy-MM-dd");
+    } else {
+      delete newFilters.endDate;
+    }
+    setFilters(newFilters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate]);
 
   if (loading && payments.length === 0) {
     return <FinancesSkeleton />;
@@ -216,23 +263,73 @@ export default function FinancesClient() {
             {/* Start Date */}
             <div>
               <span className="text-sm font-medium mb-1 block">Start Date</span>
-              <Input
-                type="date"
-                value={filters.startDate || ""}
-                onChange={(e) => handleFilterChange("startDate", e.target.value || undefined)}
-                className="w-full"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    {startDate ? format(startDate, "MM/dd/yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date);
+                      // Ensure end date is not before start date
+                      if (date && endDate && date > endDate) {
+                        setEndDate(undefined);
+                      }
+                    }}
+                    disabled={(date) => {
+                      if (endDate && date > endDate) return true;
+                      return date > new Date() || date < new Date("1900-01-01");
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* End Date */}
             <div>
               <span className="text-sm font-medium mb-1 block">End Date</span>
-              <Input
-                type="date"
-                value={filters.endDate || ""}
-                onChange={(e) => handleFilterChange("endDate", e.target.value || undefined)}
-                className="w-full"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    {endDate ? format(endDate, "MM/dd/yyyy") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => {
+                      setEndDate(date);
+                      // Ensure start date is not after end date
+                      if (date && startDate && date < startDate) {
+                        setStartDate(undefined);
+                      }
+                    }}
+                    disabled={(date) => {
+                      if (startDate && date < startDate) return true;
+                      return date > new Date() || date < new Date("1900-01-01");
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Access Given */}

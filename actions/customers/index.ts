@@ -4,6 +4,7 @@
 import { CommonResponseDataType } from "@/types/Common";
 import {
   Customer,
+  GroupCustomer,
   GroupFull,
   GroupShort,
   IndividualCustomer,
@@ -83,39 +84,45 @@ export async function fetchGroups(
   
   return deduplicatedRequest(cacheKey, async () => {
     try {
-      const response = await axios.get("/customers/get-all?customer_type=group",
+      const response = await axios.get("/api/groups",
         {
           params: {
-            page,
-            size,
-            searchTerm,
-            group_id,
-            isPrimaryMembersOnly,
+            page: page || "1",
+            size: size || "10",
+            searchTerm: searchTerm ?? " ",
           },
         }
       );
       
-      // Ensure we handle the response structure correctly
-      // The API response might be at response.data.data.results or response.data.data directly
-      let results = [];
+      // Handle new API response structure
+      // Response structure: { status, message, data: { total, page, size, groups: [...] } }
+      let results: GroupShort[] = [];
       let totalResults = 0;
       
-      if (response.data?.data) {
-        // Check if it's an array directly
-        if (Array.isArray(response.data.data)) {
-          results = response.data.data;
-          totalResults = response.data.totalResults ?? response.data.data.length;
-        } 
-        // Check if it's an object with results property
-        else if (response.data.data.results && Array.isArray(response.data.data.results)) {
-          results = response.data.data.results;
-          totalResults = response.data.data.totalResults ?? response.data.totalResults ?? 0;
-        }
-        // Check nested structure like individuals
-        else if (response.data.data.data && Array.isArray(response.data.data.data)) {
-          results = response.data.data.data;
-          totalResults = response.data.data.totalResults ?? 0;
-        }
+      if (response.data?.data?.groups && Array.isArray(response.data.data.groups)) {
+        const groups = response.data.data.groups;
+        totalResults = response.data.data.total || groups.length;
+        
+        // Transform API response to GroupShort format
+        results = groups.map((group: any) => {
+          // Find primary member from members array
+          const primaryMember = group.members?.find((m: any) => m.relationship === "primary");
+          const primaryMemberName = primaryMember?.name || "N/A";
+          
+          // Get package_name from primary member's packageId or use "N/A"
+          // Note: package_name might need to be fetched separately, using packageId for now
+          const package_name = primaryMember?.packageId || "N/A";
+          
+          return {
+            _id: group.groupId,
+            groupId: group.groupId,
+            createdAt: group.createdAt,
+            status: group.status || "ACTIVE",
+            primaryMember: primaryMemberName,
+            number_of_members: group.members?.length || 0,
+            package_name: package_name,
+          };
+        });
       }
       
       return {
@@ -142,24 +149,75 @@ export const fetchGroupCustomers = async (
   isPrimaryMembersOnly?: boolean
 ): Promise<{ results: GroupFull }> => {
   try {
-    const response = await axios.get("/customers/get-all?customer_type=group",
+    // Fetch all groups and find the specific group by group_id
+    const response = await axios.get("/api/groups",
       {
         params: {
-          page,
-          size,
-          searchTerm,
-          group_id,
-          isPrimaryMembersOnly,
+          page: page || "1",
+          size: size || "1000", // Large size to get all groups if needed
+          searchTerm: searchTerm ?? " ",
         },
       }
     );
-    console.log(response.data.data);
+    
+    if (response.data?.data?.groups && Array.isArray(response.data.data.groups)) {
+      // Find the specific group by group_id
+      const group = response.data.data.groups.find((g: any) => g.groupId === group_id);
+      
+      if (group) {
+        // Find primary member
+        const primaryMember = group.members?.find((m: any) => m.relationship === "primary");
+        const primaryMemberName = primaryMember?.name || "N/A";
+        const package_name = primaryMember?.packageId || "N/A";
+        
+        // Transform API members to GroupCustomer format
+        // Note: The API only provides limited member data, so we'll map what's available
+        const members: GroupCustomer[] = (group.members || []).map((member: any) => ({
+          _id: member.id,
+          createdAt: group.createdAt, // Use group creation date as fallback
+          updatedAt: group.createdAt,
+          status: group.status,
+          firstName: member.name.split(' ')[0] || '',
+          lastName: member.name.split(' ').slice(1).join(' ') || '',
+          email: '',
+          nic: '',
+          mobileNumber: '',
+          relationToPrimaryMember: member.relationship === "primary" ? "Primary Member" : member.relationship,
+          isPrimaryMember: member.relationship === "primary",
+          packageId: member.packageId,
+          fee: 0,
+          isActive: group.status === "ACTIVE",
+          isPaid: false,
+          group_id: group.groupId,
+          number_of_members: group.members?.length || 0,
+          package_name: package_name,
+          availableSessionQuota: 0,
+          clientId: member.clientId,
+          groupId: group.groupId,
+        }));
+        
+        const groupFull: GroupFull = {
+          _id: group.groupId,
+          groupId: group.groupId,
+          createdAt: group.createdAt,
+          status: group.status || "ACTIVE",
+          primaryMember: primaryMemberName,
+          number_of_members: group.members?.length || 0,
+          package_name: package_name,
+          members: members,
+        };
+        
+        return {
+          results: groupFull,
+        };
+      }
+    }
+    
     return {
-      results: response.data.data,
+      results: {} as GroupFull,
     };
   } catch (error) {
     console.error(error);
-
     return {
       results: {} as GroupFull,
     };

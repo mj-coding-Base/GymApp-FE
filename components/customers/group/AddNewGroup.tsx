@@ -6,26 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
+    Form,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useViewGroupDetails } from "@/hooks/useGroupDetailsSheet";
 import { cn } from "@/lib/utils";
+import { CommonResponseDataType } from "@/types/Common";
 import { IndividualCustomer } from "@/types/Customer";
 import type { Package } from "@/types/Packages";
+import axios from "@/utils/axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Trash2, UserCheck } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -135,27 +137,82 @@ function AddNewGroup() {
   };
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    if (!data.package) {
+      toast.error("Please select a package");
+      return;
+    }
     if (selectedCustomers.length === 0) {
-      alert("Please select at least one customer");
+      toast.error("Please select at least one customer");
       return;
     }
 
-    // Log the API request
-    const apiRequest = {
-      package: data.package,
-      members: selectedCustomers.map((customer, index) => ({
-        customerId: customer._id,
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        mobileNumber: customer.mobileNumber,
-        email: customer.email,
-        nic: customer.nic,
-        isPrimaryMember: index === 0,
-        packageId: customer.packageId,
-      })),
+    // Build request compatible with backend
+    const customerIds = selectedCustomers.map((c) => c.clientId);
+    const relatioship = selectedCustomers.map((_, idx) => (idx === 0 ? "primary" : "member"));
+    const requestBody = {
+      customerIds,
+      relatioship, // note: spelled as provided by backend
+      packageId: data.package,
     };
 
-    console.log("API Request:", JSON.stringify(apiRequest, null, 2));
+    // Gather auth headers (fallback if interceptor/token missing)
+    const hasWindow = typeof globalThis !== 'undefined' && (globalThis as { window?: unknown }).window !== undefined;
+    let token = hasWindow ? localStorage.getItem("x-auth-token") : null;
+    let gymId = hasWindow ? localStorage.getItem("gym-id") : null;
+
+    // Fallback: read from user-details cookie
+    if (hasWindow && (!token || !gymId)) {
+      try {
+        const cookieStr = document.cookie || '';
+        const userCookie = cookieStr
+          .split('; ')
+          .find(row => row.startsWith('user-details='))
+          ?.split('=')[1];
+        if (userCookie) {
+          const decoded = decodeURIComponent(userCookie);
+          const parsed = JSON.parse(decoded);
+          token = token || parsed?.token || null;
+          gymId = gymId || parsed?.gymId || null;
+          // Prime localStorage for subsequent requests
+          if (token) localStorage.setItem('x-auth-token', token);
+          if (gymId) localStorage.setItem('gym-id', gymId);
+        }
+      } catch (e) {
+        console.error('Failed to read auth from cookies', e);
+      }
+    }
+
+    if (!token) {
+      console.error("Missing authentication token in localStorage");
+      toast.error("You are not authenticated. Please log in again.");
+      return;
+    }
+    if (!gymId) {
+      console.warn("Missing gym-id in localStorage");
+      toast.error("Gym not selected. Please refresh and try again.");
+      return;
+    }
+
+    // Log the exact request being sent (with header summary only)
+    console.log(
+      "CreateGroup request:",
+      JSON.stringify(requestBody, null, 2),
+      "\nHeaders:",
+      { "x-auth-token": token ? "<present>" : "<missing>", "gym-id": gymId }
+    );
+
+    try {
+      const res = await axios.post(
+        "/api/groups/createGroup",
+        requestBody,
+        { headers: { "x-auth-token": token, "gym-id": gymId } }
+      );
+
+      const responseData = res.data as CommonResponseDataType;
+      if (responseData?.status === "FAIL") {
+        toast.error(responseData?.message || "Failed to create group");
+        return;
+      }
 
       setSuccessData({
         title: `Registration Successful!`,
@@ -165,6 +222,11 @@ function AddNewGroup() {
       });
       setOpenAddNewGroup(false);
       setOpenSuccessModal(true);
+    } catch (err) {
+      console.error("CreateGroup error:", err);
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
+      toast.error(error?.response?.data?.message || error?.message || "Failed to create group");
+    }
   };
 
   const selectedPackage = form.watch("package");
@@ -209,9 +271,10 @@ function AddNewGroup() {
                             <Skeleton className="h-[90px] rounded-lg" />
                             <Skeleton className="h-[90px] rounded-lg" />
                           </div>
-                        ) : packages.length === 0 ? (
-                          <p className="text-[12px] text-[#6D6D6D]">No packages available</p>
                         ) : (
+                          packages.length === 0 ? (
+                            <p className="text-[12px] text-[#6D6D6D]">No packages available</p>
+                          ) : (
                           <div className="grid grid-cols-2 gap-3">
                             {packages.map((pkg) => {
                               const isSelected = field.value === pkg.packageId;
@@ -267,6 +330,7 @@ function AddNewGroup() {
                               );
                             })}
                           </div>
+                          )
                         )}
                         <FormMessage />
                       </FormItem>

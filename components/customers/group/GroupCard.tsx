@@ -57,11 +57,11 @@ const GroupCard = ({ group }: Props) => {
           </p>
         </div>
 
-        <div className="flex gap-9">
+          <div className="flex gap-9">
           <div className="flex flex-col gap-[5px]">
             <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">Group ID</p>
             <p className="text-[12px]/[15px] text-[#434745] font-medium">
-              {group._id}
+              {group.groupId || group._id}
             </p>
           </div>
 
@@ -79,7 +79,7 @@ const GroupCard = ({ group }: Props) => {
       <div className="absolute right-0 inset-y-0 flex flex-col gap-[10px] items-center justify-center">
         <i
           onClick={() => {
-            setSelectedGroupData(group._id);
+            setSelectedGroupData(group.groupId || group._id);
             setOpenViewGroupDetails(true);
           }}
           className="view-details w-[40px] h-[50px]"
