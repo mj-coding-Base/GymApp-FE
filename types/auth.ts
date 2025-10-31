@@ -6,7 +6,8 @@ export interface UserSession {
   token: string;
   refreshToken: string | null;
   mobile?: string;
-  isAdmin:boolean;
+  isAdmin: boolean;
+  isFullTime?: boolean;
   gymId: string;
 
   // profilePicture?: string;

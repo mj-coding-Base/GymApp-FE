@@ -22,6 +22,7 @@ type SignInResponseDataType = {
     idToken: string;
     refreshToken: string;
     isAdmin: boolean;
+    isFullTime: boolean;
     mobile: string;
     gymId: string;
   } | null;

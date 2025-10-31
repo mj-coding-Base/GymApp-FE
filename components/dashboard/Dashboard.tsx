@@ -10,7 +10,6 @@ import MarkAttendance from "./MarkAttendance";
 import PendingPayments from "./PendingPayments";
 import TodayAttendance from "./TodayAttendance";
 import TotalEarningChart from "./TotalEarningsChart";
-import UnpaidCustomers from "./UnpaidCustomers";
 import WhiteCard from "./WhiteCard";
 
 // Define types for the backend data
@@ -48,9 +47,81 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
   
   const { setOpenDailyAttendanceSheet } = useDailyAttendanceSheet();
   const { setOpenPendingPaymentsSheet } = usePendingPaymentsSheet();
-  const { user } = useUserDetails();
-  const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
-  const isFullTime = user?.isFullTime === true || user?.isFullTime === "true" || user?.isFullTime === 1;
+  const { user, refresh: refreshUser } = useUserDetails();
+  
+  // Debug: Log user data AND check cookie directly
+  React.useEffect(() => {
+    console.log('=== DASHBOARD DEBUG ===');
+    console.log('Full user object:', JSON.stringify(user, null, 2));
+    console.log('user?.isAdmin:', user?.isAdmin, 'Type:', typeof user?.isAdmin);
+    console.log('user?.isFullTime:', user?.isFullTime, 'Type:', typeof user?.isFullTime);
+    console.log('All user keys:', user ? Object.keys(user) : 'User is null/undefined');
+    
+    // Also check cookie directly
+    if (typeof document !== 'undefined') {
+      const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('user-details='))
+        ?.split('=')[1];
+      if (cookieValue) {
+        try {
+          const cookieUser = JSON.parse(decodeURIComponent(cookieValue));
+          console.log('Cookie user-details:', JSON.stringify(cookieUser, null, 2));
+          console.log('Cookie isAdmin:', cookieUser?.isAdmin);
+          console.log('Cookie isFullTime:', cookieUser?.isFullTime);
+        } catch (e) {
+          console.error('Error parsing cookie:', e);
+        }
+      }
+    }
+    console.log('======================');
+    
+    // If user exists but isFullTime is missing, try to refresh
+    if (user?.isAdmin !== undefined && user?.isFullTime === undefined) {
+      console.warn('isFullTime is missing from user object, refreshing...');
+      refreshUser();
+    }
+  }, [user, refreshUser]);
+  
+  // More robust checks - handle boolean, string, number, and case variations
+  // Also check for different property name variations
+  const isAdminRaw = user?.isAdmin ?? user?.IsAdmin ?? user?.is_admin;
+  const isFullTimeRaw = user?.isFullTime ?? user?.IsFullTime ?? user?.is_full_time ?? user?.isFulltime;
+  
+  const isAdmin = isAdminRaw === true || 
+                 isAdminRaw === "true" || 
+                 isAdminRaw === "True" || 
+                 isAdminRaw === "TRUE" ||
+                 isAdminRaw === 1 ||
+                 String(isAdminRaw || '').toLowerCase() === 'true';
+  
+  const isFullTime = isFullTimeRaw === true || 
+                     isFullTimeRaw === "true" || 
+                     isFullTimeRaw === "True" || 
+                     isFullTimeRaw === "TRUE" ||
+                     isFullTimeRaw === 1 ||
+                     String(isFullTimeRaw || '').toLowerCase() === 'true';
+  
+  // Debug: Log computed values - ALWAYS log
+  React.useEffect(() => {
+    console.log('=== COMPUTED VALUES ===');
+    console.log('isAdmin (computed):', isAdmin);
+    console.log('isFullTime (computed):', isFullTime);
+    console.log('showTotalEarningChart:', isAdmin && isFullTime);
+    console.log('showFullTimeComponents:', isFullTime);
+    console.log('showTodayAttendance:', !isAdmin && !isFullTime);
+    console.log('========================');
+  }, [isAdmin, isFullTime]);
+  
+  // Permission-based component visibility
+  // TotalEarningChart: only if isAdmin == true && isFullTime == true
+  const showTotalEarningChart = isAdmin && isFullTime;
+  
+  // CollectPayment, MarkAttendance, PendingPayments: if isFullTime == true
+  const showFullTimeComponents = isFullTime;
+  
+  // Today Attendance: if isAdmin == false && isFullTime == false
+  const showTodayAttendance = !isAdmin && !isFullTime;
   
   return (
     <div>
@@ -65,8 +136,9 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </p>
         </div>
 
-        {/* Action buttons - only show if isFullTime is true */}
-        {isFullTime && (
+        {/* CollectPayment and MarkAttendance - only show if isFullTime == true */}
+        {/* DEBUG: showFullTimeComponents = {String(showFullTimeComponents)}, isFullTime = {String(isFullTime)} */}
+        {showFullTimeComponents && (
           <div className="grid grid-cols-2 gap-[10px]">
             <CollectPayment />
             <MarkAttendance />
@@ -101,11 +173,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </div>
         </WhiteCard>
 
-        {/* Today Attendance - only show if isFullTime is false */}
-        {!isFullTime && <TodayAttendance />}
+        {/* Today Attendance - only show if user is NOT admin AND NOT fullTime */}
+        {showTodayAttendance && <TodayAttendance />}
 
-        {/* Trainers card - only show if isFullTime is true */}
-        {isFullTime && (
+        {/* Trainers card - only show if isFullTime == true */}
+        {showFullTimeComponents && (
           <WhiteCard className="flex flex-col gap-[10px] items-center">
             <div className="flex gap-[5px] w-full">
               <i className="total-client size-[18px] text-[#3D3D3D]" />
@@ -132,8 +204,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </WhiteCard>
         )}
 
-        {/* Daily attendance card - only show if isFullTime is true */}
-        {isFullTime && (
+        {/* Daily attendance card - only show if isFullTime == true */}
+        {showFullTimeComponents && (
           <WhiteCard className="flex flex-col gap-[10px] items-center">
             <div className="flex gap-[5px] w-full">
               <i className="calendar-icon size-[18px] text-[#3D3D3D]" />
@@ -156,8 +228,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </WhiteCard>
         )}
 
-        {/* Pending payments card - only show if isFullTime is true */}
-        {isFullTime && (
+        {/* Pending payments card - only show if isFullTime == true */}
+        {showFullTimeComponents && (
           <WhiteCard className="flex flex-col gap-[10px] items-center">
             <div className="flex gap-[5px] w-full">
               <i className="total-client size-[18px] text-[#EB5F14]" />
@@ -182,13 +254,10 @@ const Dashboard: React.FC<DashboardProps> = ({ data, userName }) => {
           </WhiteCard>
         )}
 
-        {/* Earnings chart for admins, Unpaid customers for trainers - only show if isFullTime is true */}
-        {isFullTime && (
-          isAdmin ? (
-            <TotalEarningChart chartData={chartData} />
-          ) : (
-            <UnpaidCustomers pendingPayments={client.pendingPayments} />
-          )
+        {/* TotalEarningChart - only show if isAdmin == true && isFullTime == true */}
+        {/* DEBUG: showTotalEarningChart = {String(showTotalEarningChart)}, isAdmin = {String(isAdmin)}, isFullTime = {String(isFullTime)} */}
+        {showTotalEarningChart && (
+          <TotalEarningChart chartData={chartData} />
         )}
       </div>
       
