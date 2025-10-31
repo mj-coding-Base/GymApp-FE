@@ -2,6 +2,8 @@ import CardWrapper from "@/components/auth/CardWrapper";
 import NewPasswordForm from "@/components/auth/NewPasswordForm";
 import PasswordSuccessModal from "@/components/auth/PasswordSuccessModal";
 
+export const dynamic = 'force-dynamic';
+
 const LoginPage = () => {
   return (
     <>

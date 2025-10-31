@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+export const dynamic = 'force-dynamic';
+
 import CardWrapper from "@/components/auth/CardWrapper";
 import CheckEmail from "@/components/auth/CheckEmail";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
@@ -40,7 +42,7 @@ const ResetPassword = () => {
         backButtonLabel=""
         titleClass="text-[18px]/[22px] font-semibold"
         headerTexts=""
-        className={showCheckEmail ? "" : ""}
+        className=""
         showCheckEmail={showCheckEmail}
         setShowCheckEmail={setShowCheckEmail}
       >

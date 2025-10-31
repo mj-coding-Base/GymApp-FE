@@ -1,6 +1,7 @@
 "use server";
 import axios from "@/utils/axios";
 import { deduplicatedRequest } from "@/utils/requestDeduplication";
+import { format } from "date-fns";
 
 export type DashboardData = {
   trainer: {
@@ -167,5 +168,93 @@ export const fetchDailyAttendance = async (
     ];
     
     return dummyData;
+  }
+};
+
+// Type for today's attendance records
+export type TodayAttendanceRecord = {
+  _id: string;
+  customerId: string;
+  firstName: string;
+  lastName: string;
+  attendedDateTime: string;
+  deactivateAt?: string;
+  clientId?: string;
+};
+
+// API Response structure for today's attendance
+type TodayAttendanceApiResponse = {
+  status: string;
+  message: string | null;
+  data: {
+    success: boolean;
+    message: string;
+    data: Array<{
+      date: string;
+      attendances: Array<{
+        _id?: string;
+        customerId: string;
+        firstName: string;
+        lastName: string;
+        time: string;
+        attendedDateTime: string;
+        deactivateAt?: string;
+        clientId?: string;
+      }>;
+      totalCount: number;
+    }>;
+    totalRecords: number;
+    dateRange: {
+      startDate: string;
+      endDate: string;
+    };
+  };
+};
+
+export const fetchTodayAttendance = async (): Promise<TodayAttendanceRecord[]> => {
+  try {
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+    
+    const res = await axios.get(
+      `/Attendances/daily-attendance?startDate=${todayStr}&endDate=${todayStr}`,
+      {
+        headers: {
+          'accept': 'application/json',
+        }
+      }
+    );
+    
+    // Handle the nested response structure
+    const apiResponse: TodayAttendanceApiResponse = res.data;
+    
+    // Extract attendance records from the response
+    if (apiResponse.data?.data && Array.isArray(apiResponse.data.data)) {
+      // Flatten the attendance data
+      const records: TodayAttendanceRecord[] = [];
+      for (const dayData of apiResponse.data.data) {
+        if (dayData.attendances && Array.isArray(dayData.attendances)) {
+          for (const attendance of dayData.attendances) {
+            records.push({
+              _id: attendance._id || `${attendance.customerId}-${attendance.attendedDateTime}`,
+              customerId: attendance.customerId,
+              firstName: attendance.firstName,
+              lastName: attendance.lastName,
+              attendedDateTime: attendance.attendedDateTime,
+              deactivateAt: attendance.deactivateAt,
+              clientId: attendance.clientId,
+            });
+          }
+        }
+      }
+      return records;
+    }
+    
+    return [];
+  } catch (error) {
+    console.error("Failed to fetch today's attendance data:", error);
+    
+    // Return empty array on error
+    return [];
   }
 };

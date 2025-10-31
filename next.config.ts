@@ -19,20 +19,19 @@ const nextConfig: NextConfig = {
   // Transpile packages that need special handling
   transpilePackages: ['jspdf', 'jspdf-autotable'],
   
-  // Add webpack config for jspdf and jspdf-autotable (only when not using Turbopack)
-  ...(process.env.TURBOPACK !== '1' && {
-    webpack: (config: any, { isServer }: any) => {
-      if (!isServer) {
-        config.resolve.fallback = {
-          ...config.resolve.fallback,
-          fs: false,
-          path: false,
-          crypto: false,
-        };
-      }
-      return config;
-    },
-  }),
+  // Always use webpack for builds (Turbopack is only for development with --turbopack flag)
+  // Explicitly defining webpack ensures Next.js doesn't try to use Turbopack during builds
+  webpack: (config: any, { isServer }: any) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
   
   // Optimize images
   images: {
@@ -71,10 +70,9 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // Turbopack configuration (stable, moved from experimental)
-  turbopack: {
-    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
-  },
+  // Turbopack configuration - only used in development (not in production builds)
+  // Turbopack is enabled via --turbopack flag in dev script, not here
+  // Removing turbopack config to avoid build issues
   
   // Optimize headers for caching
   async headers() {

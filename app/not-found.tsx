@@ -1,8 +1,7 @@
 'use client';
 
-import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-export const dynamic = 'force-dynamic';
+import { Suspense } from 'react';
 function NotFoundContent() {
   const searchParams = useSearchParams();
   const query = searchParams?.get('query');
