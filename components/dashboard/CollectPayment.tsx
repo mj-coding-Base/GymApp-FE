@@ -26,7 +26,7 @@ const CollectPayment = () => {
         </div>
         <div
           onClick={() => {
-            setOpenCollectPaymentGroupSheet(false);
+            setOpenCollectPaymentGroupSheet(true);
           }
         }
           className="flex flex-col items-center justify-between bg-[#fac1be] rounded-[15px]  py-[18px] gap-[6px]"
