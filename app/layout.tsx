@@ -2,18 +2,17 @@ import Providers from "@/components/common/Providers";
 import { SessionProvider } from '@/context/session-context'; // Add this import
 import { getSession } from "@/lib/authentication";
 import { cn } from "@/lib/utils";
+import "@fontsource/inter/300.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import "@/public/icons.css";
 import "@/public/iconss.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "PayZhe",
@@ -34,7 +33,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="scrollbar-stylish">
       <head><meta name="facebook-domain-verification" content="q8dyybm29donnk8yhijffop1stqxn6" /></head>
-      <body className={cn("antialiased max-w-lg mx-auto", inter.className)}>
+      <body className={cn("antialiased max-w-lg mx-auto font-sans")}>
         {/* Wrap everything with SessionProvider */}
         <SessionProvider initialSession={session}>
           {children}

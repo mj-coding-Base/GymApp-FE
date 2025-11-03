@@ -1,13 +1,13 @@
 "use client";
 
-import { getUserPaymentsId } from "@/actions/customers";
+import { getProfilePictureUrl, getUserPaymentsId } from "@/actions/customers";
 import { getUserAttendance } from "@/actions/session";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import useUserDetails from "@/hooks/useUserDetails";
 import { AttendanceHistory, IndividualCustomer, PaymentHistory } from "@/types/Customer";
@@ -31,6 +31,7 @@ const ViewClientProfile = ({
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
   const { user } = useUserDetails();
   const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -56,6 +57,31 @@ const ViewClientProfile = ({
       .finally(() => setLoading(false));
   }, [customer.clientId, isOpen]);
 
+  // Load profile picture
+  useEffect(() => {
+    const fetchProfilePicture = async () => {
+      if (!customer?.clientId || !isOpen) return;
+
+      try {
+        const url = await getProfilePictureUrl(customer.clientId);
+        setProfileImageUrl(url);
+      } catch (error) {
+        // Silently fail - customer may not have a profile picture
+        console.warn('Failed to load profile picture:', error);
+        setProfileImageUrl(null);
+      }
+    };
+
+    fetchProfilePicture();
+
+    // Cleanup: revoke object URL when component unmounts or closes
+    return () => {
+      if (profileImageUrl) {
+        URL.revokeObjectURL(profileImageUrl);
+      }
+    };
+  }, [customer?.clientId, isOpen]);
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetContent
@@ -76,6 +102,17 @@ const ViewClientProfile = ({
           Client Profile
         </h1>
         <div className="overflow-y-auto">
+          {/* Profile Picture */}
+          {profileImageUrl && (
+            <div className="flex justify-center mt-[16px] mb-[16px]">
+              <img
+                src={profileImageUrl}
+                alt={`${customer.firstName} ${customer.lastName}`}
+                className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+              />
+            </div>
+          )}
+          
           <div className="mt-[16px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
             <div className="flex border-b-[1px] border-b-[#000000]">
               <div className="flex-[35%] shrink-0 px-[10px] py-[7.8px] border-l-[1px]  content-center flex flex-col gap-[9px]">

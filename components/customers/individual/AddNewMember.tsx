@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { createIndividualCustomer, updateCustomer } from "@/actions/customers";
+import { createIndividualCustomer, getProfilePictureUrl, updateCustomer, uploadProfilePicture } from "@/actions/customers";
 import { fetchAllPackages } from "@/actions/package";
+import { ImageUpload } from "@/components/common/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -135,6 +136,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const [deactivateDate, setDeactivateDate] = useState<Date | undefined>(undefined);
   const [dobDate, setDobDate] = useState<Date | undefined>(undefined);
   const [dobCalendarMonth, setDobCalendarMonth] = useState<Date>(new Date(2014, 11, 1)); // December 2014
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [currentProfileImageUrl, setCurrentProfileImageUrl] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -187,10 +190,21 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         setDeactivateDate(undefined);
         setDobDate(undefined);
         setDobCalendarMonth(new Date(2014, 11, 1)); // December 2014
+        setProfileImage(null);
+        setCurrentProfileImageUrl(null);
+      } else {
+        // Load existing profile picture if editing
+        const loadProfilePicture = async () => {
+          if (data.clientId) {
+            const url = await getProfilePictureUrl(data.clientId);
+            setCurrentProfileImageUrl(url);
+          }
+        };
+        loadProfilePicture();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, data]);
 
   useEffect(() => {
     if (open && data) {
@@ -229,9 +243,20 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       setDeactivateDate(undefined);
       setDobDate(undefined);
       setDobCalendarMonth(new Date(2014, 11, 1)); // December 2014
+      setProfileImage(null);
+      setCurrentProfileImageUrl(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, open]);
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (currentProfileImageUrl) {
+        URL.revokeObjectURL(currentProfileImageUrl);
+      }
+    };
+  }, [currentProfileImageUrl]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     let response;
@@ -281,7 +306,30 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       }
 
       if (response.status === "SUCCESS") {
+        // Upload profile picture if a new one was selected
+        // For new customers, the response.message contains the clientId in the format:
+        // "FirstName LastName's registration number is CLIENTID"
+        let clientIdToUse = data?.clientId;
+        if (!clientIdToUse && response.message) {
+          // Extract clientId from message (format: "... registration number is CLIENTID")
+          const match = response.message.match(/registration number is (\S+)/);
+          if (match && match[1]) {
+            clientIdToUse = match[1];
+          }
+        }
+        
+        if (profileImage && clientIdToUse) {
+          try {
+            await uploadProfilePicture(clientIdToUse, profileImage);
+          } catch (error) {
+            console.error("Failed to upload profile picture:", error);
+            toast.error("Customer saved but profile picture upload failed");
+          }
+        }
+
         form.reset();
+        setProfileImage(null);
+        setCurrentProfileImageUrl(null);
         setOpen(false);
         setSuccessData({
           title: !data ? "Registration Successful!" : "Client Updated!",
@@ -879,6 +927,23 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                   );
                 }}
               />
+
+              {/* Profile Picture Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Picture
+                </label>
+                <ImageUpload
+                  id="profile-picture-upload"
+                  label="Profile Picture"
+                  onFileSelect={(file: File | null) => {
+                    setProfileImage(file);
+                  }}
+                  maxSizeMB={10}
+                  acceptedTypes={['image/jpeg', 'image/jpg', 'image/png']}
+                  currentImageUrl={currentProfileImageUrl || undefined}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-[15px] pt-4">
                 <SheetClose asChild>
