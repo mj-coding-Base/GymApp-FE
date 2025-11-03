@@ -97,6 +97,7 @@ export type IndividualCustomer = {
   isMarried : true,
   deactivateAt?: string;
   reference?: string;
+  profilePicture?: string;
 };
 
 export type NewIndividualCustomer ={

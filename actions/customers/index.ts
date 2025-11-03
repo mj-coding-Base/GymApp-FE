@@ -3,12 +3,12 @@
 
 import { CommonResponseDataType } from "@/types/Common";
 import {
-  Customer,
-  GroupCustomer,
-  GroupFull,
-  GroupShort,
-  IndividualCustomer,
-  PaymentHistory,
+    Customer,
+    GroupCustomer,
+    GroupFull,
+    GroupShort,
+    IndividualCustomer,
+    PaymentHistory,
 } from "@/types/Customer";
 import axios from "@/utils/axios";
 import { deduplicatedRequest } from "@/utils/requestDeduplication";
@@ -432,5 +432,68 @@ export const searchCustomers = async (
         ? error.response?.data?.message || error.message
         : "Failed to search customers"
     );
+  }
+};
+
+/**
+ * Upload customer profile picture
+ * @param clientId - Customer clientId
+ * @param file - File object from file input
+ * @returns Promise with upload result
+ */
+export const uploadProfilePicture = async (
+  clientId: string,
+  file: File
+): Promise<{ success: boolean; message: string; filePath?: string }> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file); // Field name must match backend: FileInterceptor('file')
+
+    const response = await axios.post<{
+      message: string;
+      filename: string;
+      filePath: string;
+    }>(`/customers/${clientId}/upload-profile-picture`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return {
+      success: true,
+      message: response.data.message,
+      filePath: response.data.filePath,
+    };
+  } catch (error) {
+    console.error('Profile picture upload failed:', error);
+    throw new Error(
+      isAxiosError(error)
+        ? error.response?.data?.message || error.message
+        : "Failed to upload profile picture"
+    );
+  }
+};
+
+/**
+ * Get profile picture URL (returns blob URL for <img src>)
+ * @param clientId - Customer clientId
+ * @returns Promise resolving to blob URL string
+ */
+export const getProfilePictureUrl = async (clientId: string): Promise<string | null> => {
+  try {
+    const response = await axios.get<Blob>(`/customers/${clientId}/profile-picture`, {
+      responseType: 'blob',
+    });
+
+    const blob = response.data;
+    const objectUrl = URL.createObjectURL(blob);
+    return objectUrl;
+  } catch (error) {
+    // Return null if profile picture not found (404) - this is expected for customers without pictures
+    if (isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    console.error('Failed to get profile picture:', error);
+    return null;
   }
 };

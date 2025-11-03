@@ -1,11 +1,11 @@
 "use client";
 
-import { deactivateCustomer } from "@/actions/customers";
+import { deactivateCustomer, getProfilePictureUrl } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import useUserDetails from "@/hooks/useUserDetails";
 import { IndividualCustomer } from "@/types/Customer";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import AddNewMember from "./AddNewMember";
 import ViewClientProfile from "./ClientProfile";
 
@@ -21,6 +21,7 @@ const IndividualCard = React.memo(({ customer }: Props) => {
   const [isActive, setIsActive] = useState(customer.isActive);
   const { user } = useUserDetails();
   const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
 
   // ⚡ PERFORMANCE: Memoize date formatting (runs only when createdAt changes)
   const formattedDate = useMemo(
@@ -34,9 +35,45 @@ const IndividualCard = React.memo(({ customer }: Props) => {
     () => `${customer.firstName} ${customer.lastName}`,
     [customer.firstName, customer.lastName],
   );
+
+  // Load profile picture
+  useEffect(() => {
+    const fetchProfilePicture = async () => {
+      if (!customer?.clientId) return;
+
+      try {
+        const url = await getProfilePictureUrl(customer.clientId);
+        setProfileImageUrl(url);
+      } catch (error) {
+        // Silently fail - customer may not have a profile picture
+        console.warn('Failed to load profile picture:', error);
+      }
+    };
+
+    fetchProfilePicture();
+
+    // Cleanup: revoke object URL when component unmounts
+    return () => {
+      if (profileImageUrl) {
+        URL.revokeObjectURL(profileImageUrl);
+      }
+    };
+  }, [customer?.clientId]);
+
   return (
     <div className="border border-b border-[#DAD9DE] p-[15px] bg-white relative">
       <div className="flex flex-col gap-[15px]">
+        {/* Profile Picture */}
+        {profileImageUrl && (
+          <div className="flex justify-center">
+            <img
+              src={profileImageUrl}
+              alt={fullName}
+              className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+            />
+          </div>
+        )}
+        
         <div className="flex gap-9">
           <div className="flex flex-col gap-[5px]">
             <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
