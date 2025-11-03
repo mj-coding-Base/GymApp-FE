@@ -6,33 +6,33 @@ import { fetchAllPackages } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
 } from "@/components/ui/sheet";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { cn } from "@/lib/utils";
@@ -114,6 +114,10 @@ const formSchema = z.object({
     .string({ required_error: "Profession is required" })
     .min(1, "Profession is required")
     .max(100, "Profession too long"),
+  reference: z
+    .string()
+    .max(255, "Reference too long")
+    .optional(),
 });
 
 
@@ -157,6 +161,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       },
       whyJoin: "Regular Fitness",
       profession: "",
+      reference: "",
     },
   });
 
@@ -218,6 +223,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         },
         whyJoin: data.whyJoin as any,
         profession: data.profession || "",
+        reference: data.reference || "",
       });
     } else if (open && !data) {
       setDeactivateDate(undefined);
@@ -261,7 +267,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         dob: dobDate.toISOString(),
         deactivateAt: deactivateAtDate,
         clientId: data?.clientId || undefined,
-      
+        reference: values.reference || undefined,
       };
 
       if (data) {
@@ -798,6 +804,25 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                       <Input
                         {...field}
                         placeholder="Your profession"
+                        className="rounded-[10px] h-[41px]"
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="reference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reference</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Reference (optional)"
                         className="rounded-[10px] h-[41px]"
                         disabled={isSubmitting}
                       />

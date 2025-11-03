@@ -7,16 +7,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { useWarningModal } from "@/hooks/modals/useWarningModal";
 import { cn } from "@/lib/utils";
@@ -530,24 +530,36 @@ export default function FinancesClient() {
           {/* Page Size Selector - Always visible */}
           <div className="flex items-center justify-center gap-2">
             <span className="text-sm text-[#3D3D3D]">Show per page:</span>
-            <Select
-              value={String(pageSize)}
-              onValueChange={(value) => {
+            <Input
+              type="number"
+              value={pageSize}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "") {
+                  return;
+                }
                 const newSize = Number(value);
-                setPageSize(newSize);
-                setPage(1);
+                if (newSize > 0 && newSize <= 300) {
+                  setPageSize(newSize);
+                  setPage(1);
+                } else if (newSize > 300) {
+                  setPageSize(300);
+                  setPage(1);
+                }
               }}
-            >
-              <SelectTrigger className="w-24 h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (value === "" || Number(value) <= 0) {
+                  setPageSize(10);
+                } else if (Number(value) > 300) {
+                  setPageSize(300);
+                }
+              }}
+              min="1"
+              max="300"
+              className="w-24 h-9"
+              placeholder="10"
+            />
           </div>
 
           {/* Page Navigation - Only show if there are results */}

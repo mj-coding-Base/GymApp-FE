@@ -96,6 +96,7 @@ export type IndividualCustomer = {
   isMale : true,
   isMarried : true,
   deactivateAt?: string;
+  reference?: string;
 };
 
 export type NewIndividualCustomer ={
@@ -114,7 +115,8 @@ export type NewIndividualCustomer ={
   whyJoin :  string ,
   profession :  string,
   clientId :  string,
-  deactivateAt?: string
+  deactivateAt?: string,
+  reference?: string
 }
 
 // API response member structure
@@ -180,6 +182,7 @@ export type GroupCustomer = {
   clientId: string;
   groupId?: string;
   deactivateAt?: string;
+  reference?: string;
 };
 
 export type CustomerView = {
