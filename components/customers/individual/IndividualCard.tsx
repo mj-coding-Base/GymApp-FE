@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import useUserDetails from "@/hooks/useUserDetails";
 import { IndividualCustomer } from "@/types/Customer";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import AddNewMember from "./AddNewMember";
 import ViewClientProfile from "./ClientProfile";
 
@@ -22,6 +22,7 @@ const IndividualCard = React.memo(({ customer }: Props) => {
   const { user } = useUserDetails();
   const isAdmin = user?.isAdmin === true || user?.isAdmin === "true" || user?.isAdmin === 1;
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const imageUrlRef = useRef<string | null>(null);
 
   // ⚡ PERFORMANCE: Memoize date formatting (runs only when createdAt changes)
   const formattedDate = useMemo(
@@ -39,23 +40,40 @@ const IndividualCard = React.memo(({ customer }: Props) => {
   // Load profile picture
   useEffect(() => {
     const fetchProfilePicture = async () => {
-      if (!customer?.clientId) return;
+      if (!customer?.clientId) {
+        setProfileImageUrl(null);
+        imageUrlRef.current = null;
+        return;
+      }
+
+      // Revoke previous URL if it exists
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
+      }
 
       try {
         const url = await getProfilePictureUrl(customer.clientId);
-        setProfileImageUrl(url);
-      } catch (error) {
+        if (url) {
+          imageUrlRef.current = url;
+          setProfileImageUrl(url);
+        } else {
+          setProfileImageUrl(null);
+        }
+      } catch {
         // Silently fail - customer may not have a profile picture
-        console.warn('Failed to load profile picture:', error);
+        // This is expected for customers without profile pictures
+        setProfileImageUrl(null);
       }
     };
 
     fetchProfilePicture();
 
-    // Cleanup: revoke object URL when component unmounts
+    // Cleanup: revoke object URL when component unmounts or clientId changes
     return () => {
-      if (profileImageUrl) {
-        URL.revokeObjectURL(profileImageUrl);
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
       }
     };
   }, [customer?.clientId]);
@@ -109,9 +127,19 @@ const IndividualCard = React.memo(({ customer }: Props) => {
           <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
             Client Name
           </p>
-          <p className="text-[12px]/[15px] text-[#434745] font-medium">
-            {fullName}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-[12px]/[15px] text-[#434745] font-medium">
+              {fullName}
+            </p>
+            {customer.reference && (
+              <>
+                <span className="text-[#6D6D6D]">•</span>
+                <p className="text-[12px]/[15px] text-[#6D6D6D] font-medium bg-gray-100 px-2 py-0.5 rounded">
+                  {customer.reference}
+                </p>
+              </>
+            )}
+          </div>
         </div>
 
         {isAdmin && (

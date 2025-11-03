@@ -490,10 +490,23 @@ export const getProfilePictureUrl = async (clientId: string): Promise<string | n
     return objectUrl;
   } catch (error) {
     // Return null if profile picture not found (404) - this is expected for customers without pictures
-    if (isAxiosError(error) && error.response?.status === 404) {
+    const status = (error as any)?.response?.status;
+    const is404 = isAxiosError(error) && (error.response?.status === 404 || status === 404);
+    const isNotFoundMessage = error instanceof Error && (
+      error.message.includes('404') || 
+      error.message.includes('not found') ||
+      error.message.includes('Cannot GET')
+    );
+    
+    if (is404 || isNotFoundMessage) {
+      // Silently return null for 404 - this is expected for customers without profile pictures
       return null;
     }
-    console.error('Failed to get profile picture:', error);
+    
+    // Only log non-404 errors
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Failed to get profile picture:', error);
+    }
     return null;
   }
 };

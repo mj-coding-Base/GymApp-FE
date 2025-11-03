@@ -126,7 +126,9 @@ axiosInstance.interceptors.response.use(
     const isBusinessResponse = errorMessage.includes("hasn't made any payments") ||
       errorMessage.includes("no payments") ||
       errorMessage.includes("not found") ||
-      errorMessage.includes("No data found");
+      errorMessage.includes("No data found") ||
+      errorMessage.includes("Cannot GET") ||
+      error.response?.status === 404; // 404 errors are often expected (e.g., missing profile pictures)
     
     if (process.env.NODE_ENV !== 'production' && !isBusinessResponse) {
       console.error("[Axios Error]", resData || error.message);
@@ -139,11 +141,20 @@ axiosInstance.interceptors.response.use(
       if (resData && typeof resData === 'object') {
         err.response = resData;
       }
+      // Preserve the original response status for error handling
+      if (error.response?.status !== undefined) {
+        if (!err.response) err.response = {};
+        err.response.status = error.response.status;
+      }
       return Promise.reject(err as Error);
     } catch (createError) {
       // Fallback: even if Error creation somehow fails, create a basic one
       const finalErr = new Error('API request failed');
       (finalErr as any).response = resData;
+      if (error.response?.status !== undefined) {
+        if (!(finalErr as any).response) (finalErr as any).response = {};
+        (finalErr as any).response.status = error.response.status;
+      }
       return Promise.reject(finalErr);
     }
   }
