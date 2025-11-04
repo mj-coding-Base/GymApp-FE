@@ -510,3 +510,66 @@ export const getProfilePictureUrl = async (clientId: string): Promise<string | n
     return null;
   }
 };
+
+/**
+ * Reset FP machine status and last payment access given for a single customer
+ * @param customerId - Customer clientId
+ * @returns Promise with reset result
+ */
+export const resetFpMachineStatusSingle = async (
+  customerId: string
+): Promise<CommonResponseDataType> => {
+  try {
+    const response = await axios.post<{
+      success: boolean;
+      message: string;
+      result: {
+        success: boolean;
+        gymId: string;
+        clientId: string;
+        customerUpdated: boolean;
+        paymentUpdated: boolean;
+        durationMs: number;
+      };
+    }>("/customers/reset-fp-machine-status-single", {
+      customerId,
+    });
+
+    // Transform API response to CommonResponseDataType format
+    if (response.data.success) {
+      return {
+        status: 'SUCCESS',
+        message: response.data.message || 'FP machine status reset completed successfully',
+        data: response.data.result,
+      };
+    } else {
+      return {
+        status: 'FAIL',
+        message: response.data.message || 'Failed to reset FP machine status',
+        data: null,
+      };
+    }
+  } catch (error: any) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Reset FP machine status error:", error);
+    }
+    
+    // Handle 404 and 500 errors as specified in API docs
+    const status = isAxiosError(error) ? error.response?.status : null;
+    let errorMessage = "Failed to reset FP machine status";
+    
+    if (status === 404) {
+      errorMessage = "Customer not found";
+    } else if (status === 500) {
+      errorMessage = "Failed to reset FP machine status";
+    } else {
+      errorMessage = error?.response?.data?.message || error?.message || errorMessage;
+    }
+    
+    return {
+      status: 'FAIL',
+      message: errorMessage,
+      data: null,
+    };
+  }
+};

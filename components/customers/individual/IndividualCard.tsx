@@ -1,6 +1,6 @@
 "use client";
 
-import { deactivateCustomer, getProfilePictureUrl } from "@/actions/customers";
+import { deactivateCustomer, getProfilePictureUrl, resetFpMachineStatusSingle } from "@/actions/customers";
 import { Badge } from "@/components/ui/badge";
 import { useActions } from "@/hooks/modals/useActions";
 import useUserDetails from "@/hooks/useUserDetails";
@@ -105,12 +105,41 @@ const IndividualCard = React.memo(({ customer }: Props) => {
             <p className="text-[10px]/[12px] text-[#6D6D6D] font-medium">
               Status
             </p>
-            <Badge
-              variant={isActive ? "success" : "destructive"}
-              className="rounded-[15px] text-[11px]/[13px] font-semibold"
-            >
-              {isActive ? "Active" : "Inactive"}
-            </Badge>
+            {isActive ? (
+              <button
+                type="button"
+                onClick={() => {
+                  handleAction(
+                    async () => {
+                      const res = await resetFpMachineStatusSingle(customer.clientId);
+                      return res;
+                    },
+                    `Are you sure you want to reset FP machine status for this client?`,
+                    `FP machine status has been successfully reset!`,
+                    "Reset",
+                    "Done",
+                    undefined,
+                    "yellow"
+                  );
+                }}
+                className="w-fit"
+                aria-label="Reset FP machine status"
+              >
+                <Badge
+                  variant="success"
+                  className="rounded-[15px] text-[11px]/[13px] font-semibold cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  Active
+                </Badge>
+              </button>
+            ) : (
+              <Badge
+                variant="destructive"
+                className="rounded-[15px] text-[11px]/[13px] font-semibold"
+              >
+                Inactive
+              </Badge>
+            )}
           </div>
         </div>
 
