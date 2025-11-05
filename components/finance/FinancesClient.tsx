@@ -7,16 +7,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { useWarningModal } from "@/hooks/modals/useWarningModal";
 import { cn } from "@/lib/utils";
@@ -281,12 +281,13 @@ export default function FinancesClient() {
                     selected={startDate}
                     onSelect={(date) => {
                       setStartDate(date);
-                      // Ensure end date is not before start date
+                      // Only clear end date if start date is after end date (allow same date)
                       if (date && endDate && date > endDate) {
                         setEndDate(undefined);
                       }
                     }}
                     disabled={(date) => {
+                      // Allow same date as endDate, only disable if after endDate
                       if (endDate && date > endDate) return true;
                       return date > new Date() || date < new Date("1900-01-01");
                     }}
@@ -317,12 +318,13 @@ export default function FinancesClient() {
                     selected={endDate}
                     onSelect={(date) => {
                       setEndDate(date);
-                      // Ensure start date is not after end date
+                      // Only clear start date if end date is before start date (allow same date)
                       if (date && startDate && date < startDate) {
                         setStartDate(undefined);
                       }
                     }}
                     disabled={(date) => {
+                      // Allow same date as startDate, only disable if before startDate
                       if (startDate && date < startDate) return true;
                       return date > new Date() || date < new Date("1900-01-01");
                     }}
@@ -411,6 +413,23 @@ export default function FinancesClient() {
             >
               Clear All Filters
             </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Total Payments Summary */}
+      {payments.length > 0 && (
+        <Card className="p-4 mb-4 bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600">Total Payments Amount</div>
+              <div className="text-2xl font-bold text-blue-700">
+                Rs. {payments.reduce((sum, payment) => sum + (payment.amount || 0), 0).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Total of {payments.length} payment{payments.length !== 1 ? 's' : ''} shown on this page ({totalCount} total filtered)
+              </div>
+            </div>
           </div>
         </Card>
       )}

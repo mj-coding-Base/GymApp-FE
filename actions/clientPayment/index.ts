@@ -169,6 +169,7 @@ export interface PaymentResponse {
 export interface FetchPaymentsResult {
   payments: PaymentResponse[];
   totalCount: number;
+  totalAmount?: number;
   page: number;
   size: number;
   totalPages: number;
@@ -200,6 +201,7 @@ export const fetchAllPayments = async (filters: FetchPaymentsFilters): Promise<F
     return {
       payments: response.data?.data?.payments || [],
       totalCount: response.data?.data?.totalCount || 0,
+      totalAmount: response.data?.data?.totalAmount || 0,
       page: response.data?.data?.page || 1,
       size: response.data?.data?.size || 10,
       totalPages: response.data?.data?.totalPages || 0,
@@ -209,6 +211,7 @@ export const fetchAllPayments = async (filters: FetchPaymentsFilters): Promise<F
     return {
       payments: [],
       totalCount: 0,
+      totalAmount: 0,
       page: 1,
       size: 10,
       totalPages: 0,

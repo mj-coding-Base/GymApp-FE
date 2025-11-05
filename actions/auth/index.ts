@@ -16,6 +16,7 @@ type SignInResponseDataType = {
   message: string;
   data: {
     _id: string;
+    memberId?: string;
     firstName: string;
     lastName: string;
     email: string;

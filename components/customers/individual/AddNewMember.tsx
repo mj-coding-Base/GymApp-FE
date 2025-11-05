@@ -114,10 +114,10 @@ const formSchema = z.object({
   profession: z
     .string({ required_error: "Profession is required" })
     .min(1, "Profession is required")
-    .max(100, "Profession too long"),
+    .max(30, "Profession too long"),
   reference: z
     .string()
-    .max(255, "Reference too long")
+    .max(30, "Admission Number too long")
     .optional(),
 });
 
@@ -866,11 +866,11 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                 name="reference"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Reference</FormLabel>
+                    <FormLabel>Admission Number</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Reference (optional)"
+                        placeholder="Admission Number (optional)"
                         className="rounded-[10px] h-[41px]"
                         disabled={isSubmitting}
                       />

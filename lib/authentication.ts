@@ -10,6 +10,7 @@ import { SignJWT, jwtVerify } from "jose";
 
 import { signIn } from "@/actions/auth";
 import { Session } from "@/types/auth";
+import { getGymIdFromToken, getMemberIdFromToken } from "@/utils/jwt";
 
 const secretKey = process.env.JWT_SECRET || "secret123";
 const key = new TextEncoder().encode(secretKey);
@@ -60,8 +61,37 @@ export async function login(data: {
     return res;
   }
 
+  // CRITICAL SECURITY: Extract gymId and memberId from JWT token
+  // This ensures we use values from the token (source of truth) rather than
+  // relying on API response which could be manipulated
+  const tokenGymId = res.data?.idToken ? getGymIdFromToken(res.data.idToken) : null;
+  const tokenMemberId = res.data?.idToken ? getMemberIdFromToken(res.data.idToken) : null;
+
+  // Debug logging
+  console.log('Token gymId:', tokenGymId);
+  console.log('Token memberId:', tokenMemberId);
+  console.log('API response gymId:', res.data?.gymId);
+  console.log('API response memberId:', res.data?.memberId);
+
+  // Use gymId from token if available, otherwise fallback to API response
+  // This provides backward compatibility while prioritizing security
+  const finalGymId = tokenGymId || res.data?.gymId || null;
+  const finalMemberId = tokenMemberId || res.data?.memberId || null;
+
+  console.log('Final gymId:', finalGymId);
+  console.log('Final memberId:', finalMemberId);
+
+  if (!finalGymId) {
+    console.error("Could not extract gymId from token or API response");
+    return {
+      status: "FAIL",
+      message: "Authentication failed: Missing gymId in token",
+    };
+  }
+
   const user = {
     id: res.data?._id,
+    memberId: finalMemberId,
     name: res.data?.firstName && res.data?.lastName
       ? `${res.data.firstName} ${res.data.lastName}`
       : res.data?.email ?? "Unnamed User",
@@ -71,7 +101,7 @@ export async function login(data: {
     // -TODO
     isAdmin: res.data?.isAdmin,
     isFullTime: res.data?.isFullTime,
-    gymId: res.data?.gymId,
+    gymId: finalGymId, // Always use gymId from token for security
     mobile: res.data?.mobile,
     // profilePicture: res.data?.profilePicture,
   };

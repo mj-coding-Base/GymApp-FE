@@ -1,9 +1,10 @@
 import { getSession } from "@/lib/authentication";
+import { getGymIdFromToken } from "@/utils/jwt";
 import axios, { AxiosError } from "axios";
 
 const isServer = typeof window === "undefined";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1" ; //|| "https://api.payzhe.fit/api/v1"
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1"  ; //|| "https://api.payzhe.fit/api/v1"
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -31,15 +32,35 @@ axiosInstance.interceptors.request.use(async (request) => {
         // Only decrypt JWT if cache is stale
         const session = await getSession();
         token = session?.user.token ?? null;
-        gymId = session?.user.gymId ?? null;
+        
+        // CRITICAL SECURITY: Extract gymId from JWT token (source of truth)
+        // This ensures we use the gymId from the token, not from session/cookies
+        // which could potentially be manipulated
+        if (token) {
+          gymId = getGymIdFromToken(token);
+        }
+        
+        // Fallback to session gymId if token doesn't contain it (backward compatibility)
+        if (!gymId) {
+          gymId = session?.user.gymId ?? null;
+        }
         
         // Cache the values
         serverAuthCache = { token, gymId, timestamp: now };
       }
     } else {
-      // Client-side: localStorage is already fast
+      // Client-side: Extract gymId from token if available
       token = localStorage.getItem("x-auth-token");
-      gymId = localStorage.getItem("gym-id");
+      
+      // CRITICAL SECURITY: Extract gymId from JWT token (source of truth)
+      if (token) {
+        gymId = getGymIdFromToken(token);
+      }
+      
+      // Fallback to localStorage if token doesn't contain gymId (backward compatibility)
+      if (!gymId) {
+        gymId = localStorage.getItem("gym-id");
+      }
     }
 
     // Set auth token if available

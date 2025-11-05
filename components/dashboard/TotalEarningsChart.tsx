@@ -7,14 +7,14 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { useMemo, useState } from "react";
+// import {
+//     Select,
+//     SelectContent,
+//     SelectItem,
+//     SelectTrigger,
+//     SelectValue,
+// } from "@/components/ui/select";
+import { useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 const chartConfig = {
@@ -24,7 +24,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const years = [ 2025];
+// const years = [ 2025];
 
 interface ChartDataPoint {
   month: string;
@@ -36,7 +36,7 @@ interface ChartDataProps {
 }
 
 const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
-  const [selectedYear, setSelectedYear] = useState(years[0]);
+  // const [selectedYear, setSelectedYear] = useState(years[0]);
 
   // ⚡ PERFORMANCE OPTIMIZATION: Memoize data transformation
   // Only recompute when chartData changes, not on every render
@@ -52,18 +52,7 @@ const TotalEarningChart: React.FC<ChartDataProps> = ({ chartData = [] }) => {
     <div className="mb-[32px]">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-14 font-semibold">Total Earnings</h2>
-        <Select onValueChange={(value) => setSelectedYear(Number(value))}>
-          <SelectTrigger className="w-24 bg-[#FFFFFF] text-[12px] font-normal">
-            <SelectValue placeholder={selectedYear} />
-          </SelectTrigger>
-          <SelectContent>
-            {years.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
       </div>
       <Card className="pt-[33px] overflow-x-auto scrollbar-hide max-w-lg">
         <CardContent className="p-0 min-w-[400px]">

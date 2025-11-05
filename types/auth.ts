@@ -1,6 +1,7 @@
 // types/auth.ts
 export interface UserSession {
   id: string;
+  memberId?: string;
   name: string;
   email: string;
   token: string;
