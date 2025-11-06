@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -39,6 +40,8 @@ const packageSchema = z.object({
   sessions: z.number().min(1, "Sessions must be at least 1"),
   durationDays: z.number().min(1, "Duration must be at least 1 day"),
   price: z.number().min(0, "Price cannot be negative"),
+  isGroup: z.boolean().optional(),
+  isVisible: z.boolean().optional(),
 });
 
 interface AddNewPackageProps {
@@ -57,6 +60,8 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
       sessions: 0,
       durationDays: 0,
       price: 0,
+      isGroup: false,
+      isVisible: true,
     },
   });
 
@@ -70,6 +75,8 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
         sessions: data.sessions,
         durationDays: data.durationDays,
         price: data.price,
+        isGroup: data.isGroup ?? false,
+        isVisible: data.isVisible ?? true,
       });
       
       if (result) { // Assuming successful response if we get data back
@@ -225,6 +232,46 @@ function AddNewPackage({ onPackageAdded }: AddNewPackageProps) {
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isGroup"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-[#212121] text-[14px] cursor-pointer">
+                        Group Package
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isVisible"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="text-[#212121] text-[14px] cursor-pointer">
+                        Visible
+                      </FormLabel>
+                    </div>
                   </FormItem>
                 )}
               />

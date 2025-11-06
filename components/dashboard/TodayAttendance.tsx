@@ -121,6 +121,23 @@ const TodayAttendance = () => {
     }
   };
 
+  const formatDate = (dateString: string): string => {
+    try {
+      return format(new Date(dateString), "MMM dd, yyyy");
+    } catch {
+      return dateString;
+    }
+  };
+
+  const isDeactivated = (record: TodayAttendanceRecord): boolean => {
+    if (!record.deactivateAt) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deactivateDate = new Date(record.deactivateAt);
+    deactivateDate.setHours(0, 0, 0, 0);
+    return deactivateDate < today;
+  };
+
   return (
     <WhiteCard className="flex flex-col gap-[10px]">
       <div className="flex gap-[5px] w-full">
@@ -148,22 +165,32 @@ const TodayAttendance = () => {
           <div className="flex flex-col gap-[8px] ">
             {attendanceRecords.map((record) => {
               const unpaid = isUnpaid(record);
+              const deactivated = isDeactivated(record);
               return (
                 <div
                   key={record._id}
                   className={`p-[12px] rounded-[10px] p-2 border ${
                     unpaid
                       ? "bg-[#FFEBEE] border-[#F44336]"
+                      : deactivated
+                      ? "bg-[#FFF3E0] border-[#FF9800]"
                       : "bg-[#F8F9FA] border-[#E0E0E0]"
                   }`}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
-                      <p className="text-[13px] font-semibold text-[#363636]">
-                        {record.firstName} {record.lastName}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-[13px] font-semibold text-[#363636]">
+                          {record.firstName} {record.lastName}
+                        </p>
+                        {record.deactivateAt && (
+                          <span className="text-[10px] text-[#6D6D6D] font-normal">
+                            ({formatDate(record.deactivateAt)})
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-[#6D6D6D] mt-1">
-                        {record.clientId || record.customerId}
+                        {record.reference || record.clientId || record.customerId || "N/A"}
                       </p>
                     </div>
                     <div className="flex flex-col items-end">

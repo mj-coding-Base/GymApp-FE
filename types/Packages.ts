@@ -5,6 +5,8 @@ export type Package = {
   durationDays: number;
   price: number;
   isActive: boolean;
+  isGroup: boolean;
+  isVisible: boolean;
   createdAt: string;
   updatedAt: string;
   packageId: string;

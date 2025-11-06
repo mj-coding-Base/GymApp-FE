@@ -180,6 +180,7 @@ export type TodayAttendanceRecord = {
   attendedDateTime: string;
   deactivateAt?: string;
   clientId?: string;
+  reference?: string;
 };
 
 // API Response structure for today's attendance
@@ -200,6 +201,7 @@ type TodayAttendanceApiResponse = {
         attendedDateTime: string;
         deactivateAt?: string;
         clientId?: string;
+        reference?: string;
       }>;
       totalCount: number;
     }>;
@@ -243,6 +245,7 @@ export const fetchTodayAttendance = async (): Promise<TodayAttendanceRecord[]> =
               attendedDateTime: attendance.attendedDateTime,
               deactivateAt: attendance.deactivateAt,
               clientId: attendance.clientId,
+              reference: attendance.reference,
             });
           }
         }
