@@ -9,6 +9,7 @@ export interface UserSession {
   isAdmin: boolean;
   isFullTime?: boolean;
   gymId: string;
+  memberId?: string;
 
   // profilePicture?: string;
 }

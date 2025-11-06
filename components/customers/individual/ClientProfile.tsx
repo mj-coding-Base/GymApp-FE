@@ -80,7 +80,7 @@ const ViewClientProfile = ({
         URL.revokeObjectURL(profileImageUrl);
       }
     };
-  }, [customer?.clientId, isOpen]);
+  }, [customer?.clientId, isOpen, profileImageUrl]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -105,6 +105,7 @@ const ViewClientProfile = ({
           {/* Profile Picture */}
           {profileImageUrl && (
             <div className="flex justify-center mt-[16px] mb-[16px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={profileImageUrl}
                 alt={`${customer.firstName} ${customer.lastName}`}

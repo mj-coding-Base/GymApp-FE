@@ -415,6 +415,23 @@ export default function FinancesClient() {
         </Card>
       )}
 
+      {/* Total Payments Amount Summary */}
+      {payments.length > 0 && (
+        <Card className="p-4 mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Total Payments Amount</div>
+              <div className="text-2xl font-bold text-gray-800">
+                Rs. {payments.reduce((sum, payment) => sum + (payment.amount || 0), 0).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Based on {payments.length} payment{payments.length !== 1 ? 's' : ''} shown
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Payments List */}
       <Card className="p-4">
         {payments.length === 0 ? (

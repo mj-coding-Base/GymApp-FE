@@ -1,9 +1,10 @@
-import { getSession } from "@/lib/authentication";
-import axios, { AxiosError } from "axios";
+import { getSession, refreshToken } from "@/lib/authentication";
+import { getGymIdFromToken } from "@/utils/jwt";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 const isServer = typeof window === "undefined";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1" ; //|| "https://api.payzhe.fit/api/v1"
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1"  ; //|| "https://api.payzhe.fit/api/v1"
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
@@ -12,6 +13,25 @@ const axiosInstance = axios.create({
 // ⚡ PERFORMANCE OPTIMIZATION: Cache to avoid repeated JWT decryptions
 let serverAuthCache: { token: string | null; gymId: string | null; timestamp: number } | null = null;
 const CACHE_DURATION = 5000; // 5 seconds cache
+
+// Flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
 
 axiosInstance.interceptors.request.use(async (request) => {
   try {
@@ -31,15 +51,25 @@ axiosInstance.interceptors.request.use(async (request) => {
         // Only decrypt JWT if cache is stale
         const session = await getSession();
         token = session?.user.token ?? null;
-        gymId = session?.user.gymId ?? null;
+        // Extract gymId from token instead of trusting session data
+        gymId = token ? getGymIdFromToken(token) : null;
         
         // Cache the values
         serverAuthCache = { token, gymId, timestamp: now };
       }
     } else {
-      // Client-side: localStorage is already fast
+      // Client-side: Extract from localStorage and decode token
       token = localStorage.getItem("x-auth-token");
-      gymId = localStorage.getItem("gym-id");
+      // SECURITY: Always extract gymId from JWT token (signed, cannot be manipulated)
+      gymId = token ? getGymIdFromToken(token) : null;
+      
+      // SECURITY: Never fallback to localStorage gymId - it can be manipulated
+      // If token doesn't have gymId, that's a security issue and should be rejected
+      if (!gymId && token) {
+        console.error("SECURITY WARNING: Token exists but missing gymId. Token may be invalid.");
+        // Don't allow requests without valid gymId from token
+        // This ensures gymId cannot be manipulated client-side
+      }
     }
 
     // Set auth token if available
@@ -48,6 +78,7 @@ axiosInstance.interceptors.request.use(async (request) => {
     }
 
     // Set gymId in headers for all requests
+    // This is extracted from token, so it's secure and cannot be manipulated
     if (gymId) {
       request.headers["gym-id"] = gymId;
     }
@@ -73,22 +104,139 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(new Error("Invalid API endpoint or baseURL misconfigured"));
     }
 
-    // Handle unauthorized errors specifically
+    // Handle unauthorized errors specifically - attempt token refresh
     if (error.response?.status === 401) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.error("Authentication failed");
+      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+      
+      // Prevent infinite retry loops
+      if (originalRequest._retry) {
+        // Clear auth cache on final failure
+        serverAuthCache = null;
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem("x-auth-token");
+          localStorage.removeItem("refresh-token");
+        }
+        return Promise.reject(error);
       }
-      // Clear auth cache on 401
-      serverAuthCache = null;
+
+      // If we're already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers["x-auth-token"] = token as string;
+            }
+            return axiosInstance(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      return refreshToken()
+        .then((refreshResult) => {
+          if (refreshResult.success && refreshResult.token) {
+            // Update cache
+            if (isServer) {
+              serverAuthCache = {
+                token: refreshResult.token,
+                gymId: getGymIdFromToken(refreshResult.token),
+                timestamp: Date.now(),
+              };
+            } else {
+              localStorage.setItem("x-auth-token", refreshResult.token);
+            }
+
+            // Extract gymId from NEW token (security: always use token gymId)
+            const newTokenGymId = getGymIdFromToken(refreshResult.token);
+            
+            if (!newTokenGymId) {
+              // Security: If new token doesn't have gymId, reject refresh
+              if (process.env.NODE_ENV !== 'production') {
+                console.error("SECURITY: Refreshed token missing gymId");
+              }
+              processQueue(new Error("Refreshed token missing gymId"));
+              serverAuthCache = null;
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem("x-auth-token");
+                localStorage.removeItem("refresh-token");
+              }
+              return Promise.reject(new Error("Security error: Invalid refreshed token"));
+            }
+
+            // Update cache with new token and gymId from token
+            if (isServer) {
+              serverAuthCache = {
+                token: refreshResult.token,
+                gymId: newTokenGymId, // Use gymId from token (secure source)
+                timestamp: Date.now(),
+              };
+            } else {
+              localStorage.setItem("x-auth-token", refreshResult.token);
+              // SECURITY: Never store gymId in localStorage - always extract from token
+              // Remove any old gymId from localStorage to prevent manipulation
+              localStorage.removeItem("gym-id");
+            }
+
+            // Update request with new token AND gymId from token
+            if (originalRequest.headers) {
+              originalRequest.headers["x-auth-token"] = refreshResult.token;
+              originalRequest.headers["gym-id"] = newTokenGymId; // Use gymId from token
+            }
+
+            // Process queued requests with new token
+            processQueue(null, refreshResult.token);
+
+            // Retry original request
+            return axiosInstance(originalRequest);
+          } else {
+            // Refresh failed, reject all queued requests
+            processQueue(new Error("Token refresh failed"));
+            serverAuthCache = null;
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem("x-auth-token");
+              localStorage.removeItem("refresh-token");
+            }
+            return Promise.reject(error);
+          }
+        })
+        .catch((refreshError) => {
+          // Refresh failed, reject all queued requests
+          processQueue(refreshError);
+          serverAuthCache = null;
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem("x-auth-token");
+            localStorage.removeItem("refresh-token");
+          }
+          return Promise.reject(refreshError);
+        })
+        .finally(() => {
+          isRefreshing = false;
+        });
     }
 
     // Extract error message - use a function to ensure we always get a valid string
     const getErrorMessage = (): string => {
       try {
-        if (resData && typeof resData === 'object' && 'message' in resData && (resData as any).message) {
-          const msg = String((resData as any).message);
-          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
-            return msg;
+        // Try to get message from response data
+        if (resData && typeof resData === 'object' && resData !== null) {
+          if ('message' in resData && resData.message !== null && resData.message !== undefined) {
+            const msg = String(resData.message);
+            if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+              return msg;
+            }
+          }
+          // Try 'error' field as fallback
+          if ('error' in resData && resData.error !== null && resData.error !== undefined) {
+            const msg = String(resData.error);
+            if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+              return msg;
+            }
           }
         }
       } catch (e) {
@@ -96,7 +244,8 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        if (error.message) {
+        // Try error.message
+        if (error?.message) {
           const msg = String(error.message);
           if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
             return msg;
@@ -107,20 +256,33 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        if (error.response?.statusText) {
+        // Try statusText
+        if (error?.response?.statusText) {
           const msg = String(error.response.statusText);
           if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
             return msg;
           }
         }
       } catch (e) {
-        // Use default
+        // Continue to default
       }
 
+      // Always return a default string
       return 'API request failed';
     };
 
-    const errorMessage: string = getErrorMessage();
+    // Safely get error message
+    let errorMessage: string;
+    try {
+      errorMessage = getErrorMessage();
+    } catch (e) {
+      errorMessage = 'API request failed';
+    }
+    
+    // Ensure errorMessage is always a valid string
+    if (!errorMessage || typeof errorMessage !== 'string') {
+      errorMessage = 'API request failed';
+    }
     
     // Don't log "no data" responses as errors - these are expected business cases
     const isBusinessResponse = errorMessage.includes("hasn't made any payments") ||
@@ -135,22 +297,28 @@ axiosInstance.interceptors.response.use(
     }
     
     // Always return proper Error object for Promise rejection
-    // The errorMessage is guaranteed to be a valid string from getErrorMessage()
     try {
+      // Create error with safe message
       const err = new Error(errorMessage) as any;
+      
+      // Attach response data if available
       if (resData && typeof resData === 'object') {
         err.response = resData;
       }
+      
       // Preserve the original response status for error handling
       if (error.response?.status !== undefined) {
         if (!err.response) err.response = {};
         err.response.status = error.response.status;
       }
+      
       return Promise.reject(err as Error);
     } catch (createError) {
       // Fallback: even if Error creation somehow fails, create a basic one
       const finalErr = new Error('API request failed');
-      (finalErr as any).response = resData;
+      if (resData && typeof resData === 'object') {
+        (finalErr as any).response = resData;
+      }
       if (error.response?.status !== undefined) {
         if (!(finalErr as any).response) (finalErr as any).response = {};
         (finalErr as any).response.status = error.response.status;

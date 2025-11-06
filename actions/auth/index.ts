@@ -25,6 +25,7 @@ type SignInResponseDataType = {
     isFullTime: boolean;
     mobile: string;
     gymId: string;
+    memberId?: string;
   } | null;
 };
 

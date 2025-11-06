@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import React, { useCallback, useState } from 'react';
 
 interface ImageUploadProps {
@@ -23,7 +24,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     // Check file type
     if (!acceptedTypes.includes(file.type)) {
       return `Invalid file type. Allowed: ${acceptedTypes.join(', ')}`;
@@ -36,7 +37,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     }
 
     return null;
-  };
+  }, [acceptedTypes, maxSizeMB]);
 
   const handleFileChange = useCallback(
     (file: File | null) => {
@@ -64,7 +65,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       onFileSelect(file);
     },
-    [currentImageUrl, onFileSelect, maxSizeMB, acceptedTypes]
+    [currentImageUrl, onFileSelect, validateFile]
   );
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,11 +103,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     <div className="space-y-4">
       {/* Preview */}
       {preview && (
-        <div className="relative inline-block">
-          <img
+        <div className="relative w-full h-48">
+          <Image
             src={preview}
             alt="Preview"
-            className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
+            fill
+            className="object-cover rounded-lg border-2 border-gray-200"
+            unoptimized // For blob URLs/data URLs
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <button
             type="button"
