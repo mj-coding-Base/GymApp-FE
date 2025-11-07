@@ -171,8 +171,8 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const fetchPackages = async () => {
     try {
       setLoadingPackages(true);
-      // Use cache first, then fetch if needed
-      const res = await fetchAllPackages(true);
+      // Fetch packages from server
+      const res = await fetchAllPackages();
       setPackages(res);
     } catch (error) {
       console.error("Failed to fetch packages:", error);

@@ -59,7 +59,26 @@ function DialogContent({
   
   // Check if children already contain a DialogDescription
   const hasDescription = React.Children.toArray(children).some(
-    (child: any) => child?.type?.displayName === 'DialogDescription' || child?.props?.asChild
+    (child): boolean => {
+      if (!React.isValidElement(child)) return false;
+      
+      // Check for asChild prop with proper type guard
+      const childProps = child.props as { asChild?: boolean };
+      if (childProps && 'asChild' in childProps && childProps.asChild === true) {
+        return true;
+      }
+      
+      // Check for DialogDescription by checking the type's displayName
+      const childType = child.type;
+      if (typeof childType === 'object' && childType !== null) {
+        const typeWithDisplayName = childType as { displayName?: string };
+        if (typeWithDisplayName.displayName === 'DialogDescription') {
+          return true;
+        }
+      }
+      
+      return false;
+    }
   );
   
   return (

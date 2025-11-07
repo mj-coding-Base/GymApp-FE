@@ -92,8 +92,8 @@ const PaymentCollectionIndividual = ({
       setPackages([]); // Clear previous packages
       
       try {
-        // Use cache first, then fetch if needed
-        const fetchedPackages = await fetchAllPackages(true);
+        // Fetch packages from server
+        const fetchedPackages = await fetchAllPackages();
         console.log("Fetched packages:", fetchedPackages);
         
         if (!fetchedPackages || fetchedPackages.length === 0) {

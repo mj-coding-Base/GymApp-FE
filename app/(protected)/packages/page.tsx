@@ -51,9 +51,13 @@ export default function PackagePage() {
       }
 
       try {
-        // Use cache first, then fetch if needed (cache is handled inside fetchAllPackages)
-        const data = await fetchAllPackages(true);
+        // Fetch packages from server
+        const data = await fetchAllPackages();
         setPackages(data);
+        // Update client-side cache after successful fetch
+        if (data && data.length > 0) {
+          packagesCache.set(data);
+        }
       } catch (error) {
         console.error("Error loading packages:", error);
       } finally {
