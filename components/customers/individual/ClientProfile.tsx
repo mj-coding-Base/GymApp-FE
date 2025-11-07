@@ -176,101 +176,103 @@ const ViewClientProfile = ({
           </div>
 
           {/* Additional Details Dropdown */}
-          <div className="mt-[16px]">
-            <button
-              type="button"
-              onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
-              className="w-full flex items-center justify-between border-[1px] border-[#000000] bg-white hover:bg-gray-50 rounded-[12px] h-[41px] px-[12px] sm:px-[16px] transition-colors"
-            >
-              <span className="text-[11px]/[14px] sm:text-[12px]/[15px] font-medium text-[#363636] text-left truncate flex-1 mr-2">
-                {showAdditionalDetails ? "Hide Additional Details" : "Show Additional Details"}
-              </span>
-              {showAdditionalDetails ? (
-                <ChevronUp className="w-4 h-4 text-[#363636] shrink-0" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-[#363636] shrink-0" />
-              )}
-            </button>
+          {isAdmin && (
+            <div className="mt-[16px]">
+              <button
+                type="button"
+                onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+                className="w-full flex items-center justify-between border-[1px] border-[#000000] bg-white hover:bg-gray-50 rounded-[12px] h-[41px] px-[12px] sm:px-[16px] transition-colors"
+              >
+                <span className="text-[11px]/[14px] sm:text-[12px]/[15px] font-medium text-[#363636] text-left truncate flex-1 mr-2">
+                  {showAdditionalDetails ? "Hide Additional Details" : "Show Additional Details"}
+                </span>
+                {showAdditionalDetails ? (
+                  <ChevronUp className="w-4 h-4 text-[#363636] shrink-0" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-[#363636] shrink-0" />
+                )}
+              </button>
 
-            {showAdditionalDetails && (
-              <div className="mt-[12px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
-                <div className="flex flex-col sm:flex-row border-b-[1px] border-b-[#000000]">
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Date of Birth
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.dob ? new Date(customer.dob).toLocaleDateString() : "N/A"}
-                    </p>
+              {showAdditionalDetails && (
+                <div className="mt-[12px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
+                  <div className="flex flex-col sm:flex-row border-b-[1px] border-b-[#000000]">
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Date of Birth
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.dob ? new Date(customer.dob).toLocaleDateString() : "N/A"}
+                      </p>
+                    </div>
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Gender
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.isMale ? "Male" : "Female"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Gender
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.isMale ? "Male" : "Female"}
-                    </p>
+                  <div className="flex flex-col sm:flex-row border-b-[1px] border-b-[#000000]">
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Marital Status
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.isMarried ? "Married" : "Single"}
+                      </p>
+                    </div>
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Profession
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.profession || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex border-b-[1px] border-b-[#000000]">
+                    <div className="flex-[100%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Why Join
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.whyJoin || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex border-b-[1px] border-b-[#000000]">
+                    <div className="flex-[100%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Reference
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.reference || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row">
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Address Line 1
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.addressLine1 || "N/A"}
+                      </p>
+                    </div>
+                    <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
+                      <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
+                        Address Line 2
+                      </p>
+                      <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
+                        {customer.addressLine2 || "N/A"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row border-b-[1px] border-b-[#000000]">
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Marital Status
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.isMarried ? "Married" : "Single"}
-                    </p>
-                  </div>
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Profession
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.profession || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex border-b-[1px] border-b-[#000000]">
-                  <div className="flex-[100%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Why Join
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.whyJoin || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex border-b-[1px] border-b-[#000000]">
-                  <div className="flex-[100%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Reference
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.reference || "N/A"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row">
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px] sm:border-r-0 border-b-[1px] sm:border-b-0 border-b-[#000000] sm:border-r-[1px] sm:border-r-[#000000]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Address Line 1
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.addressLine1 || "N/A"}
-                    </p>
-                  </div>
-                  <div className="flex-[50%] shrink-0 px-[10px] sm:px-[10px] py-[7.8px] content-center flex flex-col gap-[9px]">
-                    <p className="text-[#6D6D6D] text-[11.5px]/[14px] font-medium">
-                      Address Line 2
-                    </p>
-                    <p className="text-[#3D3D3D] text-[12px]/[15px] font-semibold break-words">
-                      {customer.addressLine2 || "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <p className="mt-[16px] mb-[13.5px] text-[12px]/[15px] text-[#888888] font-semibold">
             Payment History

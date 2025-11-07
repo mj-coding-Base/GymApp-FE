@@ -5,9 +5,22 @@ import { CommonResponseDataType } from "@/types/Common";
 import { Package } from "@/types/Packages";
 import { revalidatePath } from "next/cache";
 
+// Track ongoing requests to prevent duplicate calls (server-side only)
+let ongoingRequest: Promise<Package[]> | null = null;
+
 export const fetchAllPackages = async (): Promise<Package[]> => {
-  // Wrap in additional try-catch to ensure no errors escape and break Server Component render
-  try {
+  // If there's already an ongoing request, wait for it instead of making a new one
+  if (ongoingRequest) {
+    try {
+      return await ongoingRequest;
+    } catch (error) {
+      // If the ongoing request fails, continue to make a new request
+      ongoingRequest = null;
+    }
+  }
+
+  // Create new request
+  ongoingRequest = (async (): Promise<Package[]> => {
     try {
       const response = await axios.get(`/packages/get-all`);
       
@@ -36,9 +49,11 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt || "",
         isActive: item.isActive ?? true,
+        isGroup: item.isGroup ?? false,
+        isVisible: item.isVisible ?? true,
         status: item.status || "active",
       }));
-
+      
       return packages;
     } catch (error: unknown) {
       // Log detailed error information for debugging
@@ -52,23 +67,19 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
             data: (error as any).response?.data,
           });
         }
-        // Log stack trace in development
-        if (process.env.NODE_ENV !== 'production') {
-          console.error("Error stack:", error.stack);
-        }
       } else {
         console.error("Failed to fetch packages:", error);
       }
 
       // Return empty array instead of throwing - this prevents Server Component render errors
       return [];
+    } finally {
+      // Clear ongoing request after completion
+      ongoingRequest = null;
     }
-  } catch (outerError: unknown) {
-    // Catch any unexpected errors that might escape the inner try-catch
-    // This is a safety net to prevent Server Component render failures
-    console.error("Unexpected error in fetchAllPackages:", outerError);
-    return [];
-  }
+  })();
+
+  return ongoingRequest;
 };
 
 export interface createNewPackage{
@@ -76,7 +87,9 @@ export interface createNewPackage{
    description :  string,
    sessions : number,
    durationDays : number,
-   price : number
+   price : number,
+   isGroup?: boolean,
+   isVisible?: boolean
 }
 
 export async function createNewPackage(Newpackage:createNewPackage) {
@@ -95,7 +108,7 @@ export const updatePackage = async (
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      `/customers/${packageId}`,
+      `/packages/${packageId}`,
       updatedData
     );
 

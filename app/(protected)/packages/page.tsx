@@ -51,10 +51,9 @@ export default function PackagePage() {
       }
 
       try {
-        const data = await fetchAllPackages();
+        // Use cache first, then fetch if needed (cache is handled inside fetchAllPackages)
+        const data = await fetchAllPackages(true);
         setPackages(data);
-        // Cache the fresh data
-        packagesCache.set(data);
       } catch (error) {
         console.error("Error loading packages:", error);
       } finally {
@@ -187,7 +186,19 @@ export default function PackagePage() {
                     </div>
                   </div>
 
-                  <UpdatePackage packageId={pkg.packageId} onPackageUpdated={() => getPackages().then(setPackages)} />
+                  <UpdatePackage 
+                    packageId={pkg.packageId} 
+                    initialData={{
+                      name: pkg.package_name,
+                      description: pkg.description,
+                      sessions: pkg.sessions,
+                      durationDays: pkg.durationDays,
+                      price: pkg.price,
+                      isGroup: pkg.isGroup,
+                      isVisible: pkg.isVisible,
+                    }}
+                    onPackageUpdated={() => getPackages().then(setPackages)} 
+                  />
                 </div>
               </div>
             ))

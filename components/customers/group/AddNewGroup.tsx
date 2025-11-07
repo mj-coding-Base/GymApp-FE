@@ -92,7 +92,8 @@ function AddNewGroup() {
     const loadPackages = async () => {
       try {
         setLoadingPackages(true);
-        const fetchedPackages = await fetchAllPackages();
+        // Use cache first, then fetch if needed
+        const fetchedPackages = await fetchAllPackages(true);
         console.log("Fetched packages:", fetchedPackages);
         if (!fetchedPackages || fetchedPackages.length === 0) {
           console.warn("No packages returned from API");
