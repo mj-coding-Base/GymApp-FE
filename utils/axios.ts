@@ -48,14 +48,25 @@ axiosInstance.interceptors.request.use(async (request) => {
         token = serverAuthCache.token;
         gymId = serverAuthCache.gymId;
       } else {
-        // Only decrypt JWT if cache is stale
-        const session = await getSession();
-        token = session?.user.token ?? null;
-        // Extract gymId from token instead of trusting session data
-        gymId = token ? getGymIdFromToken(token) : null;
-        
-        // Cache the values
-        serverAuthCache = { token, gymId, timestamp: now };
+        try {
+          // Only decrypt JWT if cache is stale
+          const session = await getSession();
+          token = session?.user.token ?? null;
+          // Extract gymId from token instead of trusting session data
+          gymId = token ? getGymIdFromToken(token) : null;
+          
+          // Cache the values
+          serverAuthCache = { token, gymId, timestamp: now };
+        } catch (sessionError) {
+          // Handle session retrieval errors gracefully
+          if (process.env.NODE_ENV !== 'production') {
+            console.error("[Axios Request Interceptor] Session retrieval error:", sessionError);
+          }
+          // Clear cache on error
+          serverAuthCache = null;
+          token = null;
+          gymId = null;
+        }
       }
     } else {
       // Client-side: Extract from localStorage and decode token
@@ -79,8 +90,14 @@ axiosInstance.interceptors.request.use(async (request) => {
 
     // Set gymId in headers for all requests
     // This is extracted from token, so it's secure and cannot be manipulated
+    // Note: Some endpoints require gym-id header, so missing gymId might cause errors
     if (gymId) {
       request.headers["gym-id"] = gymId;
+    } else {
+      // Log warning if gymId is missing (might cause backend errors)
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn("[Axios Request Interceptor] Missing gymId for request:", request.url);
+      }
     }
 
     return request;
@@ -88,6 +105,7 @@ axiosInstance.interceptors.request.use(async (request) => {
     if (process.env.NODE_ENV !== 'production') {
       console.error("[Axios Request Interceptor] Error:", err);
     }
+    // Return request even on error to avoid breaking the request flow
     return request;
   }
 });
