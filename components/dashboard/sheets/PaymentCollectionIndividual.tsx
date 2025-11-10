@@ -6,6 +6,7 @@ import { fetchAllPackages } from "@/actions/package";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     Select,
     SelectContent,
@@ -62,6 +63,7 @@ const PaymentCollectionIndividual = ({
   const [packages, setPackages] = useState<Package[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
+  const [paymentMode, setPaymentMode] = useState<"package" | "manual">("package");
   
   const { setOpenSuccessModal, setSuccessData } = useSuccessModal();
   const autoCloseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,7 +82,11 @@ const PaymentCollectionIndividual = ({
 
     setMonthOptions(months);
     // Set default to current month
-    setFormData(prev => ({ ...prev, month: `${currentYear}-${currentMonth + 1}` }));
+    const defaultMonth = `${currentYear}-${currentMonth + 1}`;
+    setFormData(prev => ({ 
+      ...prev, 
+      month: prev.month || defaultMonth 
+    }));
   }, []);
 
   useEffect(() => {
@@ -123,8 +129,37 @@ const PaymentCollectionIndividual = ({
     loadPackages();
   }, [openPaymentCollectionIndividualSheet]);
 
+  // Ensure month is set when sheet opens
+  useEffect(() => {
+    if (openPaymentCollectionIndividualSheet && !formData.month) {
+      if (monthOptions.length > 0) {
+        const defaultMonth = monthOptions[1]?.value || monthOptions[0]?.value || "";
+        if (defaultMonth) {
+          setFormData(prev => ({ ...prev, month: defaultMonth }));
+        }
+      } else {
+        // If monthOptions aren't ready yet, calculate and set month directly
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
+        const defaultMonth = `${currentYear}-${currentMonth + 1}`;
+        setFormData(prev => ({ ...prev, month: defaultMonth }));
+      }
+    }
+  }, [openPaymentCollectionIndividualSheet, monthOptions, formData.month]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
+    
+    // If it's the amount field, validate it's numeric
+    if (id === "amount" && value !== "") {
+      const numValue = parseFloat(value);
+      if (isNaN(numValue) || numValue <= 0) {
+        setErrors(prev => ({ ...prev, amount: "Amount must be a positive number" }));
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [id]: value
@@ -133,6 +168,43 @@ const PaymentCollectionIndividual = ({
     if (errors[id]) {
       setErrors(prev => ({ ...prev, [id]: "" }));
     }
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow empty string, numbers, and decimal point
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setFormData(prev => ({
+        ...prev,
+        amount: value
+      }));
+      
+      // Clear package selection when manually entering amount
+      if (value !== "") {
+        setSelectedPackage(null);
+        setFormData(prev => ({ ...prev, packageId: "" }));
+      }
+      
+      if (errors.amount) {
+        setErrors(prev => ({ ...prev, amount: "" }));
+      }
+    }
+  };
+
+  const handlePaymentModeChange = (value: string) => {
+    setPaymentMode(value as "package" | "manual");
+    
+    // Clear selections when switching modes
+    if (value === "manual") {
+      setSelectedPackage(null);
+      setFormData(prev => ({ ...prev, packageId: "", amount: "" }));
+    } else {
+      setFormData(prev => ({ ...prev, amount: "" }));
+    }
+    
+    // Clear errors
+    setErrors({});
   };
 
   const handleMonthChange = (value: string) => {
@@ -160,33 +232,58 @@ const PaymentCollectionIndividual = ({
       return;
     }
 
-    if (!selectedPackage) {
+    // Validate based on payment mode
+    if (paymentMode === "package" && !selectedPackage) {
       toast.error("Please select a package");
+      return;
+    }
+
+    if (paymentMode === "manual") {
+      if (!formData.amount || formData.amount.trim() === "") {
+        toast.error("Please enter payment amount");
+        return;
+      }
+      const amount = parseFloat(formData.amount);
+      if (isNaN(amount) || amount <= 0) {
+        toast.error("Please enter a valid payment amount");
+        return;
+      }
+    }
+
+    if (!formData.month) {
+      toast.error("Please select a month");
       return;
     }
 
     try {
       setIsSubmitting(true);
       
+      // Determine amount based on payment mode
+      const paymentAmount = paymentMode === "package" 
+        ? selectedPackage!.price 
+        : parseFloat(formData.amount);
+      
       // Validate input
       const validatedData = paymentSchema.parse({
-        amount: selectedPackage.price,
+        amount: paymentAmount,
         reference: formData.reference || "cash",
         month: formData.month,
       });
 
-      // Update customer's package first
-      const updateResult = await updateCustomer(clientId, {
-        packageId: selectedPackage.packageId,
-      });
+      // Update customer's package only if package mode is selected
+      if (paymentMode === "package" && selectedPackage) {
+        const updateResult = await updateCustomer(clientId, {
+          packageId: selectedPackage.packageId,
+        });
 
-      if (updateResult.status === "FAIL") {
-        toast.error(`Failed to update package: ${updateResult.message}`);
-        setIsSubmitting(false);
-        return;
+        if (updateResult.status === "FAIL") {
+          toast.error(`Failed to update package: ${updateResult.message}`);
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      // If customer update succeeds, collect payment immediately
+      // Collect payment
       const paidFor = clientId;
       await collectIndividualPayment({ ...validatedData, paidFor });
       
@@ -194,8 +291,9 @@ const PaymentCollectionIndividual = ({
       
       // Close the payment sheet
       setOpenPaymentCollectionIndividualSheet(false);
-      setFormData({ amount: "", reference: "", month: monthOptions[1].value, packageId: "" });
+      setFormData({ amount: "", reference: "", month: monthOptions[1]?.value || "", packageId: "" });
       setSelectedPackage(null);
+      setPaymentMode("package");
       
       // Show success modal immediately after payment
       const handleModalClose = () => {
@@ -212,9 +310,13 @@ const PaymentCollectionIndividual = ({
         });
       };
 
+      const successMessage = paymentMode === "package"
+        ? `LKR ${validatedData.amount.toFixed(2)} has been collected successfully for ${formData.month}. Package has been updated.`
+        : `LKR ${validatedData.amount.toFixed(2)} has been collected successfully for ${formData.month}.`;
+
       setSuccessData({
         title: "Payment Collected Successfully!",
-        description: `LKR ${validatedData.amount.toFixed(2)} has been collected successfully for ${formData.month}. Package has been updated.`,
+        description: successMessage,
         backButtonText: "Close",
         function: handleModalClose,
       });
@@ -253,7 +355,18 @@ const PaymentCollectionIndividual = ({
       // Reset form when sheet closes
       setFormData({ amount: "", reference: "", month: monthOptions[1]?.value || "", packageId: "" });
       setSelectedPackage(null);
+      setPaymentMode("package");
+      setErrors({});
     }
+  };
+
+  // Helper function to check if manual amount is valid
+  const isManualAmountValid = (): boolean => {
+    if (paymentMode !== "manual") return true;
+    const amountStr = formData.amount?.trim() || "";
+    if (amountStr === "") return false;
+    const amount = parseFloat(amountStr);
+    return !isNaN(amount) && isFinite(amount) && amount > 0;
   };
 
   // Cleanup timeout on unmount
@@ -280,11 +393,37 @@ const PaymentCollectionIndividual = ({
           </SheetTitle>
         </SheetHeader>
         <div className="px-4 overflow-y-auto space-y-4 py-4">
-          {/* Package Selection Section */}
+          {/* Payment Mode Selection */}
           <div className="grid w-full items-center gap-1.5">
             <Label className="text-[12px]/[100%] font-medium text-[#363636]">
-              Select Package
+              Payment Method
             </Label>
+            <RadioGroup
+              value={paymentMode}
+              onValueChange={handlePaymentModeChange}
+              className="flex gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="package" id="package-mode" />
+                <Label htmlFor="package-mode" className="text-[12px] font-normal cursor-pointer">
+                  Select Package
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="manual" id="manual-mode" />
+                <Label htmlFor="manual-mode" className="text-[12px] font-normal cursor-pointer">
+                  Enter Amount
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Package Selection Section - Only show when package mode is selected */}
+          {paymentMode === "package" && (
+            <div className="grid w-full items-center gap-1.5">
+              <Label className="text-[12px]/[100%] font-medium text-[#363636]">
+                Select Package
+              </Label>
             {(() => {
               if (loadingPackages) {
                 return (
@@ -355,7 +494,33 @@ const PaymentCollectionIndividual = ({
             {errors.amount && (
               <p className="text-red-500 text-xs">{errors.amount}</p>
             )}
-          </div>
+            </div>
+          )}
+
+          {/* Manual Amount Input - Only show when manual mode is selected */}
+          {paymentMode === "manual" && (
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label
+                htmlFor="amount"
+                className="text-[12px]/[100%] font-medium text-[#363636]"
+              >
+                Payment Amount
+              </Label>
+              <Input
+                placeholder="Enter amount"
+                type="number"
+                id="amount"
+                step="0.01"
+                min="0"
+                value={formData.amount}
+                onChange={handleAmountChange}
+                className="h-[53px] text-[14px]/[100%] font-semibold text-[#3D3D3D] placeholder:text-[#B0B0B0] placeholder:font-normal"
+              />
+              {errors.amount && (
+                <p className="text-red-500 text-xs">{errors.amount}</p>
+              )}
+            </div>
+          )}
 
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label className="text-[12px]/[100%] font-medium text-[#363636]">
@@ -410,7 +575,12 @@ const PaymentCollectionIndividual = ({
           </SheetClose>
           <Button
             onClick={handleSubmit}
-            disabled={isSubmitting || !selectedPackage || !formData.month}
+            disabled={
+              isSubmitting || 
+              !formData.month || 
+              (paymentMode === "package" && !selectedPackage) ||
+              !isManualAmountValid()
+            }
             className="bg-[#378644] rounded-[10px] text-[13px] font-semibold text-[#FFFFFF] h-[40px]"
           >
             {isSubmitting ? "Processing..." : "Collect"}
