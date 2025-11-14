@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node scripts/start-dev.js",
+    "dev:turbo": "next dev --turbopack",
     "build": "npm run fix-lightningcss && next build",
-    "start": "next start",
+    "start": "node scripts/start-prod.js",
     "lint": "next lint",
     "postinstall": "npm run fix-lightningcss",
     "clean": "node -e \"const fs=require('fs');const path=require('path');const dirs=['.next','node_modules/.cache','.turbo'];dirs.forEach(dir=>{const fullPath=path.join(process.cwd(),dir);if(fs.existsSync(fullPath)){fs.rmSync(fullPath,{recursive:true,force:true});console.log('✓ Removed:',dir);}else{console.log('⚠ Not found:',dir);}});console.log('\\n✅ Cache cleared!');\"",

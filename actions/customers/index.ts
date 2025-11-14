@@ -512,6 +512,26 @@ export const getProfilePictureUrl = async (clientId: string): Promise<string | n
 };
 
 /**
+ * Get customer by clientId
+ * @param clientId - Customer clientId
+ * @returns Promise with customer data
+ */
+export const getCustomerByClientId = async (
+  clientId: string
+): Promise<IndividualCustomer | null> => {
+  try {
+    const response = await axios.get(`/customers/${clientId}`);
+    const data = response.data?.data || response.data;
+    return data as IndividualCustomer | null;
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("Error fetching customer by clientId:", error);
+    }
+    return null;
+  }
+};
+
+/**
  * Reset FP machine status and last payment access given for a single customer
  * @param customerId - Customer clientId
  * @returns Promise with reset result

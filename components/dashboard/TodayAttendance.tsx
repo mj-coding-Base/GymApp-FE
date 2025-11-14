@@ -1,39 +1,47 @@
 "use client";
 
 import { fetchTodayAttendance, TodayAttendanceRecord } from "@/actions/dashboard";
+import { getCustomerByClientId } from "@/actions/customers";
+import { IndividualCustomer } from "@/types/Customer";
 import { format } from "date-fns";
 import { useCallback, useEffect, useRef, useState } from "react";
 import WhiteCard from "./WhiteCard";
 
+type AttendanceRecordWithCustomer = TodayAttendanceRecord & {
+  customerData?: IndividualCustomer | null;
+};
+
 const TodayAttendance = () => {
-  const [attendanceRecords, setAttendanceRecords] = useState<TodayAttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordWithCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const lastRecordIdsRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const customerDataCache = useRef<Map<string, IndividualCustomer | null>>(new Map());
+  const notifiedUnpaidClientsRef = useRef<Set<string>>(new Set());
 
   // Initialize audio for notification sound
   useEffect(() => {
-    // Create audio element for the notification sound
-    // Note: You'll need to add an audio file to the public folder
-    // For now, we'll use Web Speech API as fallback
     if (globalThis.window !== undefined) {
-      // Try to load audio file if it exists
       try {
-        const audio = new Audio('/sounds/notification.mp3');
+        const audio = new Audio('/audio/gym subscription not paid.mp3');
         audio.volume = 0.5;
+        audio.preload = 'auto';
         audioRef.current = audio;
-      } catch {
+      } catch (error) {
         // Audio file not available, will use speech synthesis as fallback
         if (process.env.NODE_ENV !== 'production') {
-          console.warn('Audio file not found, will use speech synthesis as fallback');
+          console.warn('Audio file not found, will use speech synthesis as fallback', error);
         }
       }
     }
   }, []);
 
-  const playNotificationSound = () => {
+  const playNotificationSound = useCallback(() => {
     if (audioRef.current) {
-      audioRef.current.play().catch(() => {
+      // Reset audio to beginning in case it was already played
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch((error) => {
+        console.error('Error playing audio:', error);
         // Fallback to speech synthesis
         if (globalThis.speechSynthesis !== undefined) {
           const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
@@ -46,7 +54,28 @@ const TodayAttendance = () => {
       utterance.lang = 'en-US';
       globalThis.speechSynthesis.speak(utterance);
     }
-  };
+  }, []);
+
+  const fetchCustomerData = useCallback(async (clientId: string): Promise<IndividualCustomer | null> => {
+    // Check cache first
+    if (customerDataCache.current.has(clientId)) {
+      return customerDataCache.current.get(clientId) || null;
+    }
+    
+    try {
+      const customerData = await getCustomerByClientId(clientId);
+      if (customerData) {
+        customerDataCache.current.set(clientId, customerData);
+        return customerData;
+      }
+      customerDataCache.current.set(clientId, null);
+      return null;
+    } catch (error) {
+      console.error(`Error fetching customer data for ${clientId}:`, error);
+      customerDataCache.current.set(clientId, null);
+      return null;
+    }
+  }, []);
 
   const fetchAttendance = useCallback(async () => {
     try {
@@ -55,23 +84,79 @@ const TodayAttendance = () => {
       if (Array.isArray(data)) {
         // Check for new records
         const currentRecordIds = new Set(data.map(record => record._id));
-        const newRecords = data.filter(record => !lastRecordIdsRef.current.has(record._id));
         
-        // If there are new records, check if any have deactivateAt < today
-        if (newRecords.length > 0) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+        // Fetch customer data for all records
+        const recordsWithCustomerData: AttendanceRecordWithCustomer[] = await Promise.all(
+          data.map(async (record) => {
+            const clientId = record.clientId || record.customerId;
+            if (!clientId) {
+              return { ...record, customerData: null };
+            }
+            
+            // Check if we have cached data
+            if (customerDataCache.current.has(clientId)) {
+              const cachedData = customerDataCache.current.get(clientId);
+              return { ...record, customerData: cachedData || null };
+            }
+            
+            // Fetch customer data if not in cache (for new records or existing records without cache)
+            const customerData = await fetchCustomerData(clientId);
+            return { ...record, customerData };
+          })
+        );
+        
+        // Check for unpaid customers after fetching their data
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        today.setMinutes(0);
+        today.setSeconds(0);
+        today.setMilliseconds(0);
+        
+        // Check each record for unpaid status and play sound when unpaid attendance record is fetched
+        const newlyDetectedUnpaidClients: string[] = [];
+        const isNewRecord = (recordId: string) => !lastRecordIdsRef.current.has(recordId);
+        
+        recordsWithCustomerData.forEach(record => {
+          const clientId = record.clientId || record.customerId;
+          if (!clientId) return;
           
-          const unpaidRecords = newRecords.filter(record => {
-            if (!record.deactivateAt) return false;
-            const deactivateDate = new Date(record.deactivateAt);
-            deactivateDate.setHours(0, 0, 0, 0);
-            return deactivateDate < today;
-          });
+          const customerData = record.customerData || customerDataCache.current.get(clientId);
+          const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
           
-          // Play sound if there are unpaid records
-          if (unpaidRecords.length > 0) {
-            playNotificationSound();
+          if (!deactivateAt) return;
+          
+          const deactivateDate = new Date(deactivateAt);
+          deactivateDate.setHours(0, 0, 0, 0);
+          deactivateDate.setMinutes(0);
+          deactivateDate.setSeconds(0);
+          deactivateDate.setMilliseconds(0);
+          
+          // Check if date has PASSED (before today)
+          const isUnpaid = deactivateDate < today;
+          
+          if (!isUnpaid) return;
+          
+          // Play sound when unpaid user attendance record is fetched
+          // Check if this is a new attendance record OR if we haven't notified for this client yet
+          const isNewAttendanceRecord = isNewRecord(record._id);
+          const hasNotBeenNotified = !notifiedUnpaidClientsRef.current.has(clientId);
+          
+          if (isNewAttendanceRecord || hasNotBeenNotified) {
+            // Mark as notified
+            notifiedUnpaidClientsRef.current.add(clientId);
+            newlyDetectedUnpaidClients.push(clientId);
+            
+            if (process.env.NODE_ENV !== 'production') {
+              console.log(`[AUDIO] Detected unpaid customer: ${clientId}, deactivateAt: ${deactivateAt}, isNewRecord: ${isNewAttendanceRecord}`);
+            }
+          }
+        });
+        
+        // Play sound when unpaid user attendance record is fetched
+        if (newlyDetectedUnpaidClients.length > 0) {
+          playNotificationSound();
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[AUDIO] Playing notification for ${newlyDetectedUnpaidClients.length} unpaid customer(s):`, newlyDetectedUnpaidClients);
           }
         }
         
@@ -79,7 +164,7 @@ const TodayAttendance = () => {
         lastRecordIdsRef.current = currentRecordIds;
         
         // Sort by attendedDateTime descending (newest first)
-        const sortedData = [...data].sort((a, b) => {
+        const sortedData = [...recordsWithCustomerData].sort((a, b) => {
           const dateA = new Date(a.attendedDateTime).getTime();
           const dateB = new Date(b.attendedDateTime).getTime();
           return dateB - dateA;
@@ -92,25 +177,64 @@ const TodayAttendance = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchCustomerData, playNotificationSound]);
 
   useEffect(() => {
     // Initial fetch
     fetchAttendance();
     
-    // Set up interval to fetch every 30 seconds
-    const intervalId = setInterval(fetchAttendance, 30000);
+    // Set up interval to fetch every 5 seconds
+    const intervalId = setInterval(fetchAttendance, 1000);
     
     return () => clearInterval(intervalId);
   }, [fetchAttendance]);
 
-  const isUnpaid = (record: TodayAttendanceRecord): boolean => {
-    if (!record.deactivateAt) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const deactivateDate = new Date(record.deactivateAt);
-    deactivateDate.setHours(0, 0, 0, 0);
-    return deactivateDate < today;
+  const isUnpaid = (record: AttendanceRecordWithCustomer): boolean => {
+    const clientId = record.clientId || record.customerId;
+    if (!clientId) {
+      return false;
+    }
+    
+    // Try to get customer data from record first, then from cache
+    let customerData = record.customerData;
+    if (!customerData && clientId) {
+      customerData = customerDataCache.current.get(clientId) || null;
+    }
+    
+    // Get deactivateAt from customer data first, then fallback to record
+    const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
+    
+    if (!deactivateAt) {
+      return false;
+    }
+    
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(0);
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      
+      const deactivateDate = new Date(deactivateAt);
+      deactivateDate.setHours(0, 0, 0, 0);
+      deactivateDate.setMinutes(0);
+      deactivateDate.setSeconds(0);
+      deactivateDate.setMilliseconds(0);
+      
+      // Check if deactivateAt has PASSED (is before today, not including today)
+      // If deactivateAt is before today, the customer is unpaid
+      const isExpired = deactivateDate < today;
+      
+      // Debug log to help troubleshoot
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[isUnpaid] ClientId: ${clientId}, deactivateAt: ${deactivateAt}, deactivateDate: ${deactivateDate.toISOString()}, today: ${today.toISOString()}, isExpired: ${isExpired}, hasCustomerData: ${!!customerData}`);
+      }
+      
+      return isExpired;
+    } catch (error) {
+      console.error("Error comparing dates in isUnpaid:", error, { deactivateAt, clientId });
+      return false;
+    }
   };
 
   const formatTime = (dateString: string): string => {
@@ -129,14 +253,6 @@ const TodayAttendance = () => {
     }
   };
 
-  const isDeactivated = (record: TodayAttendanceRecord): boolean => {
-    if (!record.deactivateAt) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const deactivateDate = new Date(record.deactivateAt);
-    deactivateDate.setHours(0, 0, 0, 0);
-    return deactivateDate < today;
-  };
 
   return (
     <WhiteCard className="flex flex-col gap-[10px]">
@@ -164,18 +280,47 @@ const TodayAttendance = () => {
           return (
           <div className="flex flex-col gap-[8px] ">
             {attendanceRecords.map((record) => {
-              const unpaid = isUnpaid(record);
-              const deactivated = isDeactivated(record);
+              const clientId = record.clientId || record.customerId;
+              // Get customer data from record first, then from cache
+              let customerData = record.customerData;
+              if (!customerData && clientId) {
+                customerData = customerDataCache.current.get(clientId) || null;
+              }
+              
+              // Create record with customer data for checking
+              const recordWithData: AttendanceRecordWithCustomer = {
+                ...record,
+                customerData: customerData || record.customerData || null
+              };
+              
+              const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
+              const reference = customerData?.reference || record.reference;
+              
+              // Check if unpaid - deactivateAt has passed (is before today)
+              const unpaid = isUnpaid(recordWithData);
+              
+              // Debug log for rendering
+              if (process.env.NODE_ENV !== 'production' && unpaid) {
+                console.log(`[RENDER] Unpaid card for ${clientId}, deactivateAt: ${deactivateAt}`);
+              }
+              
+              // Determine card styling - use inline style as well to ensure it applies
+              const cardStyle = unpaid 
+                ? { backgroundColor: '#FFE5E5', borderColor: '#FF9999' }
+                : { backgroundColor: '#F8F9FA', borderColor: '#E0E0E0' };
+              
+              const cardClassName = unpaid
+                ? "p-[12px] rounded-[10px] p-2 border-2 bg-[#FFE5E5] border-[#FF9999]"
+                : "p-[12px] rounded-[10px] p-2 border bg-[#F8F9FA] border-[#E0E0E0]";
+              
               return (
                 <div
                   key={record._id}
-                  className={`p-[12px] rounded-[10px] p-2 border ${
-                    unpaid
-                      ? "bg-[#FFEBEE] border-[#F44336]"
-                      : deactivated
-                      ? "bg-[#FFF3E0] border-[#FF9800]"
-                      : "bg-[#F8F9FA] border-[#E0E0E0]"
-                  }`}
+                  className={cardClassName}
+                  style={cardStyle}
+                  data-unpaid={unpaid}
+                  data-deactivate-at={deactivateAt || ''}
+                  data-client-id={clientId || ''}
                 >
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
@@ -183,15 +328,28 @@ const TodayAttendance = () => {
                         <p className="text-[13px] font-semibold text-[#363636]">
                           {record.firstName} {record.lastName}
                         </p>
-                        {record.deactivateAt && (
-                          <span className="text-[10px] text-[#6D6D6D] font-normal">
-                            ({formatDate(record.deactivateAt)})
-                          </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap mt-1">
+                        <p className="text-[11px] text-[#6D6D6D]">
+                          {clientId || "N/A"}
+                        </p>
+                        {deactivateAt && (
+                          <>
+                            <span className="text-[10px] text-[#6D6D6D]">•</span>
+                            <span className="text-[11px] text-[#6D6D6D]">
+                              {formatDate(deactivateAt)}
+                            </span>
+                          </>
+                        )}
+                        {reference && (
+                          <>
+                            <span className="text-[10px] text-[#6D6D6D]">•</span>
+                            <span className="text-[11px] text-[#6D6D6D]">
+                              {reference}
+                            </span>
+                          </>
                         )}
                       </div>
-                      <p className="text-[11px] text-[#6D6D6D] mt-1">
-                        {record.reference || record.clientId || record.customerId || "N/A"}
-                      </p>
                     </div>
                     <div className="flex flex-col items-end">
                       <p className="text-[12px] font-medium text-[#363636]">
