@@ -156,57 +156,45 @@ function AddNewGroup() {
       packageId: data.package,
     };
 
-    // Gather auth headers (fallback if interceptor/token missing)
+    // SECURITY FIX: Do NOT manually set headers - let axios interceptor handle it
+    // The axios interceptor automatically extracts gymId from JWT token and sets headers
+    // This prevents manipulation of gym-id header which was a security vulnerability
+    
+    // Verify token exists (axios interceptor will handle the rest)
     const hasWindow = typeof globalThis !== 'undefined' && (globalThis as { window?: unknown }).window !== undefined;
-    let token = hasWindow ? localStorage.getItem("x-auth-token") : null;
-    let gymId = hasWindow ? localStorage.getItem("gym-id") : null;
-
-    // Fallback: read from user-details cookie
-    if (hasWindow && (!token || !gymId)) {
-      try {
-        const cookieStr = document.cookie || '';
-        const userCookie = cookieStr
-          .split('; ')
-          .find(row => row.startsWith('user-details='))
-          ?.split('=')[1];
-        if (userCookie) {
-          const decoded = decodeURIComponent(userCookie);
-          const parsed = JSON.parse(decoded);
-          token = token || parsed?.token || null;
-          gymId = gymId || parsed?.gymId || null;
-          // Prime localStorage for subsequent requests
-          if (token) localStorage.setItem('x-auth-token', token);
-          if (gymId) localStorage.setItem('gym-id', gymId);
-        }
-      } catch (e) {
-        console.error('Failed to read auth from cookies', e);
-      }
-    }
+    const token = hasWindow ? localStorage.getItem("x-auth-token") : null;
 
     if (!token) {
-      console.error("Missing authentication token in localStorage");
+      console.error("[SECURITY] Missing authentication token");
       toast.error("You are not authenticated. Please log in again.");
       return;
     }
-    if (!gymId) {
-      console.warn("Missing gym-id in localStorage");
-      toast.error("Gym not selected. Please refresh and try again.");
+
+    // SECURITY: Extract gymId from token to verify it exists (but don't use it in headers)
+    // The axios interceptor will set the header automatically from the token
+    const { getGymIdFromToken } = await import("@/utils/jwt");
+    const tokenGymId = getGymIdFromToken(token);
+    
+    if (!tokenGymId) {
+      console.error("[SECURITY] Token missing gymId - this is a security issue");
+      toast.error("Security error: Invalid authentication token. Please log out and log in again.");
       return;
     }
 
-    // Log the exact request being sent (with header summary only)
+    // Log the request (without sensitive headers)
     console.log(
-      "CreateGroup request:",
+      "[SECURITY] CreateGroup request:",
       JSON.stringify(requestBody, null, 2),
-      "\nHeaders:",
-      { "x-auth-token": token ? "<present>" : "<missing>", "gym-id": gymId }
+      "\nToken gymId verified:", tokenGymId
     );
 
     try {
+      // SECURITY: Do NOT manually set headers - axios interceptor handles it securely
+      // This ensures gym-id header always matches the JWT token
       const res = await axios.post(
         "/api/groups/createGroup",
-        requestBody,
-        { headers: { "x-auth-token": token, "gym-id": gymId } }
+        requestBody
+        // Headers are automatically set by axios interceptor from JWT token
       );
 
       const responseData = res.data as CommonResponseDataType;

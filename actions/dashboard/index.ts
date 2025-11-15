@@ -114,12 +114,15 @@ export const fetchDailyAttendance = async (
   endDate: string
 ): Promise<DailyAttendanceData[]> => {
   try {
+    // SECURITY FIX: Removed hardcoded 'gym-id' header
+    // The axios interceptor will automatically set the correct gym-id from JWT token
+    // This prevents hardcoded gym-id which was a CRITICAL security vulnerability
     const res = await axios.get(
       `/Attendances/daily-attendance?startDate=${startDate}&endDate=${endDate}`,
       {
         headers: {
           'accept': 'application/json',
-          'gym-id': 'Hiru-Fitness'
+          // gym-id header is automatically set by axios interceptor from JWT token
         }
       }
     );

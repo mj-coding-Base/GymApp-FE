@@ -2,6 +2,7 @@
 
 import { getCustomerByClientId } from "@/actions/customers";
 import { fetchTodayAttendance, TodayAttendanceRecord } from "@/actions/dashboard";
+import useUserDetails from "@/hooks/useUserDetails";
 import { IndividualCustomer } from "@/types/Customer";
 import { format } from "date-fns";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ type AttendanceRecordWithCustomer = TodayAttendanceRecord & {
 };
 
 const TodayAttendance = () => {
+  const { user } = useUserDetails();
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordWithCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const lastRecordIdsRef = useRef<Set<string>>(new Set());
@@ -20,6 +22,14 @@ const TodayAttendance = () => {
   const notifiedUnpaidClientsRef = useRef<Set<string>>(new Set());
   const userHasInteractedRef = useRef<boolean>(false);
   const audioPlaybackBlockedRef = useRef<boolean>(false);
+  
+  // Check if user should fetch attendance data
+  // Only fetch if isAdmin = false AND isFullTime = false (part-time staff only)
+  const shouldFetchAttendance = Boolean(
+    user && 
+    user.isAdmin === false && 
+    user.isFullTime === false
+  );
   
   // Audio toggle state - load from localStorage on mount
   const [audioEnabled, setAudioEnabled] = useState<boolean>(() => {
@@ -195,6 +205,15 @@ const TodayAttendance = () => {
   }, []);
 
   const fetchAttendance = useCallback(async () => {
+    // Only fetch if user is not admin and not full-time
+    if (!shouldFetchAttendance) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[ATTENDANCE] Skipping fetch - user isAdmin:', user?.isAdmin, 'isFullTime:', user?.isFullTime);
+      }
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Check for day change first
       checkAndHandleDayChange();
@@ -322,16 +341,22 @@ const TodayAttendance = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchCustomerData, playNotificationSound, checkAndHandleDayChange, isRecordFromToday]);
+  }, [fetchCustomerData, playNotificationSound, checkAndHandleDayChange, isRecordFromToday, shouldFetchAttendance, user]);
 
   useEffect(() => {
+    // Only set up polling if user should fetch attendance
+    if (!shouldFetchAttendance) {
+      setLoading(false);
+      return;
+    }
+    
     // Initialize current day
     currentDayRef.current = getCurrentDayString();
     
     // Initial fetch
     fetchAttendance();
     
-    // Set up interval to fetch every 1 second
+    // Set up interval to fetch every 2.5 seconds
     const intervalId = setInterval(fetchAttendance, 2500);
     
     // Set up day change checker - check every minute to detect day change
@@ -358,7 +383,7 @@ const TodayAttendance = () => {
       clearInterval(dayCheckIntervalId);
       clearTimeout(midnightTimeoutId);
     };
-  }, [fetchAttendance, getCurrentDayString, checkAndHandleDayChange, resetForNewDay]);
+  }, [fetchAttendance, getCurrentDayString, checkAndHandleDayChange, resetForNewDay, shouldFetchAttendance]);
 
   const isUnpaid = (record: AttendanceRecordWithCustomer): boolean => {
     const clientId = record.clientId || record.customerId;
@@ -501,6 +526,17 @@ const TodayAttendance = () => {
       
       <div className="h-[600px] overflow-y-auto pr-2">
         {(() => {
+          // Show message if user is admin or full-time (should not fetch)
+          if (!shouldFetchAttendance) {
+            return (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-[12px] text-[#6D6D6D]">
+                  Attendance tracking is only available for part-time staff
+                </p>
+              </div>
+            );
+          }
+          
           if (loading && attendanceRecords.length === 0) {
             return (
               <div className="flex items-center justify-center h-full">
