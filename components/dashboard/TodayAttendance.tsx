@@ -1,7 +1,7 @@
 "use client";
 
-import { fetchTodayAttendance, TodayAttendanceRecord } from "@/actions/dashboard";
 import { getCustomerByClientId } from "@/actions/customers";
+import { fetchTodayAttendance, TodayAttendanceRecord } from "@/actions/dashboard";
 import { IndividualCustomer } from "@/types/Customer";
 import { format } from "date-fns";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +18,57 @@ const TodayAttendance = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const customerDataCache = useRef<Map<string, IndividualCustomer | null>>(new Map());
   const notifiedUnpaidClientsRef = useRef<Set<string>>(new Set());
+  
+  // Strong state management: Map to hold all records for today by ID
+  const todayRecordsMapRef = useRef<Map<string, AttendanceRecordWithCustomer>>(new Map());
+  const currentDayRef = useRef<string>('');
+  
+  // Helper function to get current day string (YYYY-MM-DD)
+  const getCurrentDayString = useCallback((): string => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+  
+  // Helper function to check if a record belongs to today
+  const isRecordFromToday = useCallback((attendedDateTime: string): boolean => {
+    try {
+      const recordDate = new Date(attendedDateTime);
+      const today = new Date();
+      
+      return (
+        recordDate.getFullYear() === today.getFullYear() &&
+        recordDate.getMonth() === today.getMonth() &&
+        recordDate.getDate() === today.getDate()
+      );
+    } catch {
+      return false;
+    }
+  }, []);
+  
+  // Reset state when day changes
+  const resetForNewDay = useCallback(() => {
+    console.log('[ATTENDANCE] Day changed - resetting state');
+    todayRecordsMapRef.current.clear();
+    lastRecordIdsRef.current.clear();
+    notifiedUnpaidClientsRef.current.clear();
+    customerDataCache.current.clear();
+    setAttendanceRecords([]);
+    currentDayRef.current = getCurrentDayString();
+  }, [getCurrentDayString]);
+  
+  // Check for day change and reset if needed
+  const checkAndHandleDayChange = useCallback(() => {
+    const currentDay = getCurrentDayString();
+    if (currentDayRef.current && currentDayRef.current !== currentDay) {
+      resetForNewDay();
+    } else if (!currentDayRef.current) {
+      // Initialize on first run
+      currentDayRef.current = currentDay;
+    }
+  }, [getCurrentDayString, resetForNewDay]);
 
   // Initialize audio for notification sound
   useEffect(() => {
@@ -79,15 +130,32 @@ const TodayAttendance = () => {
 
   const fetchAttendance = useCallback(async () => {
     try {
+      // Check for day change first
+      checkAndHandleDayChange();
+      
       const data = await fetchTodayAttendance();
       
       if (Array.isArray(data)) {
-        // Check for new records
-        const currentRecordIds = new Set(data.map(record => record._id));
+        // Filter only records from today
+        const todayRecords = data.filter(record => isRecordFromToday(record.attendedDateTime));
         
-        // Fetch customer data for all records
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[ATTENDANCE] Fetched ${data.length} total records, ${todayRecords.length} from today`);
+        }
+        
+        // Check for new records
+        const currentRecordIds = new Set(todayRecords.map(record => record._id));
+        const newRecordIds = todayRecords
+          .map(record => record._id)
+          .filter(id => !todayRecordsMapRef.current.has(id));
+        
+        if (process.env.NODE_ENV !== 'production' && newRecordIds.length > 0) {
+          console.log(`[ATTENDANCE] Found ${newRecordIds.length} new record(s):`, newRecordIds);
+        }
+        
+        // Fetch customer data for all records (including existing ones to ensure data is up-to-date)
         const recordsWithCustomerData: AttendanceRecordWithCustomer[] = await Promise.all(
-          data.map(async (record) => {
+          todayRecords.map(async (record) => {
             const clientId = record.clientId || record.customerId;
             if (!clientId) {
               return { ...record, customerData: null };
@@ -105,6 +173,11 @@ const TodayAttendance = () => {
           })
         );
         
+        // Merge new records into the persistent map (update existing, add new)
+        for (const record of recordsWithCustomerData) {
+          todayRecordsMapRef.current.set(record._id, record);
+        }
+        
         // Check for unpaid customers after fetching their data
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -116,14 +189,14 @@ const TodayAttendance = () => {
         const newlyDetectedUnpaidClients: string[] = [];
         const isNewRecord = (recordId: string) => !lastRecordIdsRef.current.has(recordId);
         
-        recordsWithCustomerData.forEach(record => {
+        for (const record of recordsWithCustomerData) {
           const clientId = record.clientId || record.customerId;
-          if (!clientId) return;
+          if (!clientId) continue;
           
           const customerData = record.customerData || customerDataCache.current.get(clientId);
           const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
           
-          if (!deactivateAt) return;
+          if (!deactivateAt) continue;
           
           const deactivateDate = new Date(deactivateAt);
           deactivateDate.setHours(0, 0, 0, 0);
@@ -134,7 +207,7 @@ const TodayAttendance = () => {
           // Check if date has PASSED (before today)
           const isUnpaid = deactivateDate < today;
           
-          if (!isUnpaid) return;
+          if (!isUnpaid) continue;
           
           // Play sound when unpaid user attendance record is fetched
           // Check if this is a new attendance record OR if we haven't notified for this client yet
@@ -150,7 +223,7 @@ const TodayAttendance = () => {
               console.log(`[AUDIO] Detected unpaid customer: ${clientId}, deactivateAt: ${deactivateAt}, isNewRecord: ${isNewAttendanceRecord}`);
             }
           }
-        });
+        }
         
         // Play sound when unpaid user attendance record is fetched
         if (newlyDetectedUnpaidClients.length > 0) {
@@ -163,31 +236,63 @@ const TodayAttendance = () => {
         // Update last seen record IDs
         lastRecordIdsRef.current = currentRecordIds;
         
-        // Sort by attendedDateTime descending (newest first)
-        const sortedData = [...recordsWithCustomerData].sort((a, b) => {
+        // Get all records from the persistent map and sort by attendedDateTime descending (newest first)
+        const allTodayRecords = Array.from(todayRecordsMapRef.current.values());
+        const sortedData = [...allTodayRecords].sort((a, b) => {
           const dateA = new Date(a.attendedDateTime).getTime();
           const dateB = new Date(b.attendedDateTime).getTime();
           return dateB - dateA;
         });
         
-        setAttendanceRecords(sortedData.slice(0, 20)); // Limit to 20 records
+        // Update state with ALL records from today (no limit)
+        setAttendanceRecords(sortedData);
+        
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[ATTENDANCE] State updated with ${sortedData.length} total record(s) for today`);
+        }
       }
     } catch (error) {
       console.error("Error fetching today's attendance:", error);
     } finally {
       setLoading(false);
     }
-  }, [fetchCustomerData, playNotificationSound]);
+  }, [fetchCustomerData, playNotificationSound, checkAndHandleDayChange, isRecordFromToday]);
 
   useEffect(() => {
+    // Initialize current day
+    currentDayRef.current = getCurrentDayString();
+    
     // Initial fetch
     fetchAttendance();
     
-    // Set up interval to fetch every 5 seconds
+    // Set up interval to fetch every 1 second
     const intervalId = setInterval(fetchAttendance, 1000);
     
-    return () => clearInterval(intervalId);
-  }, [fetchAttendance]);
+    // Set up day change checker - check every minute to detect day change
+    const dayCheckIntervalId = setInterval(() => {
+      checkAndHandleDayChange();
+    }, 60000); // Check every minute
+    
+    // Set up midnight reset - calculate time until next midnight
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    const midnightTimeoutId = setTimeout(() => {
+      resetForNewDay();
+      // After reset, fetch new day's attendance
+      fetchAttendance();
+    }, msUntilMidnight);
+    
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(dayCheckIntervalId);
+      clearTimeout(midnightTimeoutId);
+    };
+  }, [fetchAttendance, getCurrentDayString, checkAndHandleDayChange, resetForNewDay]);
 
   const isUnpaid = (record: AttendanceRecordWithCustomer): boolean => {
     const clientId = record.clientId || record.customerId;
