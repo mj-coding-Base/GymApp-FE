@@ -18,6 +18,18 @@ const TodayAttendance = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const customerDataCache = useRef<Map<string, IndividualCustomer | null>>(new Map());
   const notifiedUnpaidClientsRef = useRef<Set<string>>(new Set());
+  const userHasInteractedRef = useRef<boolean>(false);
+  const audioPlaybackBlockedRef = useRef<boolean>(false);
+  
+  // Audio toggle state - load from localStorage on mount
+  const [audioEnabled, setAudioEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('attendance-audio-enabled');
+      // Default to true if not set (backward compatibility)
+      return saved !== null ? saved === 'true' : true;
+    }
+    return true;
+  });
   
   // Strong state management: Map to hold all records for today by ID
   const todayRecordsMapRef = useRef<Map<string, AttendanceRecordWithCustomer>>(new Map());
@@ -70,7 +82,7 @@ const TodayAttendance = () => {
     }
   }, [getCurrentDayString, resetForNewDay]);
 
-  // Initialize audio for notification sound
+  // Initialize audio for notification sound and track user interaction
   useEffect(() => {
     if (globalThis.window !== undefined) {
       try {
@@ -84,28 +96,82 @@ const TodayAttendance = () => {
           console.warn('Audio file not found, will use speech synthesis as fallback', error);
         }
       }
+      
+      // Track user interaction to enable audio playback
+      const handleUserInteraction = () => {
+        userHasInteractedRef.current = true;
+        // Remove listeners after first interaction
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      };
+      
+      // Listen for user interaction
+      document.addEventListener('click', handleUserInteraction, { once: true });
+      document.addEventListener('keydown', handleUserInteraction, { once: true });
+      document.addEventListener('touchstart', handleUserInteraction, { once: true });
+      
+      return () => {
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      };
     }
   }, []);
 
   const playNotificationSound = useCallback(() => {
-    if (audioRef.current) {
+    // Check if audio is enabled via toggle
+    if (!audioEnabled) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[AUDIO] Audio disabled by user toggle - skipping notification');
+      }
+      return;
+    }
+    
+    // If audio playback was previously blocked, skip audio and use speech synthesis
+    if (audioPlaybackBlockedRef.current) {
+      if (globalThis.speechSynthesis !== undefined) {
+        const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
+        utterance.lang = 'en-US';
+        globalThis.speechSynthesis.speak(utterance);
+      }
+      return;
+    }
+    
+    // Try to play audio if user has interacted and audio element exists
+    if (audioRef.current && userHasInteractedRef.current) {
       // Reset audio to beginning in case it was already played
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch((error) => {
-        console.error('Error playing audio:', error);
-        // Fallback to speech synthesis
-        if (globalThis.speechSynthesis !== undefined) {
-          const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
-          utterance.lang = 'en-US';
-          globalThis.speechSynthesis.speak(utterance);
+        // Check if it's a NotAllowedError (autoplay blocked)
+        if (error.name === 'NotAllowedError' || error.name === 'NotSupportedError') {
+          // Mark audio as blocked and use speech synthesis
+          audioPlaybackBlockedRef.current = true;
+          if (globalThis.speechSynthesis !== undefined) {
+            const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
+            utterance.lang = 'en-US';
+            globalThis.speechSynthesis.speak(utterance);
+          }
+        } else {
+          // Other errors - log only in development
+          if (process.env.NODE_ENV !== 'production') {
+            console.error('Error playing audio:', error);
+          }
+          // Fallback to speech synthesis
+          if (globalThis.speechSynthesis !== undefined) {
+            const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
+            utterance.lang = 'en-US';
+            globalThis.speechSynthesis.speak(utterance);
+          }
         }
       });
     } else if (globalThis.speechSynthesis !== undefined) {
+      // Use speech synthesis if audio not available or user hasn't interacted
       const utterance = new SpeechSynthesisUtterance('Gym subscription is not paid');
       utterance.lang = 'en-US';
       globalThis.speechSynthesis.speak(utterance);
     }
-  }, []);
+  }, [audioEnabled]);
 
   const fetchCustomerData = useCallback(async (clientId: string): Promise<IndividualCustomer | null> => {
     // Check cache first
@@ -358,12 +424,79 @@ const TodayAttendance = () => {
     }
   };
 
+  // Toggle audio on/off and save to localStorage
+  const toggleAudio = useCallback(() => {
+    const newValue = !audioEnabled;
+    setAudioEnabled(newValue);
+    
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('attendance-audio-enabled', String(newValue));
+    }
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[AUDIO] Audio ${newValue ? 'enabled' : 'disabled'} by user`);
+    }
+  }, [audioEnabled]);
 
   return (
     <WhiteCard className="flex flex-col gap-[10px]">
-      <div className="flex gap-[5px] w-full">
-        <i className="calendar-icon size-[18px] text-[#3D3D3D]" />
-        <h1 className="text-[12px] font-medium text-[#3D3D3D]">Today Attendance</h1>
+      <div className="flex gap-[5px] w-full items-center justify-between">
+        <div className="flex gap-[5px] items-center">
+          <i className="calendar-icon size-[18px] text-[#3D3D3D]" />
+          <h1 className="text-[12px] font-medium text-[#3D3D3D]">Today Attendance</h1>
+        </div>
+        
+        {/* Audio Toggle Button */}
+        <button
+          onClick={toggleAudio}
+          className="flex items-center gap-1 px-2 py-1 rounded-md transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+          title={audioEnabled ? 'Disable audio notifications' : 'Enable audio notifications'}
+          aria-label={audioEnabled ? 'Disable audio notifications' : 'Enable audio notifications'}
+        >
+          {audioEnabled ? (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                />
+              </svg>
+              <span className="text-[10px] text-green-600 font-medium">ON</span>
+            </>
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+                />
+              </svg>
+              <span className="text-[10px] text-gray-400 font-medium">OFF</span>
+            </>
+          )}
+        </button>
       </div>
       
       <div className="h-[600px] overflow-y-auto pr-2">
