@@ -266,7 +266,7 @@ const TodayAttendance = () => {
     fetchAttendance();
     
     // Set up interval to fetch every 1 second
-    const intervalId = setInterval(fetchAttendance, 1000);
+    const intervalId = setInterval(fetchAttendance, 2500);
     
     // Set up day change checker - check every minute to detect day change
     const dayCheckIntervalId = setInterval(() => {
