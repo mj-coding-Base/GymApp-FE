@@ -2,7 +2,7 @@ import { getSession, refreshToken } from "@/lib/authentication";
 import { getGymIdFromToken } from "@/utils/jwt";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-const isServer = typeof window === "undefined";
+const isServer = globalThis.window === undefined;
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1" ; //|| "https://api.payzhe.fit/api/v1"  || "https://api.payzhe.fit/api/v1" 
 
@@ -10,9 +10,10 @@ const axiosInstance = axios.create({
   baseURL: BASE_URL,
 });
 
-// ⚡ PERFORMANCE OPTIMIZATION: Cache to avoid repeated JWT decryptions
-let serverAuthCache: { token: string | null; gymId: string | null; timestamp: number } | null = null;
-const CACHE_DURATION = 5000; // 5 seconds cache
+// Note: Do NOT use a process-global server-side cache for auth values.
+// Server-side requests are handled concurrently for different users; a global cache
+// can cause cross-request contamination (wrong gymId/token used for another user).
+// Always retrieve session per-request on the server to ensure correct isolation.
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -21,18 +22,19 @@ let failedQueue: Array<{
   reject: (reason?: any) => void;
 }> = [];
 
-const processQueue = (error: Error | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
+const processQueue = (error: Error | null, token: string | null = null): void => {
+  for (const prom of failedQueue) {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve(token);
     }
-  });
+  }
   
   failedQueue = [];
 };
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 axiosInstance.interceptors.request.use(async (request) => {
   try {
     // SECURITY: List of public endpoints that don't require authentication or gymId
@@ -53,34 +55,17 @@ axiosInstance.interceptors.request.use(async (request) => {
     let gymId: string | null | undefined = null;
 
     if (isServer) {
-      // ⚡ CRITICAL OPTIMIZATION: Use cookie directly instead of JWT decrypt on every request
-      // This eliminates the expensive getSession() call (JWT decrypt) on every API request
-      const now = Date.now();
-      
-      // Try to use cached values if still valid
-      if (serverAuthCache && (now - serverAuthCache.timestamp < CACHE_DURATION)) {
-        token = serverAuthCache.token;
-        gymId = serverAuthCache.gymId;
-      } else {
-        try {
-          // Only decrypt JWT if cache is stale
-          const session = await getSession();
-          token = session?.user.token ?? null;
-          // Extract gymId from token instead of trusting session data
-          gymId = token ? getGymIdFromToken(token) : null;
-          
-          // Cache the values
-          serverAuthCache = { token, gymId, timestamp: now };
-        } catch (sessionError) {
-          // Handle session retrieval errors gracefully
-          if (process.env.NODE_ENV !== 'production') {
-            console.error("[Axios Request Interceptor] Session retrieval error:", sessionError);
-          }
-          // Clear cache on error
-          serverAuthCache = null;
-          token = null;
-          gymId = null;
+      // Always retrieve session per-request on the server to avoid sharing auth state
+      try {
+        const session = await getSession();
+        token = session?.user.token ?? null;
+        gymId = token ? getGymIdFromToken(token) : null;
+      } catch (sessionError) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error("[Axios Request Interceptor] Session retrieval error:", sessionError);
         }
+        token = null;
+        gymId = null;
       }
     } else {
       // Client-side: Extract from localStorage and decode token
@@ -132,21 +117,18 @@ axiosInstance.interceptors.request.use(async (request) => {
             `This should never happen. Rejecting request.`
           );
           // Reject the request to prevent potential security issue
-          return Promise.reject(new Error('Security error: Token validation failed. Please refresh the page.'));
+          throw new Error('Security error: Token validation failed. Please refresh the page.');
         }
       }
-    } else {
-      // SECURITY: Missing gymId - log warning but let backend validate
-      // Backend @ValidatedGymId() decorator will reject if gymId is truly missing
-      // This allows the request to proceed so backend can provide proper error message
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(
-          `[SECURITY WARNING] Missing gymId for request: ${request.url}. ` +
-          `Backend will validate and reject if gymId is required.`
-        );
-      }
-      // Don't reject here - let backend handle validation for better error messages
-      // The backend will reject with proper error if gymId is required
+    }
+    
+    // SECURITY: Missing gymId warning (only in non-production environments)
+    if (!gymId && process.env.NODE_ENV !== 'production' && !isPublicEndpoint) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[SECURITY WARNING] Missing gymId for request: ${request.url}. ` +
+        `Backend will validate and reject if gymId is required.`
+      );
     }
 
     return request;
@@ -161,6 +143,7 @@ axiosInstance.interceptors.request.use(async (request) => {
 
 axiosInstance.interceptors.response.use(
   (response) => response,
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   (error: AxiosError) => {
     const resData = error.response?.data;
 
@@ -177,9 +160,8 @@ axiosInstance.interceptors.response.use(
       
       // Prevent infinite retry loops
       if (originalRequest._retry) {
-        // Clear auth cache on final failure
-        serverAuthCache = null;
-        if (typeof window !== 'undefined') {
+        // Clear auth on final failure
+        if (globalThis.window !== undefined) {
           localStorage.removeItem("x-auth-token");
           localStorage.removeItem("refresh-token");
         }
@@ -198,7 +180,7 @@ axiosInstance.interceptors.response.use(
             return axiosInstance(originalRequest);
           })
           .catch((err) => {
-            return Promise.reject(err);
+            throw err;
           });
       }
 
@@ -206,16 +188,12 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       return refreshToken()
+        // eslint-disable-next-line sonarjs/cognitive-complexity
         .then((refreshResult) => {
           if (refreshResult.success && refreshResult.token) {
             // Update cache
-            if (isServer) {
-              serverAuthCache = {
-                token: refreshResult.token,
-                gymId: getGymIdFromToken(refreshResult.token),
-                timestamp: Date.now(),
-              };
-            } else {
+            if (!isServer) {
+              // Client: persist new token in localStorage
               localStorage.setItem("x-auth-token", refreshResult.token);
             }
 
@@ -225,28 +203,21 @@ axiosInstance.interceptors.response.use(
             if (!newTokenGymId) {
               // Security: If new token doesn't have gymId, reject refresh
               if (process.env.NODE_ENV !== 'production') {
+                // eslint-disable-next-line no-console
                 console.error("SECURITY: Refreshed token missing gymId");
               }
               processQueue(new Error("Refreshed token missing gymId"));
-              serverAuthCache = null;
-              if (typeof window !== 'undefined') {
+              if (globalThis.window !== undefined) {
                 localStorage.removeItem("x-auth-token");
                 localStorage.removeItem("refresh-token");
               }
-              return Promise.reject(new Error("Security error: Invalid refreshed token"));
+              throw new Error("Security error: Invalid refreshed token");
             }
 
             // Update cache with new token and gymId from token
-            if (isServer) {
-              serverAuthCache = {
-                token: refreshResult.token,
-                gymId: newTokenGymId, // Use gymId from token (secure source)
-                timestamp: Date.now(),
-              };
-            } else {
+            if (!isServer) {
               localStorage.setItem("x-auth-token", refreshResult.token);
               // SECURITY: Never store gymId in localStorage - always extract from token
-              // Remove any old gymId from localStorage to prevent manipulation
               localStorage.removeItem("gym-id");
             }
 
@@ -261,26 +232,24 @@ axiosInstance.interceptors.response.use(
 
             // Retry original request
             return axiosInstance(originalRequest);
-          } else {
-            // Refresh failed, reject all queued requests
-            processQueue(new Error("Token refresh failed"));
-            serverAuthCache = null;
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem("x-auth-token");
-              localStorage.removeItem("refresh-token");
-            }
-            return Promise.reject(error);
           }
-        })
-        .catch((refreshError) => {
-          // Refresh failed, reject all queued requests
-          processQueue(refreshError);
-          serverAuthCache = null;
-          if (typeof window !== 'undefined') {
+          // Refresh failed
+          processQueue(new Error("Token refresh failed"));
+          if (globalThis.window !== undefined) {
             localStorage.removeItem("x-auth-token");
             localStorage.removeItem("refresh-token");
           }
-          return Promise.reject(refreshError);
+          throw error;
+        })
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .catch((_refreshError) => {
+          // Refresh failed, reject all queued requests
+          processQueue(_refreshError);
+          if (globalThis.window !== undefined) {
+            localStorage.removeItem("x-auth-token");
+            localStorage.removeItem("refresh-token");
+          }
+          throw _refreshError;
         })
         .finally(() => {
           isRefreshing = false;
@@ -288,50 +257,53 @@ axiosInstance.interceptors.response.use(
     }
 
     // Extract error message - use a function to ensure we always get a valid string
+    // eslint-disable-next-line sonarjs/cognitive-complexity
     const getErrorMessage = (): string => {
-      try {
-        // Try to get message from response data
-        if (resData && typeof resData === 'object' && resData !== null) {
-          if ('message' in resData && resData.message !== null && resData.message !== undefined) {
-            const msg = String(resData.message);
-            if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
-              return msg;
-            }
+      // Safely extract message from response data
+      const getFromResponseData = (): string | null => {
+        try {
+          if (!resData || typeof resData !== 'object' || resData === null) {
+            return null;
           }
-          // Try 'error' field as fallback
-          if ('error' in resData && resData.error !== null && resData.error !== undefined) {
-            const msg = String(resData.error);
-            if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
-              return msg;
-            }
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const resAny = resData as any;
+          if (resAny.message && String(resAny.message).trim().length > 0) {
+            return String(resAny.message);
           }
+          if (resAny.error && String(resAny.error).trim().length > 0) {
+            return String(resAny.error);
+          }
+          return null;
+        } catch {
+          return null;
         }
-      } catch (e) {
-        // Continue to next option
-      }
+      };
 
+      const messageFromData = getFromResponseData();
+      if (messageFromData) return messageFromData;
+
+      // Try error.message
       try {
-        // Try error.message
         if (error?.message) {
           const msg = String(error.message);
-          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+          if (msg && msg.trim().length > 0) {
             return msg;
           }
         }
-      } catch (e) {
+      } catch {
         // Continue to next option
       }
 
+      // Try statusText
       try {
-        // Try statusText
         if (error?.response?.statusText) {
           const msg = String(error.response.statusText);
-          if (msg && msg !== 'undefined' && msg !== 'null' && msg.trim().length > 0) {
+          if (msg && msg.trim().length > 0) {
             return msg;
           }
         }
-      } catch (e) {
-        // Continue to default
+      } catch {
+        // Use default
       }
 
       // Always return a default string
@@ -339,11 +311,12 @@ axiosInstance.interceptors.response.use(
     };
 
     // Safely get error message
-    let errorMessage: string;
+    let errorMessage = 'API request failed';
     try {
       errorMessage = getErrorMessage();
-    } catch (e) {
-      errorMessage = 'API request failed';
+    } catch {
+      // Fallback to default message
+      void 0;
     }
     
     // Ensure errorMessage is always a valid string
@@ -380,7 +353,7 @@ axiosInstance.interceptors.response.use(
       }
       
       return Promise.reject(err as Error);
-    } catch (createError) {
+    } catch {
       // Fallback: even if Error creation somehow fails, create a basic one
       const finalErr = new Error('API request failed');
       if (resData && typeof resData === 'object') {
