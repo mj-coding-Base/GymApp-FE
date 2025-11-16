@@ -35,6 +35,20 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 
 axiosInstance.interceptors.request.use(async (request) => {
   try {
+    // SECURITY: List of public endpoints that don't require authentication or gymId
+    // These endpoints are marked with @SkipAuthentication() on the backend
+    const publicEndpoints = [
+      '/admin/admin-management/login',
+      '/admin/admin-management/refresh-token',
+      '/admin/admin-management/forgot-password',
+      '/admin/admin-management/reset-password',
+    ];
+    
+    // Check if this is a public endpoint (doesn't require gymId)
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      request.url?.includes(endpoint) || request.url?.endsWith(endpoint)
+    );
+    
     let token: string | null | undefined = null;
     let gymId: string | null | undefined = null;
 
@@ -83,21 +97,51 @@ axiosInstance.interceptors.request.use(async (request) => {
       }
     }
 
-    // Set auth token if available
+    // Set auth token if available (even for public endpoints, in case they need it)
     if (token) {
       request.headers["x-auth-token"] = token;
     }
 
-    // Set gymId in headers for all requests
-    // This is extracted from token, so it's secure and cannot be manipulated
-    // Note: Some endpoints require gym-id header, so missing gymId might cause errors
-    if (gymId) {
-      request.headers["gym-id"] = gymId;
-    } else {
-      // Log warning if gymId is missing (might cause backend errors)
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn("[Axios Request Interceptor] Missing gymId for request:", request.url);
+    // SECURITY: For public endpoints (login, forgot password, etc.), allow requests without gymId
+    // These endpoints don't require authentication and don't need gymId
+    if (isPublicEndpoint) {
+      // Public endpoints can proceed without gymId
+      // But if token exists and has gymId, we can still set it (optional)
+      if (gymId && gymId.trim().length > 0) {
+        request.headers["gym-id"] = gymId.trim();
       }
+      return request;
+    }
+
+    // STRICT: For all other endpoints, gymId is REQUIRED
+    // This is extracted from token, so it's secure and cannot be manipulated
+    // SECURITY: If gymId is missing, we MUST reject the request to prevent data leaks
+    if (gymId && gymId.trim().length > 0) {
+      request.headers["gym-id"] = gymId.trim();
+      
+      // SECURITY: Double-check that gymId matches token (defense in depth)
+      if (token) {
+        const tokenGymId = getGymIdFromToken(token);
+        if (tokenGymId && tokenGymId !== gymId.trim()) {
+          console.error(
+            `[SECURITY ERROR] gymId mismatch detected! ` +
+            `Token has "${tokenGymId}" but extracted "${gymId.trim()}". ` +
+            `This should never happen. Rejecting request.`
+          );
+          // Reject the request to prevent potential security issue
+          return Promise.reject(new Error('Security error: Token validation failed. Please refresh the page.'));
+        }
+      }
+    } else {
+      // CRITICAL: Missing gymId is a security issue - reject the request
+      console.error(
+        `[SECURITY ERROR] Missing gymId for request: ${request.url}. ` +
+        `This request will be rejected to prevent data leaks.`
+      );
+      // Reject requests without gymId to prevent accessing wrong gym's data
+      return Promise.reject(
+        new Error('Security error: Missing gym identification. Please log out and log in again.')
+      );
     }
 
     return request;

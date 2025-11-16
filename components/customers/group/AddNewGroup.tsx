@@ -181,37 +181,37 @@ function AddNewGroup() {
       }
     }
 
-    // SECURITY: Extract gymId from token (signed source of truth)
-    let gymId: string | null = null;
-    if (token) {
-      const { getGymIdFromToken } = await import('@/utils/jwt');
-      gymId = getGymIdFromToken(token);
-    }
-
     if (!token) {
-      console.error("Missing authentication token in localStorage");
+      console.error("[SECURITY] Missing authentication token");
       toast.error("You are not authenticated. Please log in again.");
       return;
     }
-    if (!gymId) {
-      console.warn("Missing gym-id in localStorage");
-      toast.error("Gym not selected. Please refresh and try again.");
+
+    // SECURITY: Extract gymId from token to verify it exists (but don't use it in headers)
+    // The axios interceptor will set the header automatically from the token
+    const { getGymIdFromToken } = await import("@/utils/jwt");
+    const tokenGymId = getGymIdFromToken(token);
+    
+    if (!tokenGymId) {
+      console.error("[SECURITY] Token missing gymId - this is a security issue");
+      toast.error("Security error: Invalid authentication token. Please log out and log in again.");
       return;
     }
 
-    // Log the exact request being sent (with header summary only)
+    // Log the request (without sensitive headers)
     console.log(
-      "CreateGroup request:",
+      "[SECURITY] CreateGroup request:",
       JSON.stringify(requestBody, null, 2),
-      "\nHeaders:",
-      { "x-auth-token": token ? "<present>" : "<missing>", "gym-id": gymId }
+      "\nToken gymId verified:", tokenGymId
     );
 
     try {
+      // SECURITY: Do NOT manually set headers - axios interceptor handles it securely
+      // This ensures gym-id header always matches the JWT token
       const res = await axios.post(
         "/api/groups/createGroup",
-        requestBody,
-        { headers: { "x-auth-token": token, "gym-id": gymId } }
+        requestBody
+        // Headers are automatically set by axios interceptor from JWT token
       );
 
       const responseData = res.data as CommonResponseDataType;

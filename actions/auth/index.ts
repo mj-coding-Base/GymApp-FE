@@ -107,7 +107,7 @@ export const forgotPassword = async (
 ): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.post(
-      "/admin/admin-management/login", 
+      "/admin/admin-management/forgot-password", 
       { email }
     );
 
@@ -126,7 +126,7 @@ export const resetPassword = async ({
 }): Promise<CommonResponseDataType> => {
   try {
     const res = await axios.patch(
-      "/admin/admin-management/login", 
+      "/admin/admin-management/reset-password", 
       {
         password: newPassword,
         confirmPassword: newPassword,
