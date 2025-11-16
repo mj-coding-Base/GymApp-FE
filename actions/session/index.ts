@@ -214,6 +214,8 @@ export const getAllSessions = async (
       queryParams.isAttended = safeParams.isAttended;
     }
 
+    // SECURITY: gymId is automatically set by axios interceptor from JWT token
+    // No need to manually set it - this ensures security
     const response = await axios.get('/sessions/get-all', {
       params: queryParams,
     });
@@ -237,6 +239,21 @@ export const getAllSessions = async (
     };
 
   } catch (error: any) {
+    // Handle 502 Bad Gateway errors gracefully
+    if (error?.response?.status === 502) {
+      console.warn(
+        "Backend service unavailable (502) for sessions. " +
+        "This may indicate the backend is starting up or temporarily unavailable."
+      );
+      // Return empty result instead of throwing
+      return {
+        status: 'SUCCESS',
+        message: null,
+        data: [],
+        total: 0
+      };
+    }
+    
     if (process.env.NODE_ENV !== 'production') {
       console.error('Full fetch sessions error:', error);
     }

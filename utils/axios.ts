@@ -89,11 +89,13 @@ axiosInstance.interceptors.request.use(async (request) => {
       gymId = token ? getGymIdFromToken(token) : null;
       
       // SECURITY: Never fallback to localStorage gymId - it can be manipulated
-      // If token doesn't have gymId, that's a security issue and should be rejected
+      // If token doesn't have gymId, that's a security issue
       if (!gymId && token) {
-        console.error("SECURITY WARNING: Token exists but missing gymId. Token may be invalid.");
-        // Don't allow requests without valid gymId from token
-        // This ensures gymId cannot be manipulated client-side
+        // Log warning but don't block - let backend handle validation
+        // Backend will reject if gymId is truly missing
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn("SECURITY WARNING: Token exists but missing gymId. Backend will validate.");
+        }
       }
     }
 
@@ -115,7 +117,8 @@ axiosInstance.interceptors.request.use(async (request) => {
 
     // STRICT: For all other endpoints, gymId is REQUIRED
     // This is extracted from token, so it's secure and cannot be manipulated
-    // SECURITY: If gymId is missing, we MUST reject the request to prevent data leaks
+    // SECURITY: If gymId is missing, log warning but let backend handle validation
+    // Backend will reject requests without proper gymId validation
     if (gymId && gymId.trim().length > 0) {
       request.headers["gym-id"] = gymId.trim();
       
@@ -133,15 +136,17 @@ axiosInstance.interceptors.request.use(async (request) => {
         }
       }
     } else {
-      // CRITICAL: Missing gymId is a security issue - reject the request
-      console.error(
-        `[SECURITY ERROR] Missing gymId for request: ${request.url}. ` +
-        `This request will be rejected to prevent data leaks.`
-      );
-      // Reject requests without gymId to prevent accessing wrong gym's data
-      return Promise.reject(
-        new Error('Security error: Missing gym identification. Please log out and log in again.')
-      );
+      // SECURITY: Missing gymId - log warning but let backend validate
+      // Backend @ValidatedGymId() decorator will reject if gymId is truly missing
+      // This allows the request to proceed so backend can provide proper error message
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[SECURITY WARNING] Missing gymId for request: ${request.url}. ` +
+          `Backend will validate and reject if gymId is required.`
+        );
+      }
+      // Don't reject here - let backend handle validation for better error messages
+      // The backend will reject with proper error if gymId is required
     }
 
     return request;

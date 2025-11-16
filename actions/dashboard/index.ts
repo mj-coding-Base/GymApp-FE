@@ -130,8 +130,16 @@ export const fetchDailyAttendance = async (
     // Handle the nested response structure
     const apiResponse: DailyAttendanceApiResponse = res.data;
     return apiResponse.data.data;
-  } catch (error) {
-    console.error("Failed to fetch daily attendance data:", error);
+  } catch (error: any) {
+    // Handle 502 Bad Gateway errors gracefully
+    if (error?.response?.status === 502) {
+      console.warn(
+        "Backend service unavailable (502) for daily attendance. " +
+        "This may indicate the backend is starting up or temporarily unavailable."
+      );
+    } else {
+      console.error("Failed to fetch daily attendance data:", error);
+    }
     
     // Return dummy data for development
     const dummyData: DailyAttendanceData[] = [
@@ -257,10 +265,19 @@ export const fetchTodayAttendance = async (): Promise<TodayAttendanceRecord[]> =
     }
     
     return [];
-  } catch (error) {
-    console.error("Failed to fetch today's attendance data:", error);
+  } catch (error: any) {
+    // Handle 502 Bad Gateway errors gracefully
+    if (error?.response?.status === 502) {
+      console.warn(
+        "Backend service unavailable (502). " +
+        "This may indicate the backend is starting up or temporarily unavailable. " +
+        "The request will be retried automatically."
+      );
+    } else {
+      console.error("Failed to fetch today's attendance data:", error);
+    }
     
-    // Return empty array on error
+    // Return empty array on error to prevent UI crashes
     return [];
   }
 };

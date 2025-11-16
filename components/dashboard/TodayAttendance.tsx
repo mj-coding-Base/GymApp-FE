@@ -16,6 +16,9 @@ const TodayAttendance = () => {
   const { user } = useUserDetails();
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecordWithCustomer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 });
+  const [isPolling, setIsPolling] = useState(false);
   const lastRecordIdsRef = useRef<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const customerDataCache = useRef<Map<string, IndividualCustomer | null>>(new Map());
@@ -204,19 +207,142 @@ const TodayAttendance = () => {
     }
   }, []);
 
-  const fetchAttendance = useCallback(async () => {
-    // Only fetch if user is not admin and not full-time
-    if (!shouldFetchAttendance) {
+  // Track which records are currently being loaded
+  const loadingRecordsRef = useRef<Set<string>>(new Set());
+  const isProcessingRef = useRef<boolean>(false);
+  const allRecordsLoadedRef = useRef<boolean>(false);
+
+  // Load a single attendance record with customer data
+  const loadSingleRecord = useCallback(async (
+    record: TodayAttendanceRecord,
+    index: number,
+    total: number
+  ): Promise<void> => {
+    const recordId = record._id;
+    
+    // Skip if already loaded
+    if (todayRecordsMapRef.current.has(recordId)) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[ATTENDANCE] Skipping fetch - user isAdmin:', user?.isAdmin, 'isFullTime:', user?.isFullTime);
+        console.log(`[ATTENDANCE] Record ${recordId} already loaded, skipping`);
       }
-      setLoading(false);
+      return;
+    }
+    
+    // Skip if currently loading
+    if (loadingRecordsRef.current.has(recordId)) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[ATTENDANCE] Record ${recordId} already loading, skipping`);
+      }
+      return;
+    }
+    
+    // Mark as loading
+    loadingRecordsRef.current.add(recordId);
+    
+    try {
+      const clientId = record.clientId || record.customerId;
+      
+      // Fetch customer data for this record
+      let customerData: IndividualCustomer | null = null;
+      if (clientId) {
+        // Check cache first
+        if (customerDataCache.current.has(clientId)) {
+          customerData = customerDataCache.current.get(clientId) || null;
+        } else {
+          // Fetch customer data from backend
+          customerData = await fetchCustomerData(clientId);
+        }
+      }
+      
+      // Create record with customer data
+      const recordWithCustomerData: AttendanceRecordWithCustomer = {
+        ...record,
+        customerData
+      };
+      
+      // Add to persistent map
+      todayRecordsMapRef.current.set(recordId, recordWithCustomerData);
+      
+      // Update state immediately to show this record in UI
+      // Sort by newest first (latest on top, oldest at bottom)
+      const allTodayRecords = Array.from(todayRecordsMapRef.current.values());
+      const sortedData = [...allTodayRecords].sort((a, b) => {
+        const dateA = new Date(a.attendedDateTime).getTime();
+        const dateB = new Date(b.attendedDateTime).getTime();
+        return dateB - dateA; // Newest first (latest on top, oldest at bottom)
+      });
+      setAttendanceRecords(sortedData);
+      
+      // Update loading progress
+      setLoadingProgress({ current: index + 1, total });
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[ATTENDANCE] Loaded record ${index + 1}/${total}: ${recordId} (${record.firstName} ${record.lastName})`);
+      }
+      
+      // Check for unpaid status and play sound if needed
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      today.setMinutes(0);
+      today.setSeconds(0);
+      today.setMilliseconds(0);
+      
+      if (clientId) {
+        const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
+        
+        if (deactivateAt) {
+          const deactivateDate = new Date(deactivateAt);
+          deactivateDate.setHours(0, 0, 0, 0);
+          deactivateDate.setMinutes(0);
+          deactivateDate.setSeconds(0);
+          deactivateDate.setMilliseconds(0);
+          
+          // Check if date has PASSED (before today)
+          const isUnpaid = deactivateDate < today;
+          
+          if (isUnpaid) {
+            const isNewRecord = !lastRecordIdsRef.current.has(recordId);
+            const hasNotBeenNotified = !notifiedUnpaidClientsRef.current.has(clientId);
+            
+            if (isNewRecord || hasNotBeenNotified) {
+              // Mark as notified
+              notifiedUnpaidClientsRef.current.add(clientId);
+              
+              // Play sound immediately when unpaid record is loaded
+              playNotificationSound();
+              
+              if (process.env.NODE_ENV !== 'production') {
+                console.log(`[AUDIO] Detected unpaid customer: ${clientId}, deactivateAt: ${deactivateAt}, isNewRecord: ${isNewRecord}`);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`[ATTENDANCE] Error loading record ${recordId}:`, error);
+      // Continue to next record even if this one fails
+    } finally {
+      // Remove from loading set
+      loadingRecordsRef.current.delete(recordId);
+    }
+  }, [fetchCustomerData, playNotificationSound]);
+
+  // Initial load: Load all records one by one starting from the first (oldest) record
+  const loadAllRecordsSequentially = useCallback(async () => {
+    // Prevent concurrent processing
+    if (isProcessingRef.current) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[ATTENDANCE] Already processing, skipping load');
+      }
       return;
     }
     
     try {
-      // Check for day change first
-      checkAndHandleDayChange();
+      // Mark as processing and set loading states
+      isProcessingRef.current = true;
+      allRecordsLoadedRef.current = false;
+      setIsLoadingRecords(true);
+      setLoading(true);
       
       const data = await fetchTodayAttendance();
       
@@ -228,123 +354,131 @@ const TodayAttendance = () => {
           console.log(`[ATTENDANCE] Fetched ${data.length} total records, ${todayRecords.length} from today`);
         }
         
-        // Check for new records
-        const currentRecordIds = new Set(todayRecords.map(record => record._id));
-        const newRecordIds = todayRecords
-          .map(record => record._id)
-          .filter(id => !todayRecordsMapRef.current.has(id));
+        // Sort records by attendedDateTime ASCENDING (oldest first) - start with first record of the day
+        const sortedTodayRecords = [...todayRecords].sort((a, b) => {
+          const dateA = new Date(a.attendedDateTime).getTime();
+          const dateB = new Date(b.attendedDateTime).getTime();
+          return dateA - dateB; // Oldest first
+        });
         
-        if (process.env.NODE_ENV !== 'production' && newRecordIds.length > 0) {
-          console.log(`[ATTENDANCE] Found ${newRecordIds.length} new record(s):`, newRecordIds);
-        }
-        
-        // Fetch customer data for all records (including existing ones to ensure data is up-to-date)
-        const recordsWithCustomerData: AttendanceRecordWithCustomer[] = await Promise.all(
-          todayRecords.map(async (record) => {
-            const clientId = record.clientId || record.customerId;
-            if (!clientId) {
-              return { ...record, customerData: null };
-            }
-            
-            // Check if we have cached data
-            if (customerDataCache.current.has(clientId)) {
-              const cachedData = customerDataCache.current.get(clientId);
-              return { ...record, customerData: cachedData || null };
-            }
-            
-            // Fetch customer data if not in cache (for new records or existing records without cache)
-            const customerData = await fetchCustomerData(clientId);
-            return { ...record, customerData };
-          })
+        // Filter out already loaded records
+        const newRecords = sortedTodayRecords.filter(
+          record => !todayRecordsMapRef.current.has(record._id)
         );
         
-        // Merge new records into the persistent map (update existing, add new)
-        for (const record of recordsWithCustomerData) {
-          todayRecordsMapRef.current.set(record._id, record);
+        // Initialize loading progress
+        setLoadingProgress({ current: 0, total: newRecords.length });
+        
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[ATTENDANCE] Loading ${newRecords.length} new record(s) sequentially, starting from oldest`);
         }
         
-        // Check for unpaid customers after fetching their data
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        today.setMinutes(0);
-        today.setSeconds(0);
-        today.setMilliseconds(0);
-        
-        // Check each record for unpaid status and play sound when unpaid attendance record is fetched
-        const newlyDetectedUnpaidClients: string[] = [];
-        const isNewRecord = (recordId: string) => !lastRecordIdsRef.current.has(recordId);
-        
-        for (const record of recordsWithCustomerData) {
-          const clientId = record.clientId || record.customerId;
-          if (!clientId) continue;
+        // Load records one at a time, starting from the first (oldest) record
+        for (let i = 0; i < newRecords.length; i++) {
+          await loadSingleRecord(newRecords[i], i, newRecords.length);
           
-          const customerData = record.customerData || customerDataCache.current.get(clientId);
-          const deactivateAt = customerData?.deactivateAt || record.deactivateAt;
-          
-          if (!deactivateAt) continue;
-          
-          const deactivateDate = new Date(deactivateAt);
-          deactivateDate.setHours(0, 0, 0, 0);
-          deactivateDate.setMinutes(0);
-          deactivateDate.setSeconds(0);
-          deactivateDate.setMilliseconds(0);
-          
-          // Check if date has PASSED (before today)
-          const isUnpaid = deactivateDate < today;
-          
-          if (!isUnpaid) continue;
-          
-          // Play sound when unpaid user attendance record is fetched
-          // Check if this is a new attendance record OR if we haven't notified for this client yet
-          const isNewAttendanceRecord = isNewRecord(record._id);
-          const hasNotBeenNotified = !notifiedUnpaidClientsRef.current.has(clientId);
-          
-          if (isNewAttendanceRecord || hasNotBeenNotified) {
-            // Mark as notified
-            notifiedUnpaidClientsRef.current.add(clientId);
-            newlyDetectedUnpaidClients.push(clientId);
-            
-            if (process.env.NODE_ENV !== 'production') {
-              console.log(`[AUDIO] Detected unpaid customer: ${clientId}, deactivateAt: ${deactivateAt}, isNewRecord: ${isNewAttendanceRecord}`);
-            }
-          }
-        }
-        
-        // Play sound when unpaid user attendance record is fetched
-        if (newlyDetectedUnpaidClients.length > 0) {
-          playNotificationSound();
-          if (process.env.NODE_ENV !== 'production') {
-            console.log(`[AUDIO] Playing notification for ${newlyDetectedUnpaidClients.length} unpaid customer(s):`, newlyDetectedUnpaidClients);
+          // Small delay between records to create visible progressive loading effect
+          if (i < newRecords.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 150)); // 150ms delay for better UX
           }
         }
         
         // Update last seen record IDs
+        const currentRecordIds = new Set(sortedTodayRecords.map(record => record._id));
         lastRecordIdsRef.current = currentRecordIds;
         
-        // Get all records from the persistent map and sort by attendedDateTime descending (newest first)
-        const allTodayRecords = Array.from(todayRecordsMapRef.current.values());
-        const sortedData = [...allTodayRecords].sort((a, b) => {
-          const dateA = new Date(a.attendedDateTime).getTime();
-          const dateB = new Date(b.attendedDateTime).getTime();
-          return dateB - dateA;
-        });
-        
-        // Update state with ALL records from today (no limit)
-        setAttendanceRecords(sortedData);
+        // Mark all records as loaded
+        allRecordsLoadedRef.current = true;
         
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`[ATTENDANCE] State updated with ${sortedData.length} total record(s) for today`);
+          console.log(`[ATTENDANCE] Finished loading all records sequentially. Total: ${todayRecordsMapRef.current.size}`);
         }
       }
     } catch (error) {
-      console.error("Error fetching today's attendance:", error);
+      console.error("Error loading attendance records:", error);
     } finally {
       setLoading(false);
+      setIsLoadingRecords(false);
+      setLoadingProgress({ current: 0, total: 0 });
+      isProcessingRef.current = false;
     }
-  }, [fetchCustomerData, playNotificationSound, checkAndHandleDayChange, isRecordFromToday, shouldFetchAttendance, user]);
+  }, [loadSingleRecord, isRecordFromToday]);
+
+  // Poll for new records (only checks for latest/new records)
+  const pollForNewRecords = useCallback(async () => {
+    // Only poll if all initial records are loaded
+    if (!allRecordsLoadedRef.current) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[ATTENDANCE] Initial load not complete, skipping poll');
+      }
+      return;
+    }
+    
+    // Prevent concurrent processing
+    if (isProcessingRef.current) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[ATTENDANCE] Already processing, skipping poll');
+      }
+      return;
+    }
+    
+    try {
+      // Mark as processing and set polling state
+      isProcessingRef.current = true;
+      setIsPolling(true);
+      
+      const data = await fetchTodayAttendance();
+      
+      if (Array.isArray(data)) {
+        // Filter only records from today
+        const todayRecords = data.filter(record => isRecordFromToday(record.attendedDateTime));
+        
+        // Sort by newest first to get the latest records
+        const sortedTodayRecords = [...todayRecords].sort((a, b) => {
+          const dateA = new Date(a.attendedDateTime).getTime();
+          const dateB = new Date(b.attendedDateTime).getTime();
+          return dateB - dateA; // Newest first
+        });
+        
+        // Find new records (not in our map)
+        const newRecords = sortedTodayRecords.filter(
+          record => !todayRecordsMapRef.current.has(record._id)
+        );
+        
+        if (newRecords.length > 0) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[ATTENDANCE] Found ${newRecords.length} new record(s) during poll`);
+          }
+          
+          // Load new records one at a time (newest first for new records)
+          for (let i = 0; i < newRecords.length; i++) {
+            await loadSingleRecord(newRecords[i], i, newRecords.length);
+            
+            // Small delay between records
+            if (i < newRecords.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 150));
+            }
+          }
+          
+          // Update last seen record IDs
+          const currentRecordIds = new Set(sortedTodayRecords.map(record => record._id));
+          lastRecordIdsRef.current = currentRecordIds;
+        } else {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[ATTENDANCE] No new records found during poll');
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error polling for new attendance records:", error);
+    } finally {
+      isProcessingRef.current = false;
+      setIsPolling(false);
+    }
+  }, [loadSingleRecord, isRecordFromToday]);
 
   useEffect(() => {
-    // Only set up polling if user should fetch attendance
+    // Only set up if user should fetch attendance
     if (!shouldFetchAttendance) {
       setLoading(false);
       return;
@@ -353,15 +487,26 @@ const TodayAttendance = () => {
     // Initialize current day
     currentDayRef.current = getCurrentDayString();
     
-    // Initial fetch
-    fetchAttendance();
+    // Reset flags for new day
+    allRecordsLoadedRef.current = false;
+    isProcessingRef.current = false;
     
-    // Set up interval to fetch every 2.5 seconds
-    const intervalId = setInterval(fetchAttendance, 2500);
+    // Initial load: Load all records one by one starting from the first (oldest) record
+    loadAllRecordsSequentially();
+    
+    // Set up polling for new records every 10 seconds (only after initial load is complete)
+    const pollIntervalId = setInterval(() => {
+      pollForNewRecords();
+    }, 10000); // Poll every 10 seconds
     
     // Set up day change checker - check every minute to detect day change
     const dayCheckIntervalId = setInterval(() => {
       checkAndHandleDayChange();
+      // Reset flags when day changes
+      if (currentDayRef.current !== getCurrentDayString()) {
+        allRecordsLoadedRef.current = false;
+        isProcessingRef.current = false;
+      }
     }, 60000); // Check every minute
     
     // Set up midnight reset - calculate time until next midnight
@@ -374,16 +519,19 @@ const TodayAttendance = () => {
     
     const midnightTimeoutId = setTimeout(() => {
       resetForNewDay();
-      // After reset, fetch new day's attendance
-      fetchAttendance();
+      // Reset flags for new day
+      allRecordsLoadedRef.current = false;
+      isProcessingRef.current = false;
+      // After reset, load new day's attendance sequentially
+      loadAllRecordsSequentially();
     }, msUntilMidnight);
     
     return () => {
-      clearInterval(intervalId);
+      clearInterval(pollIntervalId);
       clearInterval(dayCheckIntervalId);
       clearTimeout(midnightTimeoutId);
     };
-  }, [fetchAttendance, getCurrentDayString, checkAndHandleDayChange, resetForNewDay, shouldFetchAttendance]);
+  }, [loadAllRecordsSequentially, pollForNewRecords, getCurrentDayString, checkAndHandleDayChange, resetForNewDay, shouldFetchAttendance]);
 
   const isUnpaid = (record: AttendanceRecordWithCustomer): boolean => {
     const clientId = record.clientId || record.customerId;
@@ -539,8 +687,14 @@ const TodayAttendance = () => {
           
           if (loading && attendanceRecords.length === 0) {
             return (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center justify-center h-full gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3D3D3D]"></div>
                 <p className="text-[12px] text-[#6D6D6D]">Loading attendance...</p>
+                {loadingProgress.total > 0 && (
+                  <p className="text-[10px] text-[#6D6D6D]">
+                    {loadingProgress.current} / {loadingProgress.total} records
+                  </p>
+                )}
               </div>
             );
           }
@@ -551,8 +705,40 @@ const TodayAttendance = () => {
               </div>
             );
           }
+          
+          // Show loading indicator at top when polling for new records
+          const showPollingIndicator = isPolling && allRecordsLoadedRef.current;
+          
           return (
-          <div className="flex flex-col gap-[8px] ">
+          <div className="flex flex-col gap-[8px]">
+            {/* Polling indicator */}
+            {showPollingIndicator && (
+              <div className="flex items-center justify-center py-2">
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#3D3D3D]"></div>
+                  <p className="text-[10px] text-[#6D6D6D]">Checking for new records...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Loading progress indicator */}
+            {isLoadingRecords && loadingProgress.total > 0 && (
+              <div className="flex items-center justify-center py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-32 bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className="bg-[#3D3D3D] h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(loadingProgress.current / loadingProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-[10px] text-[#6D6D6D]">
+                    {loadingProgress.current} / {loadingProgress.total}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Attendance records - newest on top, oldest at bottom */}
             {attendanceRecords.map((record) => {
               const clientId = record.clientId || record.customerId;
               // Get customer data from record first, then from cache
