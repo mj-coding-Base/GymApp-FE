@@ -156,13 +156,13 @@ function AddNewGroup() {
       packageId: data.package,
     };
 
-    // Gather auth headers (fallback if interceptor/token missing)
+    // SECURITY: Extract gymId from JWT token (signed, cannot be manipulated)
+    // NEVER use localStorage gymId - it's a security vulnerability
     const hasWindow = typeof globalThis !== 'undefined' && (globalThis as { window?: unknown }).window !== undefined;
     let token = hasWindow ? localStorage.getItem("x-auth-token") : null;
-    let gymId = hasWindow ? localStorage.getItem("gym-id") : null;
 
     // Fallback: read from user-details cookie
-    if (hasWindow && (!token || !gymId)) {
+    if (hasWindow && !token) {
       try {
         const cookieStr = document.cookie || '';
         const userCookie = cookieStr
@@ -172,15 +172,20 @@ function AddNewGroup() {
         if (userCookie) {
           const decoded = decodeURIComponent(userCookie);
           const parsed = JSON.parse(decoded);
-          token = token || parsed?.token || null;
-          gymId = gymId || parsed?.gymId || null;
-          // Prime localStorage for subsequent requests
+          token = parsed?.token || null;
+          // SECURITY: Only store token, never gymId
           if (token) localStorage.setItem('x-auth-token', token);
-          if (gymId) localStorage.setItem('gym-id', gymId);
         }
       } catch (e) {
         console.error('Failed to read auth from cookies', e);
       }
+    }
+
+    // SECURITY: Extract gymId from token (signed source of truth)
+    let gymId: string | null = null;
+    if (token) {
+      const { getGymIdFromToken } = await import('@/utils/jwt');
+      gymId = getGymIdFromToken(token);
     }
 
     if (!token) {

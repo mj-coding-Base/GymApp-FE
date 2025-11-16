@@ -10,6 +10,7 @@ export interface JWTPayload {
   user_type: string;
   gymId?: string;
   memberId?: string;
+  tokenId?: string; // Unique token identifier for session management
   iat?: number;
   exp?: number;
 }
@@ -72,4 +73,15 @@ export function getMemberIdFromToken(token: string | null | undefined): string |
   if (!token) return null;
   const payload = decodeJWT(token);
   return payload?.memberId || null;
+}
+
+/**
+ * Extracts tokenId from a JWT token
+ * @param token - The JWT token
+ * @returns The tokenId if present, null otherwise
+ */
+export function getTokenIdFromToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  const payload = decodeJWT(token);
+  return payload?.tokenId || null;
 }

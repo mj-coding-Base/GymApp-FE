@@ -24,17 +24,8 @@ export const useAuth = () => {
       setToken(null);
     }
   };
-  const saveGymId = (gymId: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("gym-id", gymId);
-      setGymId(gymId);
-    }
-  };
-    const clearGymId = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("gym-id");
-      setGymId(null);
-    }
-  };
-  return { token,gymId, saveToken, clearToken ,saveGymId,clearGymId};
+  // SECURITY: Removed saveGymId/clearGymId - gymId should NEVER be stored in localStorage
+  // gymId must always be extracted from JWT token (signed, cannot be manipulated)
+  // Storing gymId in localStorage is a security vulnerability
+  return { token, gymId, saveToken, clearToken };
 };

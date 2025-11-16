@@ -12,6 +12,7 @@ import { signIn } from "@/actions/auth";
 import { refreshAccessToken } from "@/actions/auth/refresh-token";
 import { Session } from "@/types/auth";
 import { getGymIdFromToken, getMemberIdFromToken } from "@/utils/jwt";
+import axios from "@/utils/axios";
 
 const secretKey = process.env.JWT_SECRET || "secret123";
 const key = new TextEncoder().encode(secretKey);
@@ -139,10 +140,30 @@ export async function login(data: {
 }
 
 export async function logout() {
-  // ⚡ PERFORMANCE: Fast logout - clear cookies only
+  try {
+    // SECURITY: Call backend logout endpoint to revoke session in Redis
+    // This ensures the session is properly invalidated server-side
+    const session = await getSession();
+    if (session?.user?.token) {
+      try {
+        // Call backend logout endpoint to revoke session
+        await axios.post("/admin/admin-management/logout");
+      } catch (logoutError) {
+        // Log error but continue with local cleanup
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn("Backend logout failed, continuing with local cleanup:", logoutError);
+        }
+      }
+    }
+  } catch (error) {
+    // Continue with cleanup even if session retrieval fails
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn("Logout error:", error);
+    }
+  }
+
+  // Clear cookies
   const cookieStore = await cookies();
-  
-  // Clear both cookies
   cookieStore.set("session-gymapp-admin", "", { 
     expires: new Date(0),
     path: "/",
@@ -154,8 +175,13 @@ export async function logout() {
     path: "/",
   });
   
-  // Clear localStorage on client side (done in the component)
-  // This avoids any server-side operations that could slow down logout
+  // Clear localStorage on client side
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem("x-auth-token");
+    localStorage.removeItem("refresh-token");
+    // SECURITY: Remove any gymId from localStorage (should never be stored)
+    localStorage.removeItem("gym-id");
+  }
 }
 
 // Get the session
