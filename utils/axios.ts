@@ -15,23 +15,45 @@ const axiosInstance = axios.create({
 // can cause cross-request contamination (wrong gymId/token used for another user).
 // Always retrieve session per-request on the server to ensure correct isolation.
 
-// Flag to prevent multiple simultaneous refresh attempts
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (reason?: any) => void;
-}> = [];
+// 🔒 CRITICAL SECURITY: Per-gym token refresh state to prevent cross-tenant interference
+// Each gym has its own refresh state to ensure concurrent requests from different gyms don't interfere
+const refreshStateByGym = new Map<string, {
+  isRefreshing: boolean;
+  failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }>;
+}>();
 
-const processQueue = (error: Error | null, token: string | null = null): void => {
-  for (const prom of failedQueue) {
+const getRefreshState = (gymId: string | null): {
+  isRefreshing: boolean;
+  failedQueue: Array<{ resolve: (value?: any) => void; reject: (reason?: any) => void }>;
+} => {
+  if (!gymId) {
+    // Fallback for requests without gymId (shouldn't happen for authenticated requests)
+    const defaultKey = '__default__';
+    if (!refreshStateByGym.has(defaultKey)) {
+      refreshStateByGym.set(defaultKey, { isRefreshing: false, failedQueue: [] });
+    }
+    return refreshStateByGym.get(defaultKey)!;
+  }
+  
+  if (!refreshStateByGym.has(gymId)) {
+    refreshStateByGym.set(gymId, { isRefreshing: false, failedQueue: [] });
+  }
+  return refreshStateByGym.get(gymId)!;
+};
+
+const processQueue = (gymId: string | null, error: Error | null, token: string | null = null): void => {
+  const state = getRefreshState(gymId);
+  for (const prom of state.failedQueue) {
     if (error) {
       prom.reject(error);
     } else {
       prom.resolve(token);
     }
   }
-  
-  failedQueue = [];
+  state.failedQueue = [];
 };
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
@@ -136,6 +158,11 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
       
+      // 🔒 SECURITY: Extract gymId from the original request token to get per-gym refresh state
+      const originalToken = originalRequest.headers?.["x-auth-token"] as string | undefined;
+      const requestGymId = originalToken ? getGymIdFromToken(originalToken) : null;
+      const refreshState = getRefreshState(requestGymId);
+      
       // Prevent infinite retry loops
       if (originalRequest._retry) {
         // Clear auth on final failure
@@ -143,13 +170,17 @@ axiosInstance.interceptors.response.use(
           localStorage.removeItem("x-auth-token");
           localStorage.removeItem("refresh-token");
         }
+        // Clear refresh state for this gym
+        if (requestGymId) {
+          refreshStateByGym.delete(requestGymId);
+        }
         return Promise.reject(error);
       }
 
-      // If we're already refreshing, queue this request
-      if (isRefreshing) {
+      // If we're already refreshing for THIS gym, queue this request
+      if (refreshState.isRefreshing) {
         return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
+          refreshState.failedQueue.push({ resolve, reject });
         })
           .then((token) => {
             if (originalRequest.headers) {
@@ -163,7 +194,7 @@ axiosInstance.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      isRefreshing = true;
+      refreshState.isRefreshing = true;
 
       return refreshToken()
         // eslint-disable-next-line sonarjs/cognitive-complexity
@@ -184,12 +215,28 @@ axiosInstance.interceptors.response.use(
                 // eslint-disable-next-line no-console
                 console.error("SECURITY: Refreshed token missing gymId");
               }
-              processQueue(new Error("Refreshed token missing gymId"));
+              processQueue(requestGymId, new Error("Refreshed token missing gymId"));
               if (globalThis.window !== undefined) {
                 localStorage.removeItem("x-auth-token");
                 localStorage.removeItem("refresh-token");
               }
+              // Clear refresh state for this gym
+              if (requestGymId) {
+                refreshStateByGym.delete(requestGymId);
+              }
               throw new Error("Security error: Invalid refreshed token");
+            }
+
+            // 🔒 SECURITY: Validate new token's gymId matches original request's gymId
+            if (requestGymId && newTokenGymId !== requestGymId) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.error(`SECURITY: GymId mismatch during refresh. Expected ${requestGymId}, got ${newTokenGymId}`);
+              }
+              processQueue(requestGymId, new Error("GymId mismatch during token refresh"));
+              if (requestGymId) {
+                refreshStateByGym.delete(requestGymId);
+              }
+              throw new Error("Security error: GymId mismatch during token refresh");
             }
 
             // Update cache with new token (gymId is in token, not stored separately)
@@ -205,32 +252,40 @@ axiosInstance.interceptors.response.use(
               // 🔒 SECURITY: Do NOT send gym-id header - backend extracts from JWT token
             }
 
-            // Process queued requests with new token
-            processQueue(null, refreshResult.token);
+            // Process queued requests for THIS gym with new token
+            processQueue(requestGymId, null, refreshResult.token);
 
             // Retry original request
             return axiosInstance(originalRequest);
           }
           // Refresh failed
-          processQueue(new Error("Token refresh failed"));
+          processQueue(requestGymId, new Error("Token refresh failed"));
           if (globalThis.window !== undefined) {
             localStorage.removeItem("x-auth-token");
             localStorage.removeItem("refresh-token");
+          }
+          // Clear refresh state for this gym
+          if (requestGymId) {
+            refreshStateByGym.delete(requestGymId);
           }
           throw error;
         })
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .catch((_refreshError) => {
-          // Refresh failed, reject all queued requests
-          processQueue(_refreshError);
+          // Refresh failed, reject all queued requests for THIS gym
+          processQueue(requestGymId, _refreshError);
           if (globalThis.window !== undefined) {
             localStorage.removeItem("x-auth-token");
             localStorage.removeItem("refresh-token");
           }
+          // Clear refresh state for this gym
+          if (requestGymId) {
+            refreshStateByGym.delete(requestGymId);
+          }
           throw _refreshError;
         })
         .finally(() => {
-          isRefreshing = false;
+          refreshState.isRefreshing = false;
         });
     }
 

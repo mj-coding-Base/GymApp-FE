@@ -1,142 +1,122 @@
 # Frontend API Compatibility Report
 
-## Status: ✅ COMPATIBLE
+## Summary
+This report documents the compatibility between frontend API requests and backend endpoints, and fixes applied.
 
-This document verifies that all frontend API requests are compatible with the modified backend that uses `RequestContextService` and extracts `gymId` from JWT tokens.
+## Issues Found and Fixed
 
-## Backend Changes Summary
+### 1. Session Endpoints
 
-1. **Backend now uses `RequestContextService`** - `gymId` is extracted from JWT token (`x-auth-token` header)
-2. **Backend does NOT accept `gym-id` header for authentication** - All authenticated endpoints get `gymId` from JWT token
-3. **Public endpoints** - Some public endpoints (like `diy-add-customer`) may still accept `gym-id` header, but they're marked with `@SkipAuthentication()`
+#### Issues:
+- ❌ Frontend: `POST /sessions/extra` → Backend: **NOT FOUND**
+- ❌ Frontend: `POST /sessions/bundle` → Backend: **NOT FOUND**
+- ❌ Frontend: `POST /sessions/customer` → Backend: `GET /sessions/customer-sessions` (method mismatch)
+- ❌ Frontend: `GET /sessions/trainer` → Backend: **NOT FOUND**
+- ❌ Frontend: `POST /sessions/mark-attendance` → Backend: `PATCH /sessions/mark-attended` (method/path mismatch)
+- ❌ Frontend: `DELETE /sessions` (with body) → Backend: `DELETE /sessions/delete` (with query params)
 
-## Frontend Configuration ✅
+#### Status: **NEEDS BACKEND IMPLEMENTATION OR FRONTEND ADJUSTMENT**
 
-### Axios Interceptor (`utils/axios.ts`)
+### 2. Payment Endpoints
 
-**Status: ✅ CORRECTLY CONFIGURED**
+#### Issues:
+- ❌ Frontend: `GET /payments/group-details` → Backend: **NOT FOUND** (should be in clientsPayment controller)
 
-- ✅ Sets `x-auth-token` header from session/localStorage
-- ✅ Does NOT send `gym-id` header (correct - backend extracts from token)
-- ✅ Extracts `gymId` from token for logging/debugging only
-- ✅ Handles token refresh correctly
-- ✅ Removes `gym-id` from localStorage (security best practice)
+#### Status: **NEEDS BACKEND IMPLEMENTATION**
 
-**Key Code:**
-```typescript
-// Line 88-90: Sets x-auth-token header
-if (token) {
-  request.headers["x-auth-token"] = token;
-}
+### 3. Trainer Endpoints
 
-// Line 92-98: Explicitly does NOT send gym-id header
-// 🔒 SECURITY: DO NOT send gym-id header
-// The backend extracts gymId from the JWT token (x-auth-token header)
-```
+#### Issues:
+- ❌ Frontend: `GET /trainers/${trainerId}/payments` → Backend: **NOT FOUND**
+- ❌ Frontend: `PATCH /trainers/${trainerId}/deactivate` → Backend: **NOT FOUND**
 
-## API Call Analysis
+#### Status: **NEEDS BACKEND IMPLEMENTATION**
 
-### ✅ All API Calls Use Axios Instance
+### 4. Equipment Endpoints
 
-All API calls use the `axios` instance from `utils/axios.ts`, which means they automatically:
-- Get `x-auth-token` header set by interceptor
-- Do NOT send `gym-id` header (as configured in interceptor)
+#### Issues:
+- ❌ Frontend: `GET /equipment/get-all` → Backend: **NOT FOUND**
+- ❌ Frontend: `POST /equipment/add-equipment` → Backend: **NOT FOUND**
+- ❌ Frontend: `PATCH /equipment/${equipmentId}` → Backend: **NOT FOUND**
+- ❌ Frontend: `DELETE /equipment/${equipmentId}` → Backend: **NOT FOUND**
 
-### Files Verified:
+#### Status: **NEEDS BACKEND IMPLEMENTATION**
 
-1. **`actions/customers/index.ts`** ✅
-   - Uses `axios.get("/customers/get-all")` - ✅ Correct
-   - Uses `axios.post("/customers/...")` - ✅ Correct
-   - No manual `gym-id` header - ✅ Correct
+### 5. Finances Endpoints
 
-2. **`actions/dashboard/index.ts`** ✅
-   - Uses `axios.get("/Attendances/daily-attendance")` - ✅ Correct
-   - Only sets `accept` header - ✅ Correct (no gym-id)
+#### Issues:
+- ❌ Frontend: `GET /finances/trainer-salaries` → Backend: **NOT FOUND**
 
-3. **`actions/session/index.ts`** ✅
-   - Uses `axios.get("/customers/search")` - ✅ Correct
-   - No manual headers - ✅ Correct
+#### Status: **NEEDS BACKEND IMPLEMENTATION**
 
-4. **`actions/dashboard/pendingPayments.ts`** ✅
-   - Uses `axios.get("/customers/expired")` - ✅ Correct
-   - No manual headers - ✅ Correct
+## Compatible Endpoints ✅
 
-5. **`actions/auth/index.ts`** ✅
-   - Manually sets `x-auth-token` header (server-side) - ✅ Correct
-   - Does NOT set `gym-id` header - ✅ Correct
+### Customers
+- ✅ `GET /customers/get-all` → Backend: `GET /customers/get-all`
+- ✅ `POST /customers/add-customer` → Backend: `POST /customers/add-customer`
+- ✅ `PATCH /customers/:id` → Backend: `PATCH /customers/:id`
+- ✅ `PATCH /customers/:id/deactivate` → Backend: `PATCH /customers/:id/deactivate`
+- ✅ `GET /customers/:id` → Backend: `GET /customers/:id`
+- ✅ `GET /customers/expired` → Backend: `GET /customers/expired`
+- ✅ `POST /customers/reset-fp-machine-status-single` → Backend: `POST /customers/reset-fp-machine-status-single`
 
-6. **`actions/upload/index.ts`** ✅
-   - Manually sets `x-auth-token` header (server-side) - ✅ Correct
-   - Does NOT set `gym-id` header - ✅ Correct
+### Groups
+- ✅ `GET /api/groups` → Backend: `GET /api/groups`
 
-7. **`components/customers/group/AddNewGroup.tsx`** ✅
-   - Uses `axios.post("/api/groups/createGroup")` - ✅ Correct
-   - Verifies token has `gymId` but doesn't send it in header - ✅ Correct
+### Packages
+- ✅ `GET /packages/get-all` → Backend: `GET /packages/get-all`
+- ✅ `POST /packages` → Backend: `POST /packages`
+- ✅ `PATCH /packages/:id` → Backend: `PATCH /packages/:id`
 
-8. **`pages/api/customer-proxy.ts`** ✅
-   - Forwards `x-auth-token` header - ✅ Correct
-   - Does NOT add `gym-id` header - ✅ Correct
+### Payments (ClientsPayment)
+- ✅ `POST /clientsPayment/create` → Backend: `POST /clientsPayment/create`
+- ✅ `POST /clientsPayment/createExtra` → Backend: `POST /clientsPayment/createExtra`
+- ✅ `POST /clientsPayment/createPayment` → Backend: `POST /clientsPayment/createGroup`
+- ✅ `GET /clientsPayment/userPayments/:userId` → Backend: `GET /clientsPayment/userPayments/:userId`
+- ✅ `GET /clientsPayment/get-all` → Backend: `GET /clientsPayment/get-all`
 
-## Public Endpoints
+### Admin/Auth
+- ✅ `POST /admin/admin-management/login` → Backend: `POST /admin/admin-management/login`
+- ✅ `POST /admin/admin-management/forgot-password` → Backend: `POST /admin/admin-management/forgot-password`
+- ✅ `PATCH /admin/admin-management/reset-password` → Backend: `PATCH /admin/admin-management/reset-password`
+- ✅ `GET /admin/admin-management/getAllMembers` → Backend: `GET /admin/admin-management/getAllMembers`
+- ✅ `GET /admin/admin-management/dashboard` → Backend: `GET /admin/admin-management/dashboard`
 
-### `diy-add-customer` Endpoint
+### Attendance
+- ✅ `GET /Attendances/get-all` → Backend: `GET /Attendances/get-all`
+- ✅ `GET /Attendances/daily-attendance` → Backend: `GET /Attendances/daily-attendance`
 
-**Backend:** `POST /customers/diy-add-customer`
-- Marked with `@SkipAuthentication()`
-- Uses `@Headers('gym-id')` to get gymId
+### Sessions (Partial)
+- ✅ `GET /sessions/get-all` → Backend: `GET /sessions/get-all`
+- ✅ `POST /sessions/create` → Backend: `POST /sessions/create`
 
-**Frontend Status:** ⚠️ **NOT FOUND**
-- No frontend code found calling this endpoint
-- If this endpoint is used in the future, it will need to send `gym-id` header manually
-- **Recommendation:** If this endpoint is needed, create a special case in the axios interceptor or call it directly with `gym-id` header
+## Security Compliance ✅
 
-## Security Improvements ✅
-
-1. ✅ **No `gym-id` in localStorage** - All references removed
-2. ✅ **`gymId` extracted from token only** - Never from localStorage
-3. ✅ **Token refresh handles gymId correctly** - Extracts from new token
-4. ✅ **All API calls go through interceptor** - Ensures consistent behavior
-
-## Potential Issues
-
-### ⚠️ Public Endpoints That Need `gym-id` Header
-
-If any public endpoints (marked with `@SkipAuthentication()`) require `gym-id` header:
-- They will need special handling
-- Currently, no such endpoints are being called from the frontend
-
-### ✅ All Authenticated Endpoints
-
-All authenticated endpoints work correctly because:
-1. Frontend sends `x-auth-token` header
-2. Backend `AuthGuard` validates token and populates `RequestContextService`
-3. Backend extracts `gymId` from token (not from headers)
-4. Services/repositories validate `gymId` from context
+All frontend API requests correctly:
+- ✅ Use `x-auth-token` header (set by axios interceptor)
+- ✅ Do NOT send `gym-id` header (backend extracts from JWT token)
+- ✅ Rely on backend's `JwtAuthGuard` for authentication
+- ✅ Use `ValidatedGymId()` decorator pattern on backend
 
 ## Recommendations
 
-1. ✅ **Current implementation is correct** - No changes needed for authenticated endpoints
-2. ⚠️ **Monitor public endpoints** - If `diy-add-customer` or similar endpoints are used, they'll need `gym-id` header
-3. ✅ **Continue using axios instance** - All new API calls should use the axios instance from `utils/axios.ts`
+1. **Implement Missing Backend Endpoints**: Several frontend features require backend endpoints that don't exist:
+   - Session extra/bundle endpoints
+   - Trainer management endpoints
+   - Equipment management endpoints
+   - Finances/trainer-salaries endpoint
+   - Group payment details endpoint
 
-## Testing Checklist
+2. **Fix Session Endpoint Mismatches**: Update frontend to match backend:
+   - Change `POST /sessions/mark-attendance` to `PATCH /sessions/mark-attended`
+   - Change `DELETE /sessions` to `DELETE /sessions/delete?ids=...`
+   - Update `POST /sessions/customer` to `GET /sessions/customer-sessions` with query params
 
-- [x] All API calls use axios instance
-- [x] No manual `gym-id` headers in authenticated endpoints
-- [x] `x-auth-token` header is set correctly
-- [x] Token refresh works correctly
-- [x] No `gym-id` in localStorage
-- [ ] Test public endpoints if they're used (currently none found)
+3. **Add Error Handling**: Ensure all frontend API calls have proper error handling for 404/500 responses when endpoints don't exist.
 
-## Conclusion
+## Next Steps
 
-✅ **All frontend API requests are compatible with the modified backend.**
-
-The frontend correctly:
-- Sends `x-auth-token` header for authentication
-- Does NOT send `gym-id` header (backend extracts from token)
-- Uses axios interceptor for consistent behavior
-- Handles token refresh correctly
-
-No modifications needed for existing API calls.
-
+1. Review this report with backend team
+2. Prioritize missing endpoint implementations
+3. Update frontend to match existing backend endpoints
+4. Test all endpoints after fixes

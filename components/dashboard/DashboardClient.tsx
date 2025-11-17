@@ -2,7 +2,8 @@
 
 import { DashboardData, fetchDashboardData } from "@/actions/dashboard";
 import { dashboardCache } from "@/lib/dashboardCache";
-import { useEffect, useState } from "react";
+import { getGymIdFromToken } from "@/utils/jwt";
+import { useEffect, useState, useRef } from "react";
 import Dashboard from "./Dashboard";
 import DashboardSkeleton from "./DashboardSkeleton";
 
@@ -11,15 +12,71 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ userName }: DashboardClientProps) {
-  // Initialize with cached data immediately for instant load!
+  // Track current gymId to detect user switches
+  const currentGymIdRef = useRef<string | null>(null);
+  
+  // Initialize with cached data, but validate gymId first
   const [data, setData] = useState<DashboardData | null>(() => {
-    // This runs only once on mount - instant cache check
-    return dashboardCache.get();
+    // 🔒 SECURITY: Validate cache belongs to current gym before using
+    const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+    if (!currentGymId) {
+      // No token = no cache
+      return null;
+    }
+    
+    currentGymIdRef.current = currentGymId;
+    const cached = dashboardCache.get();
+    
+    // If cache exists, it's already gym-specific (after our fix)
+    return cached;
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // 🔒 SECURITY: Check if gymId changed (user switch)
+    const checkGymIdChange = () => {
+      const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+      
+      if (currentGymId && currentGymId !== currentGymIdRef.current) {
+        // Gym changed! Clear state and cache
+        console.log(`[SECURITY] GymId changed from ${currentGymIdRef.current} to ${currentGymId}. Clearing cache.`);
+        currentGymIdRef.current = currentGymId;
+        setData(null);
+        dashboardCache.clearAll();
+        return true; // Indicates change detected
+      }
+      
+      if (!currentGymIdRef.current && currentGymId) {
+        // First time setting gymId
+        currentGymIdRef.current = currentGymId;
+      }
+      
+      return false;
+    };
+    
+    // Check immediately
+    checkGymIdChange();
+    
+    // Listen for storage changes (token updates)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'x-auth-token') {
+        if (checkGymIdChange()) {
+          // Force refetch if gymId changed
+          window.location.reload(); // Most reliable way to clear all state
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also poll periodically to catch changes in same window (storage event only fires in other tabs)
+    const pollInterval = setInterval(() => {
+      if (checkGymIdChange()) {
+        window.location.reload(); // Force full reload on gym change
+      }
+    }, 1000); // Check every second
+    
     // Function to fetch fresh data
     const fetchFreshData = async () => {
       try {
@@ -27,6 +84,13 @@ export default function DashboardClient({ userName }: DashboardClientProps) {
         setError(null);
         
         const freshData = await fetchDashboardData();
+        
+        // 🔒 SECURITY: Validate fresh data belongs to current gym
+        const freshGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+        if (freshGymId !== currentGymIdRef.current) {
+          console.warn(`[SECURITY] GymId mismatch during fetch. Expected ${currentGymIdRef.current}, got ${freshGymId}. Discarding data.`);
+          return; // Don't set data if gymId changed
+        }
         
         if (freshData) {
           setData(freshData);
@@ -50,7 +114,11 @@ export default function DashboardClient({ userName }: DashboardClientProps) {
     const intervalId = setInterval(fetchFreshData, 5 * 60 * 1000);
 
     // Cleanup
-    return () => clearInterval(intervalId);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
+      clearInterval(intervalId);
+    };
   }, []); // Empty deps - only run on mount
 
   if (!data) {

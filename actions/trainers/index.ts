@@ -28,6 +28,9 @@ export interface PaymentData {
 
 export async function getTrainerPayments(trainerId: string): Promise<PaymentData[]> {
   try {
+    // NOTE: Backend endpoint /trainers/${trainerId}/payments doesn't exist yet
+    // Backend needs to implement trainer payment endpoints
+    // This will fail until backend implements the endpoint
     const response = await axios.get(`/trainers/${trainerId}/payments`);
     return response.data.map((payment: any) => ({
       id: payment._id,
@@ -70,6 +73,9 @@ export const deactivateTrainer = async (
   message?: string;
 }> => {
   try {
+    // NOTE: Backend endpoint /trainers/${trainerId}/deactivate doesn't exist yet
+    // Backend needs to implement trainer deactivation endpoint
+    // This will fail until backend implements the endpoint
     await axios.patch(`/trainers/${trainerId}/deactivate`);
     return {
       status: "SUCCESS",

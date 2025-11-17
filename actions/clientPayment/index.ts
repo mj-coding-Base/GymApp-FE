@@ -15,7 +15,8 @@ interface GroupPaymentData {
 
 export const collectGroupPayment = async (data: GroupPaymentData) => {
   try {
-    const response = await axios.post("/clientsPayment/createPayment", data);
+    // Backend endpoint is /clientsPayment/createGroup, not /clientsPayment/createPayment
+    const response = await axios.post("/clientsPayment/createGroup", data);
     
     return {
       status: "SUCCESS",
@@ -67,10 +68,13 @@ interface GroupPaymentDetailsParams {
 
 export const fetchGroupPaymentDetails = async (params: GroupPaymentDetailsParams) => {
   try {
-    const response = await axios.get("/payments/group-details", {
+    // NOTE: Backend endpoint /payments/group-details doesn't exist yet
+    // Using /clientsPayment/month-year as fallback - backend needs to implement /payments/group-details
+    // Format paymentDate as YYYY-MM for the backend
+    const paymentDate = `${params.year}-${String(params.month).padStart(2, '0')}`;
+    const response = await axios.get("/clientsPayment/month-year", {
       params: {
-        month: params.month,
-        year: params.year
+        paymentDate: paymentDate
       }
     });
     
@@ -84,7 +88,7 @@ export const fetchGroupPaymentDetails = async (params: GroupPaymentDetailsParams
     
     // Fallback dummy data for development
     if (process.env.NODE_ENV === "development") {
-      console.warn("Using dummy group payment data");
+      console.warn("Using dummy group payment data - backend endpoint /payments/group-details not implemented");
       return {
         status: "SUCCESS",
         data: {
@@ -115,7 +119,7 @@ export const fetchGroupPaymentDetails = async (params: GroupPaymentDetailsParams
             }
           ]
         },
-        message: "Dummy data loaded"
+        message: "Dummy data loaded - backend endpoint not implemented"
       };
     }
     

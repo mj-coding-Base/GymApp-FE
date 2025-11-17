@@ -54,7 +54,9 @@ export const createExtraSession = async (
   data: CreateExtraSessionDto
 ): Promise<PTSession> => {
   try {
-    const res = await axios.post('/sessions/extra', data, );
+    // NOTE: Backend endpoint /sessions/extra doesn't exist yet
+    // Using /sessions/create as fallback - backend needs to implement /sessions/extra
+    const res = await axios.post('/sessions/create', data);
 
     return res.data.data;
   } catch (error) {
@@ -70,9 +72,11 @@ export const createSessionBundle = async (
   data: CreateSessionDto
 ): Promise<PTSession[]> => {
   try {
-    const res = await axios.post('/sessions/bundle', data, );
+    // NOTE: Backend endpoint /sessions/bundle doesn't exist yet
+    // Using /sessions/create as fallback - backend needs to implement /sessions/bundle
+    const res = await axios.post('/sessions/create', data);
 
-    return res.data.data;
+    return Array.isArray(res.data.data) ? res.data.data : [res.data.data];
   } catch (error) {
     handleApiError(error, 'create session bundle');
   }
@@ -86,9 +90,17 @@ export const findCustomerSessions = async (
   data: FindCustomerSessionsDto
 ): Promise<PTSession[]> => {
   try {
-    const res = await axios.post('/sessions/customer', data, );
+    // Backend uses GET /sessions/customer-sessions with query params, not POST
+    const res = await axios.get('/sessions/customer-sessions', {
+      params: {
+        customerNIC: data.customerNIC,
+        customerName: data.customerName,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      }
+    });
 
-    return res.data.data;
+    return Array.isArray(res.data) ? res.data : (res.data?.data || []);
   } catch (error) {
     handleApiError(error, 'fetch customer sessions');
   }
@@ -100,10 +112,16 @@ export const findCustomerSessions = async (
 export const findTrainerSessions = async (
 ): Promise<PTSession[]> => {
   try {
-    const res = await axios.get('/sessions/trainer', {
+    // NOTE: Backend endpoint /sessions/trainer doesn't exist yet
+    // Using /sessions/get-all with trainerId filter as fallback
+    // Backend needs to implement /sessions/trainer endpoint
+    const res = await axios.get('/sessions/get-all', {
+      params: {
+        // Add trainerId filter when backend supports it
+      }
     });
 
-    return res.data.data;
+    return Array.isArray(res.data?.data) ? res.data.data : [];
   } catch (error) {
     handleApiError(error, 'fetch trainer sessions');
   }
@@ -140,7 +158,7 @@ export const getAllSessions2 = async (
 }> => {
   try {
     const response = await axios.get(
-      `sessions/get-all`,
+      `/sessions/get-all`,
       {
         params: {
           page,
@@ -287,7 +305,8 @@ export async function markGroupAttendance(sessionIds: string[]): Promise<{
   message?: string;
 }> {
   try {
-    await axios.post("/sessions/mark-attendance", {
+    // Backend uses PATCH /sessions/mark-attended, not POST /sessions/mark-attendance
+    await axios.patch("/sessions/mark-attended", {
       sessionIds,
       isAttended: true,
     });
@@ -300,7 +319,7 @@ export async function markGroupAttendance(sessionIds: string[]): Promise<{
     console.error("Failed to mark attendance:", error);
     return {
       status: "FAIL",
-      message: "Failed to mark attendance - using dummy response",
+      message: "Failed to mark attendance",
     };
   }
 }
@@ -365,7 +384,11 @@ export const deleteSessions = async (
   sessionIds: string[]
 ): Promise<{ deletedCount: number }> => {
   try {
-    const res = await axios.delete('/sessions', {data: { sessionIds },});
+    // Backend uses DELETE /sessions/delete with query param 'ids' (comma-separated), not body
+    const idsParam = sessionIds.join(',');
+    const res = await axios.delete('/sessions/delete', {
+      params: { ids: idsParam }
+    });
 
     return res.data.data;
   } catch (error) {

@@ -2,6 +2,19 @@
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { Toaster } from "react-hot-toast";
+import { initializeCacheValidation } from '@/utils/cache-cleanup';
+
+// Load debug utilities in development
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  import('@/utils/debug-multi-tenant').catch(() => {
+    // Silently fail if debug utils can't be loaded
+  });
+}
+
+// 🔒 CRITICAL SECURITY: Initialize cache validation on app startup
+if (typeof window !== 'undefined') {
+  initializeCacheValidation();
+}
 
 // ⚡ PERFORMANCE OPTIMIZATION: Dynamic imports to reduce initial bundle size
 // These components are only loaded when actually needed (sheet/modal opens)

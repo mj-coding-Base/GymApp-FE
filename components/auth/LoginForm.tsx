@@ -98,8 +98,16 @@ const LoginForm = () => {
 
     SuccessToast("Logged in successfully.");
 
+    // 🔒 SECURITY: Ensure token is stored before redirect
+    // The login function already clears caches, but we need to ensure token is in localStorage
+    // Type guard: Check if res has data property (SignInResponseDataType) before accessing it
+    if ('data' in res && res.data?.idToken && typeof window !== 'undefined') {
+      localStorage.setItem("x-auth-token", res.data.idToken);
+    }
+
     // Use window.location.href for a full page reload to ensure cookies are properly set
     // This prevents the double-login issue caused by middleware not seeing the cookie immediately
+    // Full reload also ensures all React state is cleared
     window.location.href = "/";
   };
 

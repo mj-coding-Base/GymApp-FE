@@ -19,27 +19,56 @@ export type CustomersData = {
   };
 };
 
-const CUSTOMERS_CACHE_PREFIX = "gymapp-customers-cache";
 const CACHE_EXPIRY_SUFFIX = "-expiry";
 const CACHE_DURATION = 3 * 60 * 1000; // 3 minutes (shorter than dashboard since data changes more)
 
 /**
- * Generate cache key based on search params to cache different queries separately
+ * Extract gymId from JWT token
+ * 🔒 SECURITY: Used to create gym-specific cache keys
  */
-function getCacheKey(searchParams: CustomersData["searchParams"]): string {
+function getGymIdFromToken(): string | null {
+  if (typeof window === "undefined") return null;
+  
+  try {
+    const token = localStorage.getItem('x-auth-token');
+    if (!token) return null;
+    
+    // Decode JWT (second part is payload)
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.gymId || null;
+  } catch (error) {
+    console.error('Failed to extract gymId from token:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate cache key based on gymId and search params
+ * 🔒 CRITICAL SECURITY: Includes gymId to prevent cross-tenant cache pollution
+ */
+function getCacheKey(searchParams: CustomersData["searchParams"]): string | null {
+  const gymId = getGymIdFromToken();
+  if (!gymId) return null;
+  
   const { page = "1", size = "10", search = "", type = "individual" } = searchParams;
-  return `${CUSTOMERS_CACHE_PREFIX}-${type}-p${page}-s${size}-q${search}`;
+  return `gymapp-customers-cache-${gymId}-${type}-p${page}-s${size}-q${search}`;
 }
 
 export const customersCache = {
   /**
    * Get cached customers data for specific search params
+   * 🔒 SECURITY: Returns data only for the current gym
    */
   get(searchParams: CustomersData["searchParams"]): CustomersData | null {
     if (typeof window === "undefined") return null;
 
     try {
       const cacheKey = getCacheKey(searchParams);
+      if (!cacheKey) return null;
+      
       const expiryKey = cacheKey + CACHE_EXPIRY_SUFFIX;
 
       const cachedData = localStorage.getItem(cacheKey);
@@ -66,12 +95,15 @@ export const customersCache = {
 
   /**
    * Set customers data in cache with expiry time
+   * 🔒 SECURITY: Stores data with gym-specific key
    */
   set(data: CustomersData): void {
     if (typeof window === "undefined") return;
 
     try {
       const cacheKey = getCacheKey(data.searchParams);
+      if (!cacheKey) return;
+      
       const expiryKey = cacheKey + CACHE_EXPIRY_SUFFIX;
       const expiry = Date.now() + CACHE_DURATION;
 
@@ -83,13 +115,15 @@ export const customersCache = {
   },
 
   /**
-   * Clear specific customers cache
+   * Clear specific customers cache for current gym
    */
   clear(searchParams: CustomersData["searchParams"]): void {
     if (typeof window === "undefined") return;
 
     try {
       const cacheKey = getCacheKey(searchParams);
+      if (!cacheKey) return;
+      
       const expiryKey = cacheKey + CACHE_EXPIRY_SUFFIX;
 
       localStorage.removeItem(cacheKey);
@@ -100,31 +134,37 @@ export const customersCache = {
   },
 
   /**
-   * Clear all customers caches
+   * Clear all customers caches (all gyms) - for logout or gym switch
    */
   clearAll(): void {
     if (typeof window === "undefined") return;
 
     try {
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith(CUSTOMERS_CACHE_PREFIX)) {
-          localStorage.removeItem(key);
+      // Find all customer cache keys and remove them
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('gymapp-customers-cache-')) {
+          keysToRemove.push(key);
         }
-      });
+      }
+      
+      keysToRemove.forEach(key => localStorage.removeItem(key));
     } catch (error) {
       console.error("Error clearing all customers caches:", error);
     }
   },
 
   /**
-   * Check if cache exists and is valid for specific params
+   * Check if cache exists and is valid for specific params and current gym
    */
   isValid(searchParams: CustomersData["searchParams"]): boolean {
     if (typeof window === "undefined") return false;
 
     try {
       const cacheKey = getCacheKey(searchParams);
+      if (!cacheKey) return false;
+      
       const expiryKey = cacheKey + CACHE_EXPIRY_SUFFIX;
       const expiry = localStorage.getItem(expiryKey);
 

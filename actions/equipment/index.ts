@@ -21,6 +21,9 @@ export const fetchAllEquipment = async (): Promise<Equipment[]> => {
   // Create new request
   ongoingRequest = (async (): Promise<Equipment[]> => {
     try {
+      // NOTE: Backend endpoint /equipment/get-all doesn't exist yet
+      // Backend needs to implement equipment management endpoints
+      // This will fail until backend implements the endpoint
       const response = await axios.get(`/equipment/get-all`);
       
       // Handle case where response.data might be undefined or null
@@ -158,6 +161,8 @@ export const fetchAllEquipment = async (): Promise<Equipment[]> => {
 
 export async function createNewEquipment(equipment: CreateEquipmentDto) {
   try {
+    // NOTE: Backend endpoint /equipment/add-equipment doesn't exist yet
+    // Backend needs to implement equipment management endpoints
     const response = await axios.post("/equipment/add-equipment", equipment);
     return response.data;
   } catch (error) {
@@ -171,6 +176,8 @@ export const updateEquipment = async (
   updatedData: UpdateEquipmentDto
 ): Promise<CommonResponseDataType> => {
   try {
+    // NOTE: Backend endpoint /equipment/${equipmentId} doesn't exist yet
+    // Backend needs to implement equipment management endpoints
     const res = await axios.patch(
       `/equipment/${equipmentId}`,
       updatedData
@@ -282,6 +289,8 @@ export async function getEquipment(): Promise<Equipment[]> {
 
 export async function deleteEquipment(equipmentId: string): Promise<void> {
   try {
+    // NOTE: Backend endpoint /equipment/${equipmentId} (DELETE) doesn't exist yet
+    // Backend needs to implement equipment management endpoints
     // Use the _id (MongoDB ObjectId) for deletion
     await axios.delete(`/equipment/${equipmentId}`);
     revalidatePath(`/equipment`);

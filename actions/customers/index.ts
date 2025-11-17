@@ -272,7 +272,9 @@ export const fetchAllCustomers = async (
       });
     }
 
-    const res = await axios.get("/admin/customer-management/get-all", {
+    // 🔒 SECURITY: Use /customers/get-all endpoint (backend controller is @Controller('customers'))
+    // Multi-tenant isolation is enforced via JWT token (gymId extracted from token)
+    const res = await axios.get("/customers/get-all", {
       params: safeParams,
     });
     console.log(res.data?.data);
@@ -398,10 +400,14 @@ export const updateCustomer = async (
 };
 
 // Toggle customer active status
+// NOTE: Backend only has /customers/:id/deactivate endpoint, not toggleStatus
+// This function deactivates the customer (backend doesn't have activate endpoint)
 export const toggleCustomerStatus = async (customerId: string) => {
   try {
+    // 🔒 SECURITY: Use /customers/:id/deactivate endpoint (backend controller is @Controller('customers'))
+    // Multi-tenant isolation is enforced via JWT token (gymId extracted from token)
     await axios.patch(
-      `/admin/customer-management/${customerId}/toggleStatus`
+      `/customers/${customerId}/deactivate`
     );
 
     revalidatePath(`/customers`);
@@ -443,7 +449,9 @@ export const searchCustomers = async (
   searchTerm: string
 ): Promise<Customer[]> => {
   try {
-    const response = await axios.get("/admin/customer-management/get-all", {
+    // 🔒 SECURITY: Use /customers/get-all endpoint (backend controller is @Controller('customers'))
+    // Multi-tenant isolation is enforced via JWT token (gymId extracted from token)
+    const response = await axios.get("/customers/get-all", {
       params: {
         searchTerm,
       },

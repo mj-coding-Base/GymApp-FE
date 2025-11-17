@@ -134,6 +134,36 @@ export async function login(data: {
   if (typeof window !== 'undefined') {
     const { updateUserState } = await import('@/hooks/useUserDetails');
     updateUserState(user);
+    
+    // 🔒 CRITICAL SECURITY: Clear ALL caches and global state on login to prevent cross-tenant data leakage
+    // This ensures that when a new user logs in, they don't see the previous user's cached data
+    try {
+      const { trainersCache } = await import('@/lib/trainersCache');
+      const { packagesCache } = await import('@/lib/packagesCache');
+      const { equipmentCache } = await import('@/lib/equipmentCache');
+      const { dashboardCache } = await import('@/lib/dashboardCache');
+      const { customersCache } = await import('@/lib/customersCache');
+      const { clearPendingRequests } = await import('@/utils/requestDeduplication');
+      const { useGroupDetailsStore } = await import('@/hooks/useGroupDetailsStore');
+      const { useDailyAttendanceSheet } = await import('@/hooks/useDailyAttendanceSheet');
+      
+      // Clear all caches
+      trainersCache.clearAll();
+      packagesCache.clearAll();
+      equipmentCache.clearAll();
+      dashboardCache.clearAll();
+      customersCache.clearAll();
+      clearPendingRequests();
+      
+      // Clear all Zustand stores
+      useGroupDetailsStore.getState().clearStore();
+      useDailyAttendanceSheet.getState().clearStore();
+      
+      console.log('[SECURITY] All caches and global state cleared on login for gym:', gymId);
+    } catch (cacheError) {
+      console.error('[SECURITY] Error clearing caches on login:', cacheError);
+      // Continue with login even if cache clearing fails
+    }
   }
   
   return res;

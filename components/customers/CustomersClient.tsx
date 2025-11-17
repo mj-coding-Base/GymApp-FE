@@ -3,7 +3,8 @@
 import { fetchGroups, fetchIndividualCustomers } from "@/actions/customers";
 import { customersCache, CustomersData } from "@/lib/customersCache";
 import { GroupShort, IndividualCustomer } from "@/types/Customer";
-import { useEffect, useState } from "react";
+import { getGymIdFromToken } from "@/utils/jwt";
+import { useEffect, useState, useRef } from "react";
 import Customers from "./Customers";
 import CustomersSkeleton from "./CustomersSkeleton";
 
@@ -23,13 +24,71 @@ interface CustomersClientProps {
 }
 
 export default function CustomersClient({ searchParams }: CustomersClientProps) {
-  // Initialize with cached data immediately for instant load!
+  // Track current gymId to detect user switches
+  const currentGymIdRef = useRef<string | null>(null);
+  
+  // Initialize with cached data, but validate gymId first
   const [data, setData] = useState<CustomersData | null>(() => {
-    return customersCache.get(searchParams);
+    // 🔒 SECURITY: Validate cache belongs to current gym before using
+    const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+    if (!currentGymId) {
+      // No token = no cache
+      return null;
+    }
+    
+    currentGymIdRef.current = currentGymId;
+    const cached = customersCache.get(searchParams);
+    
+    // If cache exists, it's already gym-specific (after our fix)
+    // But double-check: if gymId changed, clear cache
+    return cached;
   });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
+    // 🔒 SECURITY: Check if gymId changed (user switch)
+    const checkGymIdChange = () => {
+      const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+      
+      if (currentGymId && currentGymId !== currentGymIdRef.current) {
+        // Gym changed! Clear state and cache
+        console.log(`[SECURITY] GymId changed from ${currentGymIdRef.current} to ${currentGymId}. Clearing cache.`);
+        currentGymIdRef.current = currentGymId;
+        setData(null);
+        customersCache.clearAll();
+        return true; // Indicates change detected
+      }
+      
+      if (!currentGymIdRef.current && currentGymId) {
+        // First time setting gymId
+        currentGymIdRef.current = currentGymId;
+      }
+      
+      return false;
+    };
+    
+    // Check immediately
+    checkGymIdChange();
+    
+    // Listen for storage changes (token updates)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'x-auth-token') {
+        if (checkGymIdChange()) {
+          // Force refetch if gymId changed
+          window.location.reload(); // Most reliable way to clear all state
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also poll periodically to catch changes in same window (storage event only fires in other tabs)
+    const pollInterval = setInterval(() => {
+      if (checkGymIdChange()) {
+        window.location.reload(); // Force full reload on gym change
+      }
+    }, 1000); // Check every second
+    
     const fetchFreshData = async () => {
       try {
         setIsRefreshing(true);
@@ -58,6 +117,13 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
           };
         }
 
+        // 🔒 SECURITY: Validate fresh data belongs to current gym
+        const freshGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+        if (freshGymId !== currentGymIdRef.current) {
+          console.warn(`[SECURITY] GymId mismatch during fetch. Expected ${currentGymIdRef.current}, got ${freshGymId}. Discarding data.`);
+          return; // Don't set data if gymId changed
+        }
+
         // ⚡ PERFORMANCE: Batch state updates (single render)
         setData(freshData);
         customersCache.set(freshData);
@@ -74,6 +140,12 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
     // If cache exists, this updates in background
     // If no cache, this is the initial load
     fetchFreshData();
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.page, searchParams.size, searchParams.search, searchParams.type]);
 

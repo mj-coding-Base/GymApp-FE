@@ -4,23 +4,41 @@ import axios from "@/utils/axios";
 import { CommonResponseDataType } from "@/types/Common";
 import { Package } from "@/types/Packages";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/authentication";
+import { getGymIdFromToken } from "@/utils/jwt";
 
-// Track ongoing requests to prevent duplicate calls (server-side only)
-let ongoingRequest: Promise<Package[]> | null = null;
+// 🔒 CRITICAL SECURITY: Per-gym request tracking to prevent cross-tenant data leakage
+// Each gym has its own ongoing request to ensure concurrent requests from different gyms don't interfere
+const ongoingRequestsByGym = new Map<string, Promise<Package[]>>();
 
 export const fetchAllPackages = async (): Promise<Package[]> => {
-  // If there's already an ongoing request, wait for it instead of making a new one
-  if (ongoingRequest) {
-    try {
-      return await ongoingRequest;
-    } catch (error) {
-      // If the ongoing request fails, continue to make a new request
-      ongoingRequest = null;
+  // 🔒 SECURITY: Extract gymId from session (server-side) or token
+  let gymId: string | null = null;
+  try {
+    const session = await getSession();
+    const token = session?.user.token;
+    gymId = token ? getGymIdFromToken(token) : null;
+  } catch (error) {
+    console.error('[SECURITY] Failed to extract gymId for packages request:', error);
+    // Continue without gymId - will skip deduplication but still make request
+  }
+
+  // 🔒 SECURITY: Only deduplicate requests within the same gym
+  // If gymId is missing, skip deduplication to prevent cross-tenant leakage
+  if (gymId) {
+    const ongoingRequest = ongoingRequestsByGym.get(gymId);
+    if (ongoingRequest) {
+      try {
+        return await ongoingRequest;
+      } catch (error) {
+        // If the ongoing request fails, continue to make a new request
+        ongoingRequestsByGym.delete(gymId);
+      }
     }
   }
 
   // Create new request
-  ongoingRequest = (async (): Promise<Package[]> => {
+  const newRequest = (async (): Promise<Package[]> => {
     try {
       const response = await axios.get(`/packages/get-all`);
       
@@ -74,12 +92,19 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       // Return empty array instead of throwing - this prevents Server Component render errors
       return [];
     } finally {
-      // Clear ongoing request after completion
-      ongoingRequest = null;
+      // 🔒 SECURITY: Clear ongoing request for this gym after completion
+      if (gymId) {
+        ongoingRequestsByGym.delete(gymId);
+      }
     }
   })();
 
-  return ongoingRequest;
+  // 🔒 SECURITY: Store request per gym to prevent cross-tenant interference
+  if (gymId) {
+    ongoingRequestsByGym.set(gymId, newRequest);
+  }
+
+  return newRequest;
 };
 
 export interface createNewPackage{

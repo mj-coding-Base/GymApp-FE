@@ -10,6 +10,12 @@ import {
 import { useProfileDetailsSheet } from "@/hooks/useProfileSheet";
 import { useResetPasswordSheet } from "@/hooks/useResetPasswordSheet";
 import { logout } from "@/lib/authentication";
+import { trainersCache } from "@/lib/trainersCache";
+import { packagesCache } from "@/lib/packagesCache";
+import { equipmentCache } from "@/lib/equipmentCache";
+import { dashboardCache } from "@/lib/dashboardCache";
+import { customersCache } from "@/lib/customersCache";
+import { clearPendingRequests } from "@/utils/requestDeduplication";
 import Image from "next/image";
 import { useState } from "react";
 import Logo from "../Logo";
@@ -70,19 +76,38 @@ const Navbar = () => {
                 onClick={async () => {
                   setLoading(true);
                   
-                  // ⚡ PERFORMANCE: Clear all caches and storage immediately
+                  // 🔒 SECURITY: Clear ALL multi-tenant caches, global state, and storage immediately
                   if (typeof window !== 'undefined') {
-                    // Clear localStorage caches
+                    // Clear all multi-tenant caches (all gyms)
+                    trainersCache.clearAll();
+                    packagesCache.clearAll();
+                    equipmentCache.clearAll();
+                    dashboardCache.clearAll();
+                    customersCache.clearAll();
+                    
+                    // Clear request deduplication cache
+                    clearPendingRequests();
+                    
+                    // Clear all Zustand stores
+                    try {
+                      const { useGroupDetailsStore } = await import('@/hooks/useGroupDetailsStore');
+                      const { useDailyAttendanceSheet } = await import('@/hooks/useDailyAttendanceSheet');
+                      useGroupDetailsStore.getState().clearStore();
+                      useDailyAttendanceSheet.getState().clearStore();
+                    } catch (err) {
+                      console.error('[SECURITY] Error clearing Zustand stores on logout:', err);
+                    }
+                    
+                    // Clear auth tokens
+                    localStorage.removeItem('x-auth-token');
+                    localStorage.removeItem('refresh-token');
+                    localStorage.removeItem('gym-id'); // Should never exist, but clear just in case
+                    
+                    // Clear any legacy non-gym-specific caches (fallback cleanup)
                     localStorage.removeItem('gymapp-dashboard-cache');
                     localStorage.removeItem('gymapp-dashboard-cache-expiry');
                     localStorage.removeItem('gymapp-customers-cache');
                     localStorage.removeItem('gymapp-customers-cache-expiry');
-                    localStorage.removeItem('gymapp-trainers-cache');
-                    localStorage.removeItem('gymapp-trainers-cache-expiry');
-                    localStorage.removeItem('gymapp-packages-cache');
-                    localStorage.removeItem('gymapp-packages-cache-expiry');
-                    localStorage.removeItem('x-auth-token');
-                    localStorage.removeItem('gym-id');
                   }
                   
                   // Clear server session

@@ -131,6 +131,18 @@ const TodayAttendance = () => {
       };
     }
   }, []);
+  
+  // 🔒 SECURITY: Clear all caches when component unmounts to prevent cross-tenant data leakage
+  useEffect(() => {
+    return () => {
+      // Clear all caches on unmount (e.g., when user logs out or navigates away)
+      todayRecordsMapRef.current.clear();
+      lastRecordIdsRef.current.clear();
+      notifiedUnpaidClientsRef.current.clear();
+      customerDataCache.current.clear();
+      console.log('[ATTENDANCE] Component unmounting - cleared all caches');
+    };
+  }, []);
 
   const playNotificationSound = useCallback(() => {
     // Check if audio is enabled via toggle

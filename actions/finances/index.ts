@@ -48,7 +48,9 @@ export async function getTrainerSalaries(): Promise<{
   message?: string;
 }> {
   try {
-    // Make API call using your existing axios instance
+    // NOTE: Backend endpoint /finances/trainer-salaries doesn't exist yet
+    // Backend needs to implement finances/trainer-salaries endpoint
+    // This will fail until backend implements the endpoint
     const response = await axios.get("/finances/trainer-salaries");
     
     // Transform API response to match your UI structure if needed
