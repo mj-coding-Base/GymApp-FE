@@ -3,12 +3,12 @@
 
 import { CommonResponseDataType } from "@/types/Common";
 import {
-    Customer,
-    GroupCustomer,
-    GroupFull,
-    GroupShort,
-    IndividualCustomer,
-    PaymentHistory,
+  Customer,
+  GroupCustomer,
+  GroupFull,
+  GroupShort,
+  IndividualCustomer,
+  PaymentHistory,
 } from "@/types/Customer";
 import axios from "@/utils/axios";
 import { deduplicatedRequest } from "@/utils/requestDeduplication";
@@ -27,6 +27,7 @@ interface FetchCustomersParams {
 }
 
 // ⚡ PERFORMANCE OPTIMIZATION: Deduplicated fetch for individual customers
+// 🔒 SECURITY: Uses x-auth-token header (set by axios interceptor) - never sends gym-id header
 export async function fetchIndividualCustomers(
   page?: string,
   size?: string,
@@ -36,6 +37,9 @@ export async function fetchIndividualCustomers(
 
   return deduplicatedRequest(cacheKey, async () => {
     try {
+      // SECURITY: Axios interceptor automatically adds x-auth-token header from session
+      // The backend extracts gymId from the JWT token, not from headers
+      // This prevents cross-gym data leakage
       const response = await axios.get("/customers/get-all", {
         params: {
           page: page || "1",
@@ -43,17 +47,38 @@ export async function fetchIndividualCustomers(
           searchTerm: searchTerm || undefined,
           _: cacheBuster,
         },
+        // Note: gym-id header is NOT sent - backend uses gymId from JWT token
       });
 
-      // Safely extract results
-      const results = response.data?.data?.data?.results;
-      // Safely ex  tract totalResults
-      console.log(response.data?.data?.data?.totalResults);
-      const totalResults = parseInt(response.data?.data?.data?.totalResults, 10) || 0;
+      // Response structure after ApiResponseInterceptor:
+      // { status: 'SUCCESS', message: null, data: { data: { results: [...], totalResults: 123 } } }
+      const serverPayload = response?.data;
+      
+      // Extract the nested data structure
+      // serverPayload.data = { data: { results, totalResults } }
+      // serverPayload.data.data = { results, totalResults }
+      const inner = serverPayload?.data?.data ?? serverPayload?.data ?? null;
 
-      // If no results found in development, log structure
-      if (process.env.NODE_ENV !== 'production' && !results.length && totalResults === 0) {
-        console.warn("No data returned. Full response:", response.data);
+      const results = Array.isArray(inner?.results) ? inner.results : [];
+      const totalResults = Number(inner?.totalResults) || 0;
+
+      // If no results found in development, log structure for debugging
+      if (process.env.NODE_ENV !== 'production') {
+        if (!results.length && totalResults === 0) {
+          console.warn("No data returned. Full response structure:", {
+            hasResponse: !!response,
+            hasData: !!response?.data,
+            responseData: response?.data,
+            inner: inner,
+            resultsLength: results.length,
+            totalResults: totalResults
+          });
+        } else {
+          console.log("Successfully fetched customers:", {
+            resultsCount: results.length,
+            totalResults: totalResults
+          });
+        }
       }
 
       return {
@@ -440,11 +465,21 @@ export const searchCustomers = async (
  * @param clientId - Customer clientId
  * @param file - File object from file input
  * @returns Promise with upload result
+ * 
+ * NOTE: Profile picture functionality is temporarily disabled
  */
 export const uploadProfilePicture = async (
   clientId: string,
   file: File
 ): Promise<{ success: boolean; message: string; filePath?: string }> => {
+  // Profile picture upload is disabled
+  console.warn('Profile picture upload is disabled');
+  return {
+    success: false,
+    message: 'Profile picture upload is temporarily disabled',
+  };
+  
+  /* COMMENTED OUT - Profile picture functionality disabled
   try {
     const formData = new FormData();
     formData.append('file', file); // Field name must match backend: FileInterceptor('file')
@@ -472,14 +507,21 @@ export const uploadProfilePicture = async (
         : "Failed to upload profile picture"
     );
   }
+  */
 };
 
 /**
  * Get profile picture URL (returns blob URL for <img src>)
  * @param clientId - Customer clientId
  * @returns Promise resolving to blob URL string
+ * 
+ * NOTE: Profile picture functionality is temporarily disabled
  */
 export const getProfilePictureUrl = async (clientId: string): Promise<string | null> => {
+  // Profile picture retrieval is disabled
+  return null;
+  
+  /* COMMENTED OUT - Profile picture functionality disabled
   try {
     const response = await axios.get<Blob>(`/customers/${clientId}/profile-picture`, {
       responseType: 'blob',
@@ -509,6 +551,7 @@ export const getProfilePictureUrl = async (clientId: string): Promise<string | n
     }
     return null;
   }
+  */
 };
 
 /**

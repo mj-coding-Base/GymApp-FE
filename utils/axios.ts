@@ -89,46 +89,24 @@ axiosInstance.interceptors.request.use(async (request) => {
       request.headers["x-auth-token"] = token;
     }
 
-    // SECURITY: For public endpoints (login, forgot password, etc.), allow requests without gymId
-    // These endpoints don't require authentication and don't need gymId
-    if (isPublicEndpoint) {
-      // Public endpoints can proceed without gymId
-      // But if token exists and has gymId, we can still set it (optional)
-      if (gymId && gymId.trim().length > 0) {
-        request.headers["gym-id"] = gymId.trim();
-      }
-      return request;
-    }
-
-    // STRICT: For all other endpoints, gymId is REQUIRED
-    // This is extracted from token, so it's secure and cannot be manipulated
-    // SECURITY: If gymId is missing, log warning but let backend handle validation
-    // Backend will reject requests without proper gymId validation
-    if (gymId && gymId.trim().length > 0) {
-      request.headers["gym-id"] = gymId.trim();
-      
-      // SECURITY: Double-check that gymId matches token (defense in depth)
-      if (token) {
-        const tokenGymId = getGymIdFromToken(token);
-        if (tokenGymId && tokenGymId !== gymId.trim()) {
-          console.error(
-            `[SECURITY ERROR] gymId mismatch detected! ` +
-            `Token has "${tokenGymId}" but extracted "${gymId.trim()}". ` +
-            `This should never happen. Rejecting request.`
-          );
-          // Reject the request to prevent potential security issue
-          throw new Error('Security error: Token validation failed. Please refresh the page.');
-        }
-      }
-    }
+    // 🔒 SECURITY: DO NOT send gym-id header
+    // The backend extracts gymId from the JWT token (x-auth-token header)
+    // This prevents cross-gym data leakage and ensures gymId is always from the signed JWT
+    // The backend's AuthGuard validates the JWT and extracts gymId from the token payload
     
-    // SECURITY: Missing gymId warning (only in non-production environments)
-    if (!gymId && process.env.NODE_ENV !== 'production' && !isPublicEndpoint) {
-      // eslint-disable-next-line no-console
-      console.warn(
-        `[SECURITY WARNING] Missing gymId for request: ${request.url}. ` +
-        `Backend will validate and reject if gymId is required.`
-      );
+    // For public endpoints, they may need gymId but it should come from request params or body, not headers
+    // Authenticated endpoints get gymId from JWT token automatically
+    
+    // Validate token has gymId (for logging/debugging only - backend will enforce)
+    if (token && !isPublicEndpoint) {
+      const tokenGymId = getGymIdFromToken(token);
+      if (!tokenGymId && process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[SECURITY WARNING] Token missing gymId for request: ${request.url}. ` +
+          `Backend will reject this request. Please ensure token includes gymId claim.`
+        );
+      }
     }
 
     return request;
@@ -214,17 +192,17 @@ axiosInstance.interceptors.response.use(
               throw new Error("Security error: Invalid refreshed token");
             }
 
-            // Update cache with new token and gymId from token
+            // Update cache with new token (gymId is in token, not stored separately)
             if (!isServer) {
               localStorage.setItem("x-auth-token", refreshResult.token);
-              // SECURITY: Never store gymId in localStorage - always extract from token
+              // 🔒 SECURITY: Never store gymId in localStorage - always extract from token
               localStorage.removeItem("gym-id");
             }
 
-            // Update request with new token AND gymId from token
+            // Update request with new token (gymId is extracted from token by backend)
             if (originalRequest.headers) {
               originalRequest.headers["x-auth-token"] = refreshResult.token;
-              originalRequest.headers["gym-id"] = newTokenGymId; // Use gymId from token
+              // 🔒 SECURITY: Do NOT send gym-id header - backend extracts from JWT token
             }
 
             // Process queued requests with new token
