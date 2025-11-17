@@ -53,13 +53,15 @@ export default function PackagePage() {
       try {
         // Fetch packages from server
         const data = await fetchAllPackages();
-        setPackages(data);
+        console.log("[Packages] Fetched packages:", data?.length || 0, "packages");
+        setPackages(data || []);
         // Update client-side cache after successful fetch
         if (data && data.length > 0) {
           packagesCache.set(data);
         }
       } catch (error) {
         console.error("Error loading packages:", error);
+        setPackages([]); // Ensure packages is set to empty array on error
       } finally {
         setIsLoading(prev => ({...prev, packages: false}));
         setIsRefreshing(false);
@@ -140,7 +142,13 @@ export default function PackagePage() {
 
           <AddNewPackage onPackageAdded={() => getPackages().then(setPackages)} />
           
-          {packages.map((pkg) => (
+          {packages.length === 0 && !isLoading.packages && !isRefreshing ? (
+            <div className="flex flex-col items-center justify-center py-12 px-4">
+              <p className="text-gray-500 text-sm mb-2">No packages found</p>
+              <p className="text-gray-400 text-xs">Create your first package to get started</p>
+            </div>
+          ) : (
+            packages.map((pkg) => (
               <div
                 key={pkg.packageId}
                 className="border border-b border-gray-200 p-2 bg-white relative"
@@ -206,7 +214,7 @@ export default function PackagePage() {
                 </div>
               </div>
             ))
-          }
+          )}
         </CardContent>
       </Card>
 

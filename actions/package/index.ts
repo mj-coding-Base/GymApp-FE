@@ -44,33 +44,72 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
       
       // Handle case where response.data might be undefined or null
       if (!response || !response.data) {
-        console.error("Invalid response from packages API");
+        console.error("[Packages] Invalid response from packages API - no response or data");
         return [];
+      }
+
+      // Log response structure for debugging
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[Packages] API Response structure:", {
+          hasData: !!response.data,
+          hasDataData: !!response.data?.data,
+          dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
+          dataDataType: response.data?.data ? (Array.isArray(response.data.data) ? 'array' : typeof response.data.data) : 'none'
+        });
       }
 
       // Handle different response structures
-      const rawData = response.data.data || response.data || [];
+      // Backend returns array directly or wrapped in { packages: [...] }
+      let rawData: any[] = [];
+      
+      if (Array.isArray(response.data)) {
+        // Direct array response
+        rawData = response.data;
+      } else if (response.data?.packages && Array.isArray(response.data.packages)) {
+        // Wrapped in { packages: [...] }
+        rawData = response.data.packages;
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        // Wrapped in { data: [...] }
+        rawData = response.data.data;
+      } else {
+        console.error("[Packages] Unexpected response structure:", response.data);
+        return [];
+      }
       
       // Ensure rawData is an array
       if (!Array.isArray(rawData)) {
-        console.error("Packages data is not an array:", rawData);
+        console.error("[Packages] Packages data is not an array:", rawData);
         return [];
       }
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[Packages] Parsed", rawData.length, "packages from API");
+      }
 
-      const packages: Package[] = rawData.map((item: any) => ({
-        packageId: item.packageId,
-        package_name: item.name,
-        durationDays: item.durationDays,
-        description: item.description || "",
-        sessions: item.sessions,
-        price: item.price,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt || "",
-        isActive: item.isActive ?? true,
-        isGroup: item.isGroup ?? false,
-        isVisible: item.isVisible ?? true,
-        status: item.status || "active",
-      }));
+      const packages: Package[] = rawData.map((item: any) => {
+        // Handle both _id and packageId (backend might return either)
+        const packageId = item.packageId || item._id?.toString() || '';
+        
+        // Log mapping issues in development
+        if (process.env.NODE_ENV !== 'production' && !packageId) {
+          console.warn("[Packages] Package item missing ID:", item);
+        }
+        
+        return {
+          packageId: packageId,
+          package_name: item.name || item.package_name || '',
+          durationDays: item.durationDays || 0,
+          description: item.description || "",
+          sessions: item.sessions || 0,
+          price: item.price || 0,
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: item.updatedAt || "",
+          isActive: item.isActive ?? true,
+          isGroup: item.isGroup ?? false,
+          isVisible: item.isVisible ?? true,
+          status: item.status || "active",
+        };
+      });
       
       return packages;
     } catch (error: unknown) {
