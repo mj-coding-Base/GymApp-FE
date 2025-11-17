@@ -40,7 +40,34 @@ export const fetchAllPackages = async (): Promise<Package[]> => {
   // Create new request
   const newRequest = (async (): Promise<Package[]> => {
     try {
-      const response = await axios.get(`/packages/get-all`);
+      // Extract gymId for this request (server-side or client-side)
+      let requestGymId: string | null = null;
+      try {
+        if (typeof window === 'undefined') {
+          // Server-side: get from session
+          const session = await getSession();
+          const token = session?.user.token;
+          requestGymId = token ? getGymIdFromToken(token) : null;
+        } else {
+          // Client-side: get from localStorage token
+          const token = localStorage.getItem('x-auth-token');
+          requestGymId = token ? getGymIdFromToken(token) : null;
+        }
+      } catch (error) {
+        console.error('[Packages] Failed to extract gymId for request:', error);
+      }
+
+      // Make request - axios interceptor will add x-auth-token and gym-id headers
+      // Note: Backend endpoint has @SkipAuthentication() but uses @ValidatedGymId()
+      // We send token and gym-id header to help backend extract gymId
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[Packages] Making request to /packages/get-all with gymId:', requestGymId || 'not available');
+      }
+      
+      const response = await axios.get(`/packages/get-all`, {
+        // Include gymId in query params as additional fallback (though decorator doesn't read it)
+        params: requestGymId ? { 'gym-id': requestGymId } : {},
+      });
       
       // Handle case where response.data might be undefined or null
       if (!response || !response.data) {
