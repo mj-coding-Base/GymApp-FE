@@ -1,8 +1,8 @@
 "use client";
+import { initializeCacheValidation } from '@/utils/cache-cleanup';
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
 import { Toaster } from "react-hot-toast";
-import { initializeCacheValidation } from '@/utils/cache-cleanup';
 
 // Load debug utilities in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
