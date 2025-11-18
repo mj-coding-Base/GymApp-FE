@@ -335,8 +335,9 @@ export interface CustomerRegistrationData {
   profession: string;
   dob: string;
   isMale : boolean,
-  isMarried : boolean,
   deactivateAt: string;
+  reference?: string;
+  clientId?: string;
 }
 
 export const createIndividualCustomer = async (

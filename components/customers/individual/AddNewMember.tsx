@@ -7,37 +7,37 @@ import { ImageUpload } from "@/components/common/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { useSuccessModal } from "@/hooks/modals/useSuccessModal";
 import { cn } from "@/lib/utils";
-import { NewIndividualCustomer } from "@/types/Customer";
+import { IndividualCustomer, NewIndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -88,9 +88,6 @@ const formSchema = z.object({
   isMale: z.boolean({
     required_error: "Gender selection is required",
   }),
-  isMarried: z.boolean({
-    required_error: "Marital status is required",
-  }),
   dob: z.object({
     year: z.string({ required_error: "Year is required" }),
     month: z.string({ required_error: "Month is required" }),
@@ -125,7 +122,7 @@ const formSchema = z.object({
 interface AddNewMemberProps {
   readonly open: boolean;
   readonly setOpen: (value: boolean) => void;
-  readonly data: NewIndividualCustomer | null;
+  readonly data: IndividualCustomer | NewIndividualCustomer | null;
 }
 
 function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
@@ -151,7 +148,6 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       addressLine2: "",
       packageId: "",
       isMale: true,
-      isMarried: false,
       dob: {
         year: "",
         month: "",
@@ -209,38 +205,91 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
 
   useEffect(() => {
     if (open && data) {
-      const deactivateDateValue = data.deactivateAt ? new Date(data.deactivateAt) : undefined;
-      const dobDateValue = data.dob ? new Date(data.dob) : undefined;
+      // Debug: Log the data being received
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[AddNewMember] Loading customer data for editing:", {
+          clientId: data.clientId || (data as any)._id,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          isMale: data.isMale,
+          isMaleType: typeof data.isMale,
+          packageId: data.packageId,
+          dob: data.dob,
+          whyJoin: data.whyJoin,
+          profession: data.profession,
+        });
+      }
+
+      // Parse dates safely
+      let deactivateDateValue: Date | undefined = undefined;
+      let dobDateValue: Date | undefined = undefined;
+      
+      try {
+        if (data.deactivateAt) {
+          const parsed = new Date(data.deactivateAt);
+          if (!Number.isNaN(parsed.getTime())) {
+            deactivateDateValue = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse deactivateAt date:", e);
+      }
+      
+      try {
+        if (data.dob) {
+          const parsed = new Date(data.dob);
+          if (!Number.isNaN(parsed.getTime())) {
+            dobDateValue = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to parse dob date:", e);
+      }
+      
       setDeactivateDate(deactivateDateValue);
       setDobDate(dobDateValue);
       setDobCalendarMonth(dobDateValue && dobDateValue < new Date("2015-01-01") ? dobDateValue : new Date(2014, 11, 1));
       
-      form.reset({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        mobileNumber: data.mobileNumber,
-        email: data.email,
-        nic: data.nic,
-        addressLine1: data.addressLine1 ,
-        addressLine2: data.addressLine2 ,
-        packageId: data.packageId,
-        isMale: data.isMale,
-        isMarried: data.isMarried,
+      // Convert isMale to proper boolean (handle cases where it might be undefined, null, or literal true)
+      // IndividualCustomer type has isMale: true (literal), but it should be boolean in practice
+      const isMaleValue = typeof data.isMale === "boolean" 
+        ? data.isMale 
+        : data.isMale === true || data.isMale === "true" || Boolean(data.isMale);
+      
+      // Reset form with existing data - ensure all fields from backend are mapped
+      const formData = {
+        firstName: data.firstName || "",
+        lastName: data.lastName || "",
+        mobileNumber: data.mobileNumber || "+94",
+        email: data.email || "",
+        nic: data.nic || "",
+        addressLine1: data.addressLine1 || "",
+        addressLine2: data.addressLine2 || "",
+        packageId: data.packageId || "",
+        isMale: isMaleValue,
         dob: {
-          year: data.dob ? new Date(data.dob).getFullYear().toString() : "",
-          month: data.dob ? (new Date(data.dob).getMonth() + 1).toString().padStart(2, '0') : "",
-          day: data.dob ? new Date(data.dob).getDate().toString().padStart(2, '0') : "",
+          year: dobDateValue ? dobDateValue.getFullYear().toString() : "",
+          month: dobDateValue ? (dobDateValue.getMonth() + 1).toString().padStart(2, '0') : "",
+          day: dobDateValue ? dobDateValue.getDate().toString().padStart(2, '0') : "",
         },
         deactivateAt: {
-          year: data.deactivateAt ? new Date(data.deactivateAt).getFullYear().toString() : "not-set",
-          month: data.deactivateAt ? (new Date(data.deactivateAt).getMonth() + 1).toString().padStart(2, '0') : "not-set",
-          day: data.deactivateAt ? new Date(data.deactivateAt).getDate().toString().padStart(2, '0') : "not-set",
+          year: deactivateDateValue ? deactivateDateValue.getFullYear().toString() : "not-set",
+          month: deactivateDateValue ? (deactivateDateValue.getMonth() + 1).toString().padStart(2, '0') : "not-set",
+          day: deactivateDateValue ? deactivateDateValue.getDate().toString().padStart(2, '0') : "not-set",
         },
-        whyJoin: data.whyJoin as any,
+        whyJoin: (data.whyJoin as any) || "Regular Fitness",
         profession: data.profession || "",
         reference: data.reference || "",
-      });
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log("[AddNewMember] Form data being set:", formData);
+      }
+
+      form.reset(formData);
     } else if (open && !data) {
+      // Reset form for new customer
+      form.reset();
       setDeactivateDate(undefined);
       setDobDate(undefined);
       setDobCalendarMonth(new Date(2014, 11, 1)); // December 2014
@@ -277,30 +326,41 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
       }
 
       // Build customerData with only the fields we need to send
-      const customerData = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        mobileNumber: values.mobileNumber,
-        email: values.email,
-        nic: values.nic,
-        addressLine1: values.addressLine1,
-        addressLine2: values.addressLine2 ?? "",
+      const customerData: any = {
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        mobileNumber: values.mobileNumber.trim(),
+        email: values.email.trim(),
+        nic: values.nic.trim(),
+        addressLine1: values.addressLine1.trim(),
+        addressLine2: (values.addressLine2 ?? "").trim(),
         packageId: values.packageId,
         isMale: values.isMale,
-        isMarried: values.isMarried,
         whyJoin: values.whyJoin,
-        profession: values.profession,
+        profession: values.profession.trim(),
         dob: dobDate.toISOString(),
-        deactivateAt: deactivateAtDate,
-        clientId: data?.clientId || undefined,
-        reference: values.reference || undefined,
+        deactivateAt: deactivateAtDate || "",
       };
+
+      // Only include optional fields if they have values
+      if (values.reference && values.reference.trim()) {
+        customerData.reference = values.reference.trim();
+      }
+
+      // Don't send clientId in update - it's in the URL path
+      // clientId is only needed for profile picture upload after creation
 
       if (data) {
         // Update existing customer
-        // console.log("Updating customer with data:", customerData);
-        // console.log("Updating customer with data:", data.clientId);
-        response = await updateCustomer(data.clientId, customerData);
+        // Use clientId from IndividualCustomer or _id as fallback
+        const customerId = data.clientId || (data as any)._id;
+        if (process.env.NODE_ENV !== 'production') {
+          console.log("[AddNewMember] Updating customer:", {
+            customerId,
+            customerData,
+          });
+        }
+        response = await updateCustomer(customerId, customerData);
       } else {
         // Create new customer
         response = await createIndividualCustomer(customerData);
@@ -518,17 +578,22 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="isMale"
-                  render={({ field }) => (
+              <FormField
+                control={form.control}
+                name="isMale"
+                render={({ field }) => {
+                  // Convert boolean to string for RadioGroup
+                  const radioValue = field.value ? "male" : "female";
+                  
+                  return (
                     <FormItem className="space-y-3">
                       <FormLabel>Gender*</FormLabel>
                       <FormControl>
                         <RadioGroup
-                          onValueChange={(value) => field.onChange(value === "male")}
-                          defaultValue={field.value ? "male" : "female"}
+                          onValueChange={(value) => {
+                            field.onChange(value === "male");
+                          }}
+                          value={radioValue}
                           className="flex gap-4"
                         >
                           <FormItem className="flex items-center space-x-3 space-y-0">
@@ -547,40 +612,9 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                       </FormControl>
                       <FormMessage />
                     </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="isMarried"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Marital Status*</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={(value) => field.onChange(value === "married")}
-                          defaultValue={field.value ? "married" : "single"}
-                          className="flex gap-4"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="married" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Married</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="single" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Single</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  );
+                }}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
