@@ -1,10 +1,12 @@
-version: '3.8'
+# Removed version field as it's obsolete in newer Docker Compose versions
 
 services:
   gymapp-fe:
     build:
       context: .
       dockerfile: Dockerfile
+      # Disable BuildKit if it's causing issues (uncomment if needed)
+      # DOCKER_BUILDKIT: 0
     container_name: gymapp-frontend
     ports:
       - "3002:3002"
