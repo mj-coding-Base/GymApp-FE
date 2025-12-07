@@ -1,24 +1,23 @@
 "use client";
 
-import { updateEquipment, deleteEquipment } from "@/actions/equipment";
-import { EquipmentType, MuscleGroup, UpdateEquipmentDto } from "@/types/Equipment";
+import { deleteEquipment, updateEquipment } from "@/actions/equipment";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-    Drawer,
-    DrawerClose,
-    DrawerContent,
-    DrawerHeader,
-    DrawerTitle,
-    DrawerTrigger,
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
 } from "@/components/ui/drawer";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EquipmentType, MuscleGroup, UpdateEquipmentDto } from "@/types/Equipment";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -156,27 +156,33 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
             <i className="edit-new-icon bg-[#44424D] h-[14.4px] w-[14.4px] rounded-full" />
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="p-6 max-w-md mx-auto max-h-[90vh] overflow-y-auto">
-          <DrawerHeader className="p-0 mb-8">
+        <DrawerContent className="flex flex-col max-w-md mx-auto bg-white max-h-[95vh] overflow-hidden">
+          <DrawerHeader className="p-6 pb-4 border-b border-[#EBEBEB] flex-shrink-0">
             <DrawerClose asChild>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-4 cursor-pointer hover:opacity-70 transition-opacity">
                 <Button
                   size="icon"
-                  variant="outline"
-                  className="h-[11px] w-[11px] bg-white border-none"
+                  variant="ghost"
+                  className="h-8 w-8 p-0 hover:bg-transparent"
                 >
-                  <i className="back-icon size-[20.5px]" />
+                  <i className="back-icon size-5 text-[#4C4E64]" />
                 </Button>
-                <span className="text-[11px]">Back</span>
+                <span className="text-sm text-[#4C4E64] font-medium">Back</span>
               </div>
             </DrawerClose>
-            <DrawerTitle className="text-[14px] text-center justify-center">
+            <DrawerTitle className="text-lg font-semibold text-[#212121] text-left">
               Update Equipment
             </DrawerTitle>
           </DrawerHeader>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <Form {...form}>
+              <form 
+                onSubmit={form.handleSubmit(onSubmit)} 
+                className="flex flex-col h-full min-h-0"
+              >
+                <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 pb-4">
+                  <div className="flex flex-col gap-6">
               <FormField
                 control={form.control}
                 name="name"
@@ -447,48 +453,59 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
                   </FormItem>
                 )}
               />
+                  </div>
+                </div>
 
-              <div className="flex gap-4 mt-8 justify-center items-center">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="w-[120px] h-[40px] py-6 rounded-[10px]"
-                >
-                  {isDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </>
-                  )}
-                </Button>
-                <DrawerClose asChild>
+                {/* Action Buttons - Always visible at bottom */}
+                <div className="flex-shrink-0 flex gap-1 px-6 py-4 border-t border-[#EBEBEB] bg-white justify-end items-center">
+                  <span> </span>
                   <Button
                     type="button"
-                    variant="outline"
-                    className="w-[120px] h-[40px] py-6 border-[#BDBDBD] rounded-[10px]"
-                    disabled={isSubmitting}
+                    variant="destructive"
+                    onClick={handleDelete}
+                    disabled={isDeleting || isSubmitting}
+                    className="min-w-[120px] h-11 border-red-500 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors "
                   >
-                    Cancel
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </>
+                    )}
                   </Button>
-                </DrawerClose>
-                <Button
-                  type="submit"
-                  className="w-[120px] h-[40px] py-6 border rounded-[10px] bg-[#378644] text-white"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Update"
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
+                  <DrawerClose asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-w-[120px] h-11 border-[#BDBDBD] rounded-lg text-sm font-medium hover:bg-[#F5F5F5] transition-colors"
+                      disabled={isSubmitting || isDeleting}
+                    >
+                      Cancel
+                    </Button>
+                  </DrawerClose>
+                  <Button
+                    type="submit"
+                    className="min-w-[120px] h-11 rounded-lg bg-[#65A28C] hover:bg-[#5a8f7a] text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSubmitting || isDeleting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      "Update Equipment"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </DrawerContent>
       </Drawer>
 

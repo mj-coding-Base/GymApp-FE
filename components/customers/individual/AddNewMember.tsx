@@ -3,6 +3,7 @@
 
 import { createIndividualCustomer, getProfilePictureUrl, updateCustomer, uploadProfilePicture } from "@/actions/customers";
 import { fetchAllPackages } from "@/actions/package";
+import { CameraPreview } from "@/components/common/CameraPreview";
 import { ImageUpload } from "@/components/common/ImageUpload";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -41,7 +42,7 @@ import { IndividualCustomer, NewIndividualCustomer } from "@/types/Customer";
 import { Package } from "@/types/Packages";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -135,6 +136,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
   const [dobCalendarMonth, setDobCalendarMonth] = useState<Date>(new Date(2014, 11, 1)); // December 2014
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [currentProfileImageUrl, setCurrentProfileImageUrl] = useState<string | null>(null);
+  const [showCameraPreview, setShowCameraPreview] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -381,16 +383,48 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
         
         if (profileImage && clientIdToUse) {
           try {
-            await uploadProfilePicture(clientIdToUse, profileImage);
-          } catch (error) {
+            const uploadResult = await uploadProfilePicture(clientIdToUse, profileImage);
+            if (uploadResult.success) {
+              // Reload profile picture URL after successful upload
+              try {
+                const newUrl = await getProfilePictureUrl(clientIdToUse);
+                if (newUrl) {
+                  setCurrentProfileImageUrl(newUrl);
+                }
+              } catch (urlError) {
+                // Non-critical - preview might not be available immediately
+                console.warn("Could not load profile picture URL after upload:", urlError);
+              }
+              toast.success("Profile picture uploaded successfully");
+            } else {
+              toast.error(uploadResult.message || "Failed to upload profile picture");
+            }
+          } catch (error: any) {
             console.error("Failed to upload profile picture:", error);
-            toast.error("Customer saved but profile picture upload failed");
+            const errorMessage = error?.message || "Customer saved but profile picture upload failed";
+            toast.error(errorMessage);
           }
         }
 
-        form.reset();
-        setProfileImage(null);
-        setCurrentProfileImageUrl(null);
+        // Only reset if creating new customer (not updating)
+        if (!data) {
+          form.reset();
+          setProfileImage(null);
+          setCurrentProfileImageUrl(null);
+        } else {
+          // For updates, keep the profile image state but clear the file selection
+          setProfileImage(null);
+          // Reload the profile picture URL to show the newly uploaded one
+          if (data.clientId) {
+            getProfilePictureUrl(data.clientId).then((url) => {
+              if (url) {
+                setCurrentProfileImageUrl(url);
+              }
+            }).catch(() => {
+              // Silently fail - image might not be available yet
+            });
+          }
+        }
         setOpen(false);
         setSuccessData({
           title: !data ? "Registration Successful!" : "Client Updated!",
@@ -964,7 +998,7 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
               />
 
               {/* Profile Picture Upload */}
-              <div>
+              <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Profile Picture
                 </label>
@@ -978,6 +1012,15 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
                   acceptedTypes={['image/jpeg', 'image/jpg', 'image/png']}
                   currentImageUrl={currentProfileImageUrl || undefined}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowCameraPreview(true)}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Take Photo with Camera
+                </Button>
               </div>
 
               <div className="grid grid-cols-2 gap-[15px] pt-4">
@@ -1009,6 +1052,28 @@ function AddNewMember({ open, setOpen, data }: AddNewMemberProps) {
           </Form>
         </div>
       </SheetContent>
+
+      {/* Camera Preview Component */}
+      <CameraPreview
+        open={showCameraPreview}
+        onClose={() => setShowCameraPreview(false)}
+        onCapture={(file) => {
+          setProfileImage(file);
+          // Update preview immediately using FileReader
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const imageUrl = reader.result as string;
+            setCurrentProfileImageUrl(imageUrl);
+            // Force ImageUpload to update by passing the new URL
+            // The ImageUpload component will sync via useEffect
+          };
+          reader.onerror = () => {
+            console.error('Failed to read captured image');
+            toast.error('Failed to preview captured image');
+          };
+          reader.readAsDataURL(file);
+        }}
+      />
     </Sheet>
   );
 }

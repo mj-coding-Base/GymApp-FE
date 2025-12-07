@@ -2,12 +2,13 @@
 
 import { getProfilePictureUrl, getUserPaymentsId } from "@/actions/customers";
 import { getUserAttendance } from "@/actions/session";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Sheet,
-    SheetClose,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import useUserDetails from "@/hooks/useUserDetails";
 import { AttendanceHistory, IndividualCustomer, PaymentHistory } from "@/types/Customer";
@@ -59,28 +60,81 @@ const ViewClientProfile = ({
 
   // Load profile picture
   useEffect(() => {
-    const fetchProfilePicture = async () => {
-      if (!customer?.clientId || !isOpen) return;
-
-      try {
-        const url = await getProfilePictureUrl(customer.clientId);
-        setProfileImageUrl(url);
-      } catch (error) {
-        // Silently fail - customer may not have a profile picture
-        console.warn('Failed to load profile picture:', error);
+    if (!customer?.clientId || !isOpen) {
+      // Clear profile image when sheet closes or no customer
+      if (profileImageUrl) {
+        URL.revokeObjectURL(profileImageUrl);
         setProfileImageUrl(null);
+      }
+      return;
+    }
+
+    let isMounted = true;
+    let currentUrl: string | null = null;
+
+    const fetchProfilePicture = async () => {
+      try {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[ClientProfile] Fetching profile picture for clientId: ${customer.clientId}`);
+          console.log(`[ClientProfile] Customer object:`, {
+            clientId: customer.clientId,
+            profilePicture: customer.profilePicture,
+            hasProfilePictureField: 'profilePicture' in customer
+          });
+        }
+        
+        // Try to fetch profile picture - will return null if not found (404)
+        const url = await getProfilePictureUrl(customer.clientId);
+        
+        if (process.env.NODE_ENV !== 'production') {
+          if (url) {
+            console.log(`[ClientProfile] ✅ Profile picture URL received successfully`);
+            console.log(`[ClientProfile] URL preview:`, url.substring(0, 50) + '...');
+          } else {
+            console.warn(`[ClientProfile] ⚠️ No profile picture URL returned for clientId: ${customer.clientId}`);
+            if (customer.profilePicture) {
+              console.warn(`[ClientProfile] ⚠️ Customer has profilePicture field: ${customer.profilePicture}, but API returned null`);
+            } else {
+              console.warn(`[ClientProfile] ⚠️ Customer does NOT have profilePicture field in database`);
+            }
+          }
+        }
+        
+        if (isMounted && url) {
+          currentUrl = url;
+          setProfileImageUrl(url);
+        } else if (isMounted) {
+          // No URL returned - customer may not have a profile picture
+          setProfileImageUrl(null);
+        }
+      } catch (error) {
+        // Log error for debugging
+        if (isMounted) {
+          console.error('[ClientProfile] ❌ Exception while loading profile picture:', error);
+          if (error instanceof Error) {
+            console.error('[ClientProfile] Error message:', error.message);
+            console.error('[ClientProfile] Error stack:', error.stack);
+          }
+          setProfileImageUrl(null);
+        }
       }
     };
 
     fetchProfilePicture();
 
-    // Cleanup: revoke object URL when component unmounts or closes
+    // Cleanup: revoke object URL when component unmounts, closes, or customer changes
     return () => {
+      isMounted = false;
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+      // Also clean up any existing URL
       if (profileImageUrl) {
         URL.revokeObjectURL(profileImageUrl);
       }
     };
-  }, [customer?.clientId, isOpen, profileImageUrl]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer?.clientId, isOpen]);
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -91,28 +145,45 @@ const ViewClientProfile = ({
       >
         <SheetHeader className="hidden">
           <SheetTitle className="text-[14px] font-semibold text-[#363636] text-center">
-            Client Profile
+            {customer.firstName}&apos;s Profile
           </SheetTitle>
         </SheetHeader>
         <SheetClose className="flex gap-[5px] mb-[25px]">
           <i className="back-icon size-4 text-[#1D1B20]" />
           <p className="text-[11.2px]/[14px]">Back</p>
         </SheetClose>
-        <h1 className="text-[14.4px]/[17px] font-medium text-[#363636] text-center">
-          Client Profile
-        </h1>
+        
         <div className="overflow-y-auto">
-          {/* Profile Picture */}
-          {profileImageUrl && (
-            <div className="flex justify-center mt-[16px] mb-[16px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={profileImageUrl}
-                alt={`${customer.firstName} ${customer.lastName}`}
-                className="w-24 h-24 rounded-full object-cover border-2 border-gray-300"
+          {/* Profile Picture - Circular Avatar at Top */}
+          <div className="flex justify-center mt-[16px] mb-[24px]">
+            <Avatar className="w-24 h-24 border-2 border-gray-300">
+              <AvatarImage 
+                src={profileImageUrl || undefined} 
+                alt={`${customer.firstName} ${customer.lastName} profile picture`}
+                className="object-cover"
+                onError={() => {
+                  // Log error if image fails to load
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.error('[ClientProfile] AvatarImage failed to load:', profileImageUrl);
+                  }
+                  // AvatarFallback will automatically show
+                }}
+                onLoad={() => {
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.log('[ClientProfile] AvatarImage loaded successfully');
+                  }
+                }}
               />
-            </div>
-          )}
+              <AvatarFallback className="bg-[#65A28C] text-white text-2xl font-semibold flex items-center justify-center">
+                {customer.firstName?.charAt(0)?.toUpperCase() || ''}
+                {customer.lastName?.charAt(0)?.toUpperCase() || ''}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+
+          <h1 className="text-[14.4px]/[17px] font-medium text-[#363636] text-center mb-[16px]">
+            {customer.firstName}&apos;s Profile
+          </h1>
           
           <div className="mt-[16px] border-[1px] border-[#000000] rounded-[12px] overflow-hidden">
             <div className="flex border-b-[1px] border-b-[#000000]">

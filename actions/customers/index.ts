@@ -11,6 +11,7 @@ import {
   PaymentHistory,
 } from "@/types/Customer";
 import axios from "@/utils/axios";
+import { getGymIdFromToken } from "@/utils/jwt";
 import { deduplicatedRequest } from "@/utils/requestDeduplication";
 import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
@@ -481,14 +482,6 @@ export const uploadProfilePicture = async (
   clientId: string,
   file: File
 ): Promise<{ success: boolean; message: string; filePath?: string }> => {
-  // Profile picture upload is disabled
-  console.warn('Profile picture upload is disabled');
-  return {
-    success: false,
-    message: 'Profile picture upload is temporarily disabled',
-  };
-  
-  /* COMMENTED OUT - Profile picture functionality disabled
   try {
     const formData = new FormData();
     formData.append('file', file); // Field name must match backend: FileInterceptor('file')
@@ -516,51 +509,121 @@ export const uploadProfilePicture = async (
         : "Failed to upload profile picture"
     );
   }
-  */
 };
 
 /**
  * Get profile picture URL (returns blob URL for <img src>)
  * @param clientId - Customer clientId
- * @returns Promise resolving to blob URL string
- * 
- * NOTE: Profile picture functionality is temporarily disabled
+ * @returns Promise resolving to blob URL string or null if not found
  */
-export const getProfilePictureUrl = async (clientId: string): Promise<string | null> => {
-  // Profile picture retrieval is disabled
-  return null;
-  
-  /* COMMENTED OUT - Profile picture functionality disabled
+export const getProfilePictureUrl = async (clientId: string, gymId?: string): Promise<string | null> => {
   try {
-    const response = await axios.get<Blob>(`/customers/${clientId}/profile-picture`, {
-      responseType: 'blob',
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[getProfilePictureUrl] Requesting profile picture for clientId: ${clientId}`);
+    }
+    
+    // Use fetch API directly for binary data to avoid axios interceptor issues
+    const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1";
+    const isServer = globalThis.window === undefined;
+    const token = isServer ? null : localStorage.getItem('x-auth-token');
+    
+    // 🔒 SECURITY: Extract gymId from token if not provided
+    // This ensures tenant isolation for profile picture access
+    let finalGymId: string | null | undefined = gymId;
+    if (!finalGymId && token && !isServer) {
+      // Only extract from token on client-side (localStorage not available on server)
+      finalGymId = getGymIdFromToken(token);
+    }
+    
+    // Build URL with gym-id query parameter for tenant isolation
+    let url = `${BASE_URL}/customers/${clientId}/profile-picture`;
+    if (finalGymId) {
+      url += `?gym-id=${encodeURIComponent(finalGymId)}`;
+    }
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['x-auth-token'] = token;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
     });
 
-    const blob = response.data;
+    if (!response.ok) {
+      if (response.status === 404) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(`[getProfilePictureUrl] Profile picture not found (404) for clientId: ${clientId}`);
+        }
+        return null;
+      }
+      if (response.status === 400) {
+        // Missing or invalid gym-id
+        const errorData = await response.json().catch(() => ({}));
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(`[getProfilePictureUrl] Bad request (400): Missing gym-id for clientId: ${clientId}`, errorData);
+        }
+        return null;
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[getProfilePictureUrl] Response received:`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        ok: response.ok,
+      });
+    }
+
+    // Get the blob directly from fetch response
+    const blob = await response.blob();
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    
+    if (blob.size === 0) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[getProfilePictureUrl] Empty blob created for clientId: ${clientId}`);
+      }
+      return null;
+    }
+
     const objectUrl = URL.createObjectURL(blob);
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[getProfilePictureUrl] ✅ Successfully created blob URL for clientId: ${clientId}`, {
+        blobSize: blob.size,
+        contentType: contentType,
+        objectUrl: objectUrl.substring(0, 50) + '...',
+      });
+    }
+    
     return objectUrl;
   } catch (error) {
     // Return null if profile picture not found (404) - this is expected for customers without pictures
-    const status = (error as any)?.response?.status;
-    const is404 = isAxiosError(error) && (error.response?.status === 404 || status === 404);
-    const isNotFoundMessage = error instanceof Error && (
+    const is404 = error instanceof Error && (
       error.message.includes('404') || 
       error.message.includes('not found') ||
       error.message.includes('Cannot GET')
     );
     
-    if (is404 || isNotFoundMessage) {
-      // Silently return null for 404 - this is expected for customers without profile pictures
+    if (is404) {
+      // Log 404 for debugging
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[getProfilePictureUrl] Profile picture not found (404) for clientId: ${clientId}`);
+      }
       return null;
     }
     
-    // Only log non-404 errors
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('Failed to get profile picture:', error);
+    // Log non-404 errors with full details
+    console.error(`[getProfilePictureUrl] ❌ Failed to get profile picture for clientId: ${clientId}:`, error);
+    if (error instanceof Error) {
+      console.error('[getProfilePictureUrl] Error message:', error.message);
+      console.error('[getProfilePictureUrl] Error stack:', error.stack);
     }
     return null;
   }
-  */
 };
 
 /**

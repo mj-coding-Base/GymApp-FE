@@ -4,7 +4,7 @@ import { fetchGroups, fetchIndividualCustomers } from "@/actions/customers";
 import { customersCache, CustomersData } from "@/lib/customersCache";
 import { GroupShort, IndividualCustomer } from "@/types/Customer";
 import { getGymIdFromToken } from "@/utils/jwt";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Customers from "./Customers";
 import CustomersSkeleton from "./CustomersSkeleton";
 
@@ -29,8 +29,14 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
   
   // Initialize with cached data, but validate gymId first
   const [data, setData] = useState<CustomersData | null>(() => {
+    // 🔒 SECURITY: Only access localStorage on client side
+    if (globalThis.window === undefined) {
+      return null;
+    }
+    
     // 🔒 SECURITY: Validate cache belongs to current gym before using
-    const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+    const token = localStorage.getItem('x-auth-token');
+    const currentGymId = getGymIdFromToken(token);
     if (!currentGymId) {
       // No token = no cache
       return null;
@@ -48,6 +54,9 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
   useEffect(() => {
     // 🔒 SECURITY: Check if gymId changed (user switch)
     const checkGymIdChange = () => {
+      if (globalThis.window === undefined) {
+        return false;
+      }
       const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
       
       if (currentGymId && currentGymId !== currentGymIdRef.current) {
@@ -75,17 +84,17 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
       if (e.key === 'x-auth-token') {
         if (checkGymIdChange()) {
           // Force refetch if gymId changed
-          window.location.reload(); // Most reliable way to clear all state
+          globalThis.window.location.reload(); // Most reliable way to clear all state
         }
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
+    globalThis.window.addEventListener('storage', handleStorageChange);
     
     // Also poll periodically to catch changes in same window (storage event only fires in other tabs)
     const pollInterval = setInterval(() => {
       if (checkGymIdChange()) {
-        window.location.reload(); // Force full reload on gym change
+        globalThis.window.location.reload(); // Force full reload on gym change
       }
     }, 1000); // Check every second
     
@@ -118,7 +127,8 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
         }
 
         // 🔒 SECURITY: Validate fresh data belongs to current gym
-        const freshGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
+        const token = globalThis.window === undefined ? null : localStorage.getItem('x-auth-token');
+        const freshGymId = getGymIdFromToken(token);
         if (freshGymId !== currentGymIdRef.current) {
           console.warn(`[SECURITY] GymId mismatch during fetch. Expected ${currentGymIdRef.current}, got ${freshGymId}. Discarding data.`);
           return; // Don't set data if gymId changed
@@ -143,7 +153,9 @@ export default function CustomersClient({ searchParams }: CustomersClientProps) 
     
     // Cleanup
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      if (globalThis.window !== undefined) {
+        globalThis.window.removeEventListener('storage', handleStorageChange);
+      }
       clearInterval(pollInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

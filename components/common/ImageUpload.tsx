@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface ImageUploadProps {
   onFileSelect: (file: File | null) => void;
@@ -23,6 +23,21 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasUserSelection, setHasUserSelection] = useState(false);
+
+  // Sync preview with currentImageUrl prop when it changes
+  // Only update if user hasn't selected a new file, or if currentImageUrl is explicitly provided
+  useEffect(() => {
+    if (currentImageUrl) {
+      setPreview(currentImageUrl);
+      // Clear user selection flag when external URL is provided
+      setHasUserSelection(false);
+    } else if (!hasUserSelection) {
+      // Only clear if no user selection exists
+      setPreview(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentImageUrl]);
 
   const validateFile = useCallback((file: File): string | null => {
     // Check file type
@@ -44,6 +59,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       setError(null);
 
       if (!file) {
+        // When file is removed, revert to currentImageUrl if available
         setPreview(currentImageUrl || null);
         onFileSelect(null);
         return;
@@ -53,13 +69,20 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       const validationError = validateFile(file);
       if (validationError) {
         setError(validationError);
+        // Don't clear preview on validation error - keep existing preview
         return;
       }
 
       // Create preview using FileReader
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result as string);
+        const result = reader.result as string;
+        setPreview(result);
+        setHasUserSelection(true); // Track that user selected this file
+      };
+      reader.onerror = () => {
+        setError('Failed to read file');
+        setHasUserSelection(false);
       };
       reader.readAsDataURL(file);
 
@@ -94,8 +117,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   const handleRemove = () => {
-    setPreview(null);
+    setPreview(currentImageUrl || null);
     setError(null);
+    setHasUserSelection(false);
     onFileSelect(null);
   };
 
