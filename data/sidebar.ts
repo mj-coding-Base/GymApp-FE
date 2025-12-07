@@ -41,4 +41,11 @@ export const sidebarData = [
     icon: "finances-icon",
     value: "finances",
   },
+  {
+    id: 7,
+    title: "Equipment",
+    url: "/equipment",
+    icon: "equipment-icon",
+    value: "equipment",
+  },
 ];

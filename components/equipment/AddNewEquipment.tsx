@@ -1,7 +1,7 @@
 "use client";
 
 import { createNewEquipment } from "@/actions/equipment";
-import { EquipmentType, EquipmentStatus } from "@/types/Equipment";
+import { EquipmentType, MuscleGroup } from "@/types/Equipment";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,7 +27,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -44,21 +43,17 @@ import { z } from "zod";
 
 // Define the form schema
 const equipmentSchema = z.object({
-  equipmentType: z.nativeEnum(EquipmentType),
-  equName: z.string().min(1, "Equipment name is required"),
-  model: z.string().optional(),
-  brand: z.string().optional(),
+  name: z.string().min(1, "Equipment name is required"),
+  type: z.nativeEnum(EquipmentType),
+  muscleGroups: z.array(z.nativeEnum(MuscleGroup)).min(1, "At least one muscle group is required"),
+  model: z.string().min(1, "Model is required"),
+  brand: z.string().min(1, "Brand is required"),
   room: z.string().optional(),
   zone: z.string().optional(),
-  purchaseDate: z.string().optional(),
-  quantityTotal: z.number().min(0).optional(),
-  lastServicedAt: z.string().optional(),
-  nextServiceDue: z.string().optional(),
-  warrantyProvider: z.string().optional(),
-  warrantyExpiresAt: z.string().optional(),
-  equipmentStatus: z.nativeEnum(EquipmentStatus),
-  cost: z.number().min(0).optional(),
-  description: z.string().optional(),
+  quantityTotal: z.number().min(1, "Quantity must be at least 1"),
+  sku: z.string().optional(),
+  serialNumber: z.string().optional(),
+  maintenanceIntervalDays: z.number().min(1).optional(),
 });
 
 interface AddNewEquipmentProps {
@@ -72,21 +67,17 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
   const form = useForm<z.infer<typeof equipmentSchema>>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
-      equipmentType: EquipmentType.UNKNOWN,
-      equName: "",
+      name: "",
+      type: EquipmentType.UNKNOWN,
+      muscleGroups: [MuscleGroup.UNKNOWN],
       model: "",
       brand: "",
       room: "",
       zone: "",
-      purchaseDate: "",
       quantityTotal: 1,
-      lastServicedAt: "",
-      nextServiceDue: "",
-      warrantyProvider: "",
-      warrantyExpiresAt: "",
-      equipmentStatus: EquipmentStatus.AVAILABLE,
-      cost: 0,
-      description: "",
+      sku: "",
+      serialNumber: "",
+      maintenanceIntervalDays: undefined,
     },
   });
 
@@ -96,25 +87,19 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
       console.log("Form submitted with data:", data);
       
       const equipmentData = {
-        equipmentType: data.equipmentType,
-        equName: data.equName,
-        model: data.model || undefined,
-        brand: data.brand || undefined,
-        location: data.room || data.zone ? {
+        name: data.name,
+        type: data.type,
+        muscleGroups: data.muscleGroups,
+        model: data.model,
+        brand: data.brand,
+        location: {
           room: data.room || undefined,
           zone: data.zone || undefined,
-        } : undefined,
-        purchaseDate: data.purchaseDate || undefined,
-        quantityTotal: data.quantityTotal || undefined,
-        lastServicedAt: data.lastServicedAt || undefined,
-        nextServiceDue: data.nextServiceDue || undefined,
-        warranty: data.warrantyProvider || data.warrantyExpiresAt ? {
-          provider: data.warrantyProvider || undefined,
-          expiresAt: data.warrantyExpiresAt || undefined,
-        } : undefined,
-        equipmentStatus: data.equipmentStatus,
-        cost: data.cost || undefined,
-        description: data.description || undefined,
+        },
+        quantityTotal: data.quantityTotal,
+        sku: data.sku || undefined,
+        serialNumber: data.serialNumber || undefined,
+        maintenanceIntervalDays: data.maintenanceIntervalDays || undefined,
       };
 
       console.log("Sending equipment data:", equipmentData);
@@ -146,7 +131,7 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
   };
 
   const equipmentTypeOptions = Object.values(EquipmentType);
-  const statusOptions = Object.values(EquipmentStatus);
+  const muscleGroupOptions = Object.values(MuscleGroup);
 
   return (
     <div>
@@ -192,7 +177,27 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
                       
                       <FormField
                         control={form.control}
-                        name="equipmentType"
+                        name="name"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[#212121] text-sm font-medium">
+                              Equipment Name <span className="text-red-500">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Enter equipment name"
+                                className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="type"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[#212121] text-sm font-medium">
@@ -225,19 +230,55 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
 
                       <FormField
                         control={form.control}
-                        name="equName"
+                        name="muscleGroups"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[#212121] text-sm font-medium">
-                              Equipment Name <span className="text-red-500">*</span>
+                              Muscle Groups <span className="text-red-500">*</span>
                             </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter equipment name"
-                                className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                {...field}
-                              />
-                            </FormControl>
+                            <Select 
+                              onValueChange={(value) => {
+                                const currentGroups = field.value || [];
+                                if (!currentGroups.includes(value as MuscleGroup)) {
+                                  field.onChange([...currentGroups, value as MuscleGroup]);
+                                }
+                              }}
+                              value=""
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]">
+                                  <SelectValue placeholder="Add muscle group" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {muscleGroupOptions.map((group) => (
+                                  <SelectItem key={group} value={group}>
+                                    {group.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {field.value && field.value.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {field.value.map((group) => (
+                                  <span
+                                    key={group}
+                                    className="inline-flex items-center px-2 py-1 rounded-md bg-[#65A28C] text-white text-xs"
+                                  >
+                                    {group.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        field.onChange(field.value.filter(g => g !== group));
+                                      }}
+                                      className="ml-2 hover:text-red-200"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <FormMessage className="text-xs" />
                           </FormItem>
                         )}
@@ -250,7 +291,7 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-[#212121] text-sm font-medium">
-                                Brand
+                                Brand <span className="text-red-500">*</span>
                               </FormLabel>
                               <FormControl>
                                 <Input
@@ -270,7 +311,7 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-[#212121] text-sm font-medium">
-                                Model
+                                Model <span className="text-red-500">*</span>
                               </FormLabel>
                               <FormControl>
                                 <Input
@@ -334,107 +375,43 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
 
                       <FormField
                         control={form.control}
-                        name="equipmentStatus"
+                        name="quantityTotal"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[#212121] text-sm font-medium">
-                              Status <span className="text-red-500">*</span>
+                              Quantity <span className="text-red-500">*</span>
                             </FormLabel>
-                            <Select 
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                              }} 
-                              value={field.value}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]">
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {statusOptions.map((status) => (
-                                  <SelectItem key={status} value={status}>
-                                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Input
+                                placeholder="1"
+                                className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
+                                type="number"
+                                min="1"
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                                value={field.value || ""}
+                              />
+                            </FormControl>
                             <FormMessage className="text-xs" />
                           </FormItem>
                         )}
                       />
                     </div>
 
-                    {/* Quantity & Cost Section */}
+                    {/* Additional Information Section */}
                     <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-[#212121] mb-3">Quantity & Pricing</h3>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="quantityTotal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Quantity
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="0"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  type="number"
-                                  min="0"
-                                  onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="cost"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Cost
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="0.00"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                                  value={field.value || ""}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Maintenance & Warranty Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-semibold text-[#212121] mb-3">Maintenance & Warranty</h3>
+                      <h3 className="text-sm font-semibold text-[#212121] mb-3">Additional Information</h3>
                       
                       <FormField
                         control={form.control}
-                        name="purchaseDate"
+                        name="sku"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[#212121] text-sm font-medium">
-                              Purchase Date
+                              SKU
                             </FormLabel>
                             <FormControl>
                               <Input
-                                type="date"
+                                placeholder="Stock Keeping Unit"
                                 className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
                                 {...field}
                               />
@@ -444,106 +421,42 @@ function AddNewEquipment({ onEquipmentAdded }: AddNewEquipmentProps) {
                         )}
                       />
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="lastServicedAt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Last Serviced
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="nextServiceDue"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Next Service Due
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="warrantyProvider"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Warranty Provider
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder="Provider name"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="warrantyExpiresAt"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-[#212121] text-sm font-medium">
-                                Warranty Expires
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Description Section */}
-                    <div className="space-y-4">
                       <FormField
                         control={form.control}
-                        name="description"
+                        name="serialNumber"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-[#212121] text-sm font-medium">
-                              Description
+                              Serial Number
                             </FormLabel>
                             <FormControl>
-                              <Textarea
-                                placeholder="Enter equipment description, notes, or additional information..."
-                                className="min-h-[100px] rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C] resize-none"
+                              <Input
+                                placeholder="Serial number"
+                                className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
                                 {...field}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="maintenanceIntervalDays"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-[#212121] text-sm font-medium">
+                              Maintenance Interval (Days)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="e.g., 30, 60, 90"
+                                className="h-11 rounded-lg border-[#BDBDBD] text-sm focus:ring-2 focus:ring-[#65A28C] focus:border-[#65A28C]"
+                                type="number"
+                                min="1"
+                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />

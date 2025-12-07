@@ -24,8 +24,8 @@ if (existsSync(envPath)) {
   });
 }
 
-// Get PORT from environment or default to 3000
-const port = process.env.PORT || '3000';
+// Get PORT from environment or default to 3001
+const port = process.env.PORT || '3001';
 
 // Start Next.js dev server
 const args = ['dev', '--turbopack', '-p', port];

@@ -1,7 +1,7 @@
 "use client";
 
 import { updateEquipment, deleteEquipment } from "@/actions/equipment";
-import { EquipmentType, EquipmentStatus, UpdateEquipmentDto } from "@/types/Equipment";
+import { EquipmentType, MuscleGroup, UpdateEquipmentDto } from "@/types/Equipment";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -36,39 +36,32 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const updateEquipmentSchema = z.object({
-  equipmentType: z.nativeEnum(EquipmentType).optional(),
-  equName: z.string().min(1, "Equipment name is required").optional(),
+  name: z.string().min(1, "Equipment name is required").optional(),
+  type: z.nativeEnum(EquipmentType).optional(),
+  muscleGroups: z.array(z.nativeEnum(MuscleGroup)).optional(),
   model: z.string().optional(),
   brand: z.string().optional(),
   room: z.string().optional(),
   zone: z.string().optional(),
-  purchaseDate: z.string().optional(),
-  quantityTotal: z.number().min(0).optional(),
-  lastServicedAt: z.string().optional(),
-  nextServiceDue: z.string().optional(),
-  warrantyProvider: z.string().optional(),
-  warrantyExpiresAt: z.string().optional(),
-  equipmentStatus: z.nativeEnum(EquipmentStatus).optional(),
-  cost: z.number().min(0).optional(),
-  description: z.string().optional(),
+  quantityTotal: z.number().min(1).optional(),
+  sku: z.string().optional(),
+  serialNumber: z.string().optional(),
+  maintenanceIntervalDays: z.number().min(1).optional(),
 });
 
 interface UpdateEquipmentProps {
   equipmentId: string;
   initialData?: {
-    equipmentType: EquipmentType;
-    equName: string;
+    name?: string;
+    type?: EquipmentType;
+    muscleGroups?: MuscleGroup[];
     model?: string;
     brand?: string;
     location?: { room?: string; zone?: string };
-    purchaseDate?: string;
     quantityTotal?: number;
-    lastServicedAt?: string;
-    nextServiceDue?: string;
-    warranty?: { provider?: string; expiresAt?: string };
-    equipmentStatus: EquipmentStatus;
-    cost?: number;
-    description?: string;
+    sku?: string;
+    serialNumber?: string;
+    maintenanceIntervalDays?: number;
   };
   onEquipmentUpdated?: () => void;
 }
@@ -81,21 +74,17 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
   const form = useForm<z.infer<typeof updateEquipmentSchema>>({
     resolver: zodResolver(updateEquipmentSchema),
     defaultValues: {
-      equipmentType: initialData?.equipmentType,
-      equName: initialData?.equName || "",
+      name: initialData?.name || "",
+      type: initialData?.type,
+      muscleGroups: initialData?.muscleGroups || [],
       model: initialData?.model || "",
       brand: initialData?.brand || "",
       room: initialData?.location?.room || "",
       zone: initialData?.location?.zone || "",
-      purchaseDate: initialData?.purchaseDate || "",
       quantityTotal: initialData?.quantityTotal,
-      lastServicedAt: initialData?.lastServicedAt || "",
-      nextServiceDue: initialData?.nextServiceDue || "",
-      warrantyProvider: initialData?.warranty?.provider || "",
-      warrantyExpiresAt: initialData?.warranty?.expiresAt || "",
-      equipmentStatus: initialData?.equipmentStatus,
-      cost: initialData?.cost,
-      description: initialData?.description || "",
+      sku: initialData?.sku || "",
+      serialNumber: initialData?.serialNumber || "",
+      maintenanceIntervalDays: initialData?.maintenanceIntervalDays,
     },
   });
 
@@ -103,25 +92,19 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
     setIsSubmitting(true);
     try {
       const updateData: UpdateEquipmentDto = {
-        equipmentType: values.equipmentType,
-        equName: values.equName,
+        name: values.name,
+        type: values.type,
+        muscleGroups: values.muscleGroups && values.muscleGroups.length > 0 ? values.muscleGroups : undefined,
         model: values.model || undefined,
         brand: values.brand || undefined,
         location: values.room || values.zone ? {
           room: values.room || undefined,
           zone: values.zone || undefined,
         } : undefined,
-        purchaseDate: values.purchaseDate || undefined,
         quantityTotal: values.quantityTotal || undefined,
-        lastServicedAt: values.lastServicedAt || undefined,
-        nextServiceDue: values.nextServiceDue || undefined,
-        warranty: values.warrantyProvider || values.warrantyExpiresAt ? {
-          provider: values.warrantyProvider || undefined,
-          expiresAt: values.warrantyExpiresAt || undefined,
-        } : undefined,
-        equipmentStatus: values.equipmentStatus,
-        cost: values.cost || undefined,
-        description: values.description || undefined,
+        sku: values.sku || undefined,
+        serialNumber: values.serialNumber || undefined,
+        maintenanceIntervalDays: values.maintenanceIntervalDays || undefined,
       };
 
       const result = await updateEquipment(equipmentId, updateData);
@@ -159,7 +142,7 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
   };
 
   const equipmentTypeOptions = Object.values(EquipmentType);
-  const statusOptions = Object.values(EquipmentStatus);
+  const muscleGroupOptions = Object.values(MuscleGroup);
 
   return (
     <div>
@@ -196,7 +179,27 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <FormField
                 control={form.control}
-                name="equipmentType"
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Equipment Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter equipment name"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">
@@ -223,19 +226,55 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
 
               <FormField
                 control={form.control}
-                name="equName"
+                name="muscleGroups"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">
-                      Equipment Name
+                      Muscle Groups
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter equipment name"
-                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select 
+                      onValueChange={(value) => {
+                        const currentGroups = field.value || [];
+                        if (!currentGroups.includes(value as MuscleGroup)) {
+                          field.onChange([...currentGroups, value as MuscleGroup]);
+                        }
+                      }}
+                      value=""
+                    >
+                      <FormControl>
+                        <SelectTrigger className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]">
+                          <SelectValue placeholder="Add muscle group" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {muscleGroupOptions.map((group) => (
+                          <SelectItem key={group} value={group}>
+                            {group.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value && field.value.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {field.value.map((group) => (
+                          <span
+                            key={group}
+                            className="inline-flex items-center px-2 py-1 rounded-md bg-[#65A28C] text-white text-xs"
+                          >
+                            {group.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                field.onChange(field.value.filter(g => g !== group));
+                              }}
+                              className="ml-2 hover:text-red-200"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <FormMessage className="text-xs" />
                   </FormItem>
                 )}
@@ -336,9 +375,9 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
                         placeholder="Quantity"
                         className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
                         type="number"
-                        min="0"
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        value={field.value}
+                        min="1"
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />
@@ -348,88 +387,60 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
 
               <FormField
                 control={form.control}
-                name="cost"
+                name="sku"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[#212121] text-[14px]">
-                      Cost
+                      SKU
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Cost"
+                        placeholder="SKU"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="serialNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Serial Number
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Serial Number"
+                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="maintenanceIntervalDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[#212121] text-[14px]">
+                      Maintenance Interval (Days)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., 30, 60, 90"
                         className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
                         type="number"
-                        min="0"
-                        step="0.01"
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        value={field.value}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="equipmentStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#212121] text-[14px]">
-                      Status
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="purchaseDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#212121] text-[14px]">
-                      Purchase Date
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[#212121] text-[14px]">
-                      Description
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter description"
-                        className="p-3 rounded-[10px] border-[#BDBDBD] text-[14px]"
-                        {...field}
+                        min="1"
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />
@@ -510,4 +521,3 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
 }
 
 export default UpdateEquipment;
-

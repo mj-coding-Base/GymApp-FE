@@ -54,6 +54,45 @@ export enum EquipmentType {
   UNKNOWN = 'unknown'
 }
 
+export enum MuscleGroup {
+  // Upper body – chest & shoulders
+  CHEST = 'chest',
+  UPPER_CHEST = 'upper_chest',
+  LOWER_CHEST = 'lower_chest',
+  SHOULDERS = 'shoulders',
+  FRONT_DELTS = 'front_delts',
+  SIDE_DELTS = 'side_delts',
+  REAR_DELTS = 'rear_delts',
+  TRAPS = 'traps',
+  // Arms
+  BICEPS = 'biceps',
+  TRICEPS = 'triceps',
+  FOREARMS = 'forearms',
+  // Back
+  LATS = 'lats',
+  RHOMBOIDS = 'rhomboids',
+  LOWER_BACK = 'lower_back',
+  SPINAL_ERECTORS = 'spinal_erectors',
+  // Core
+  ABS = 'abs',
+  OBLIQUES = 'obliques',
+  TRANSVERSE_ABS = 'transverse_abs',
+  // Lower body
+  QUADRICEPS = 'quadriceps',
+  HAMSTRINGS = 'hamstrings',
+  GLUTES = 'glutes',
+  CALVES = 'calves',
+  HIP_FLEXORS = 'hip_flexors',
+  ADDUCTORS = 'adductors',
+  ABDUCTORS = 'abductors',
+  // Full body / compound
+  FULL_BODY = 'full_body',
+  CARDIO = 'cardio',
+  STABILIZERS = 'stabilizers',
+  CORE_STRENGTH = 'core_strength',
+  UNKNOWN = 'unknown',
+}
+
 export enum EquipmentStatus {
   AVAILABLE = 'available',
   MAINTENANCE = 'maintenance',
@@ -65,65 +104,61 @@ export interface Location {
   zone?: string;
 }
 
-export interface Warranty {
-  provider?: string;
-  expiresAt?: string;
-}
-
 export type Equipment = {
   _id?: string;
   equipmentId: string;
   gymId: string;
+  name: string;
+  sku?: string;
+  type: EquipmentType;
+  muscleGroups: MuscleGroup[];
+  model: string;
+  brand: string;
+  serialNumber?: string;
+  location: Location;
+  quantityTotal: number;
+  quantityAvailable: number;
+  status: EquipmentStatus;
+  lastServicedAt?: string;
+  maintenanceIntervalDays?: number;
+  nextServiceDue?: string;
+  images?: string[];
+  metadata?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
-  status: string;
-  equipmentType: EquipmentType;
-  equName: string;
-  model?: string;
-  brand?: string;
-  location?: Location;
-  purchaseDate?: string;
-  quantityTotal?: number;
-  lastServicedAt?: string;
-  nextServiceDue?: string;
-  warranty?: Warranty;
-  equipmentStatus: EquipmentStatus;
-  images?: string[];
-  cost?: number;
-  description?: string;
+  // Legacy fields for backward compatibility
+  equipmentType?: EquipmentType;
+  equName?: string;
+  equipmentStatus?: EquipmentStatus;
 };
 
 export interface CreateEquipmentDto {
-  equipmentType: EquipmentType;
-  equName: string;
-  model?: string;
-  brand?: string;
-  location?: Location;
-  purchaseDate?: string;
-  quantityTotal?: number;
-  lastServicedAt?: string;
-  nextServiceDue?: string;
-  warranty?: Warranty;
-  equipmentStatus: EquipmentStatus;
+  name: string;
+  type: EquipmentType;
+  muscleGroups: MuscleGroup[];
+  model: string;
+  brand: string;
+  location: Location;
+  quantityTotal: number;
+  sku?: string;
+  serialNumber?: string;
+  maintenanceIntervalDays?: number;
   images?: string[];
-  cost?: number;
-  description?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateEquipmentDto {
-  equipmentType?: EquipmentType;
-  equName?: string;
+  name?: string;
+  type?: EquipmentType;
+  muscleGroups?: MuscleGroup[];
   model?: string;
   brand?: string;
   location?: Location;
-  purchaseDate?: string;
   quantityTotal?: number;
-  lastServicedAt?: string;
-  nextServiceDue?: string;
-  warranty?: Warranty;
-  equipmentStatus?: EquipmentStatus;
+  sku?: string;
+  serialNumber?: string;
+  maintenanceIntervalDays?: number;
   images?: string[];
-  cost?: number;
-  description?: string;
+  metadata?: Record<string, any>;
 }
 

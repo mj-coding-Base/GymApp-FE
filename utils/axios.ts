@@ -111,17 +111,20 @@ axiosInstance.interceptors.request.use(async (request) => {
       request.headers["x-auth-token"] = token;
     }
 
-    // 🔒 SECURITY: For endpoints with @SkipAuthentication() that use @ValidatedGymId(),
+    // 🔒 SECURITY: For endpoints with @SkipAuthentication() that use @Headers('gym-id'),
     // we need to send gym-id header as a fallback since the AuthGuard won't run
     // This is a workaround for endpoints that skip authentication but still need gymId
     const isPackagesGetAllEndpoint = request.url?.includes('/packages/get-all');
+    const isEquipmentsEndpoint = request.url?.includes('/equipments') && 
+                                 (request.method?.toUpperCase() === 'GET' || 
+                                  request.method?.toUpperCase() === 'POST');
     
-    if (isPackagesGetAllEndpoint && gymId && token) {
-      // Send gym-id header as fallback for this specific endpoint
-      // The backend might have a guard/interceptor that reads this when auth is skipped
+    if ((isPackagesGetAllEndpoint || isEquipmentsEndpoint) && gymId) {
+      // Send gym-id header as fallback for these specific endpoints
+      // The backend reads this header when auth is skipped
       request.headers["gym-id"] = gymId;
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`[Packages] Sending gym-id header for /packages/get-all: ${gymId}`);
+        console.log(`[Axios] Sending gym-id header for ${request.url}: ${gymId}`);
       }
     }
 
