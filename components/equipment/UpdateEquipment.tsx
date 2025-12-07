@@ -265,7 +265,7 @@ function UpdateEquipment({ equipmentId, initialData, onEquipmentUpdated }: Updat
                             <button
                               type="button"
                               onClick={() => {
-                                field.onChange(field.value.filter(g => g !== group));
+                                field.onChange((field.value || []).filter(g => g !== group));
                               }}
                               className="ml-2 hover:text-red-200"
                             >
