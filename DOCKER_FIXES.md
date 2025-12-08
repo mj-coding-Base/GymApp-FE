@@ -87,10 +87,10 @@ Ensure your `.dockerignore` is configured correctly:
 ## Verification
 After successful build, verify the app works:
 ```bash
-docker run -p 3002:3002 gymapp-fe
+docker run -p 3001:3001 gymapp-fe
 ```
 
-Then visit `http://localhost:3002`
+Then visit `http://localhost:3001`
 
 ## Troubleshooting
 

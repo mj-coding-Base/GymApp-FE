@@ -163,11 +163,11 @@ RUN groupadd --system --gid 1001 nodejs && \
 
 # Set production environment
 ENV NODE_ENV=production
-ENV PORT=3002
+ENV PORT=3001
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Expose port
-EXPOSE 3002
+EXPOSE 3001
 
 # Copy standalone output (includes all necessary files and node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -181,7 +181,7 @@ USER nextjs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
+  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3001, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
 # Start the application
 CMD ["node", "server.js"]

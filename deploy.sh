@@ -36,7 +36,7 @@ docker-compose logs --tail=50
 
 echo ""
 echo "✅ Deployment complete!"
-echo "🌐 App should be available at http://your-vps-ip:3002"
+echo "🌐 App should be available at http://your-vps-ip:3001"
 echo ""
 echo "To view logs: docker-compose logs -f"
 echo "To stop: docker-compose down"

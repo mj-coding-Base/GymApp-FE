@@ -97,7 +97,7 @@ npm install --save-dev lightningcss@1.19.0
 ### Test locally first:
 ```bash
 docker build -f Dockerfile.alternative -t gymapp-fe .
-docker run -p 3002:3002 gymapp-fe
+docker run -p 3001:3001 gymapp-fe
 ```
 
 ### If that works, update your CI/CD to use:
