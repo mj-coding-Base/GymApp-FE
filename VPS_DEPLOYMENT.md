@@ -61,7 +61,7 @@ docker ps | grep gymapp
 docker logs gymapp-frontend
 
 # Test the app
-curl http://localhost:3001
+curl http://localhost:3002
 ```
 
 ### Manual Docker Build
@@ -75,7 +75,7 @@ docker build -t gymapp-fe .
 # Run it
 docker run -d \
   --name gymapp-frontend \
-  -p 3001:3001 \
+  -p 3002:3002 \
   -e NODE_ENV=production \
   gymapp-fe
 
@@ -118,7 +118,7 @@ docker-compose up -d
 Use the alternative Dockerfile:
 ```bash
 docker build -f Dockerfile.alternative -t gymapp-fe .
-docker run -d --name gymapp-frontend -p 3001:3001 gymapp-fe
+docker run -d --name gymapp-frontend -p 3002:3002 gymapp-fe
 ```
 
 #### Permission issues
@@ -144,7 +144,7 @@ nano /srv/gymapp-fe/.env
 
 # Add your environment variables:
 # NODE_ENV=production
-# PORT=3001
+# PORT=3002
 # etc...
 ```
 
@@ -158,7 +158,7 @@ server {
     server_name yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3002;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -202,7 +202,7 @@ The container will be rebuilt with the latest changes.
 - [ ] Docker is installed on VPS
 - [ ] Container builds successfully
 - [ ] Container starts without errors
-- [ ] App responds at http://vps-ip:3001
+- [ ] App responds at http://vps-ip:3002
 - [ ] No lightningcss errors in logs
 - [ ] Health check passes
 

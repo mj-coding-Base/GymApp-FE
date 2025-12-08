@@ -32,9 +32,9 @@ docker build -t gymapp-fe:latest .
 # Run the container
 docker run -d \
   --name gymapp-frontend \
-  -p 3001:3001 \
+  -p 3002:3002 \
   -e NODE_ENV=production \
-  -e PORT=3001 \
+  -e PORT=3002 \
   -e NEXT_TELEMETRY_DISABLED=1 \
   --restart unless-stopped \
   gymapp-fe:latest
@@ -54,7 +54,7 @@ Create a `.env` file in the project root with your production environment variab
 ```env
 # Application
 NODE_ENV=production
-PORT=3001
+PORT=3002
 NEXT_TELEMETRY_DISABLED=1
 
 # Add your environment variables here
@@ -73,7 +73,7 @@ docker-compose --env-file .env up -d
 # With docker
 docker run -d \
   --name gymapp-frontend \
-  -p 3001:3001 \
+  -p 3002:3002 \
   --env-file .env \
   --restart unless-stopped \
   gymapp-fe:latest
@@ -113,7 +113,7 @@ docker pull your-registry.com/gymapp-fe:latest
 # Run the container
 docker run -d \
   --name gymapp-frontend \
-  -p 3001:3001 \
+  -p 3002:3002 \
   --env-file .env.production \
   --restart unless-stopped \
   your-registry.com/gymapp-fe:latest
@@ -217,7 +217,7 @@ server {
     server_name your-domain.com;
 
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3002;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -242,7 +242,7 @@ services:
       - "traefik.http.routers.gymapp.rule=Host(`your-domain.com`)"
       - "traefik.http.routers.gymapp.entrypoints=websecure"
       - "traefik.http.routers.gymapp.tls.certresolver=letsencrypt"
-      - "traefik.http.services.gymapp.loadbalancer.server.port=3001"
+      - "traefik.http.services.gymapp.loadbalancer.server.port=3002"
 ```
 
 ## CI/CD Integration
@@ -274,7 +274,7 @@ jobs:
         run: |
           ssh user@server "docker pull your-registry.com/gymapp-fe:${{ github.sha }}"
           ssh user@server "docker stop gymapp-frontend && docker rm gymapp-frontend"
-          ssh user@server "docker run -d --name gymapp-frontend -p 3001:3001 your-registry.com/gymapp-fe:${{ github.sha }}"
+          ssh user@server "docker run -d --name gymapp-frontend -p 3002:3002 your-registry.com/gymapp-fe:${{ github.sha }}"
 ```
 
 ## Performance Optimization
