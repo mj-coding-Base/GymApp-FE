@@ -1,8 +1,8 @@
 // Script to load .env and start Next.js dev server
-import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -24,8 +24,8 @@ if (existsSync(envPath)) {
   });
 }
 
-// Get PORT from environment or default to 3001
-const port = process.env.PORT || '3001';
+// Get PORT from environment or default to 3002
+const port = process.env.PORT || '3002';
 
 // Start Next.js dev server
 const args = ['dev', '--turbopack', '-p', port];

@@ -14,25 +14,30 @@ services:
       - NODE_ENV=production
       - PORT=3002
       - NEXT_TELEMETRY_DISABLED=1
+      - HOSTNAME=0.0.0.0  # Bind to all interfaces, not just localhost
       # Add your environment variables here
       # - DATABASE_URL=your_database_url
       # - API_URL=your_api_url
+    # Add init system to handle signals properly
+    init: true
     restart: unless-stopped
+    # Add stop grace period to allow graceful shutdown
+    stop_grace_period: 30s
     healthcheck:
       test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
-    # Resource limits (optional, adjust based on your needs)
+    # Resource limits - increased memory to prevent OOM kills (exit code 137)
     deploy:
       resources:
         limits:
           cpus: '2'
-          memory: 2G
+          memory: 3G  # Increased from 2G to prevent OOM
         reservations:
-          cpus: '1'
-          memory: 1G
+          cpus: '0.5'
+          memory: 512M  # Reduced reservation to allow more flexibility
     # Security options
     security_opt:
       - no-new-privileges:true

@@ -174,14 +174,42 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Note: Runtime dependencies are included in standalone output
+# Verify server.js exists before switching user
+RUN if [ ! -f "./server.js" ]; then \
+      echo "ERROR: server.js not found! Standalone build may have failed." && \
+      echo "Contents of current directory:" && \
+      ls -la && \
+      echo "Contents of .next directory:" && \
+      ls -la .next/ 2>/dev/null || echo ".next directory not found" && \
+      exit 1; \
+    fi && \
+    echo "✓ server.js found, build successful"
+
+# Create startup script to handle errors gracefully
+RUN echo '#!/bin/sh\n\
+set -e\n\
+echo "=== Starting Next.js Application ==="\n\
+echo "Working directory: $(pwd)"\n\
+echo "Port: ${PORT:-3002}"\n\
+echo "Node version: $(node --version)"\n\
+echo "Checking for server.js..."\n\
+if [ ! -f "./server.js" ]; then\n\
+  echo "ERROR: server.js not found!"\n\
+  echo "Directory contents:"\n\
+  ls -la\n\
+  exit 1\n\
+fi\n\
+echo "✓ server.js found\n\
+echo "Starting server on port ${PORT:-3002}..."\n\
+exec node server.js\n\
+' > /app/start.sh && chmod +x /app/start.sh && chown nextjs:nodejs /app/start.sh
 
 # Switch to non-root user
 USER nextjs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
+# Health check - wait longer for startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: process.env.PORT || 3002, path: '/', method: 'GET', timeout: 5000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => { req.destroy(); process.exit(1); }); req.end();"
 
-# Start the application
-CMD ["node", "server.js"]
+# Start the application using startup script
+CMD ["/app/start.sh"]
