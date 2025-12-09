@@ -10,7 +10,7 @@ services:
     ports:
       - "${APP_PORT:-3002}:${PORT:-3002}"
     env_file:
-      - .env.production
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-3002}
