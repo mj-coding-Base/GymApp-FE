@@ -1,168 +1,135 @@
-# VPS Build Fix - LightningCSS Issue
+# VPS Build Fix - Proper Solution
 
 ## Problem
-When building directly on VPS, you get:
-```
-Error: Cannot find module '../lightningcss.linux-x64-gnu.node'
-```
+Running `npm run build` on VPS fails with:
+1. `next: not found` - Next.js CLI not installed
+2. `lightningcss binary source not found` - Dependencies not installed
 
 ## Root Cause
-LightningCSS (dependency of Tailwind CSS v4) requires native binaries that need to be properly installed for the linux platform.
+`node_modules` is not installed on the VPS. You need to install dependencies first.
 
-## Solution 1: Use Docker (Recommended)
+## Solution
 
-The easiest and most reliable way to build on VPS is using Docker:
+### Option 1: Use Docker (Recommended for VPS)
+
+**Don't build directly on VPS - use Docker instead:**
 
 ```bash
-# On VPS
 cd /srv/gymapp-fe
 
-# Pull latest changes
+# Pull latest code
 git pull
 
-# Build and run with Docker
-docker-compose up -d --build
-
-# Check logs
-docker-compose logs -f
+# Build with Docker (includes all dependencies)
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+docker compose build --progress=plain
+docker compose up -d
 ```
 
-## Solution 2: Fix Direct Build on VPS
+### Option 2: Build Directly on VPS (If Needed)
 
-If you prefer to build directly on VPS without Docker:
-
-### Step 1: Clean Install with Correct Flags
+If you really need to build directly on VPS:
 
 ```bash
 cd /srv/gymapp-fe
 
-# Remove node_modules and lock file
+# 1. Install dependencies first
+npm install --legacy-peer-deps
+
+# 2. Fix lightningcss (runs automatically via postinstall, but run explicitly)
+npm run fix-lightningcss
+
+# 3. Now build
+npm run build
+```
+
+**Note:** Building directly on VPS is NOT recommended because:
+- Requires Node.js and npm on VPS
+- Requires all build tools
+- Slower than Docker
+- Harder to maintain
+
+## Why Docker is Better
+
+✅ **Isolated environment** - No need to install Node.js on VPS
+✅ **Reproducible builds** - Same result every time
+✅ **Faster** - Uses BuildKit caching
+✅ **Cleaner** - No `node_modules` on VPS filesystem
+✅ **Production-ready** - Optimized for deployment
+
+## Quick Fix Commands
+
+### For Docker (Recommended):
+```bash
+cd /srv/gymapp-fe
+git pull
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+docker compose down
+docker compose build --progress=plain 2>&1 | tee build.log
+docker compose up -d
+docker compose logs -f
+```
+
+### For Direct Build (Not Recommended):
+```bash
+cd /srv/gymapp-fe
+npm install --legacy-peer-deps
+npm run build
+```
+
+## Troubleshooting
+
+### If Docker build hangs:
+```bash
+# Check BuildKit is enabled
+echo $DOCKER_BUILDKIT  # Should show: 1
+
+# Check build context
+du -sh .
+ls -la | grep node_modules  # Should NOT exist
+
+# Try building with verbose output
+docker compose build --progress=plain 2>&1 | head -100
+```
+
+### If direct build fails:
+```bash
+# Check Node.js version (needs 20+)
+node --version
+
+# Check npm version
+npm --version
+
+# Reinstall dependencies
 rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
 
-# Install with flags to include optional dependencies
-npm install --legacy-peer-deps --include=optional
-
-# The postinstall script will automatically fix lightningcss
-# Verify the binary exists:
-ls -la node_modules/lightningcss/*.node
-
-# Should show: lightningcss.linux-x64-gnu.node
+# Check lightningcss
+ls -la node_modules/lightningcss/ 2>/dev/null || echo "lightningcss not installed"
 ```
 
-### Step 2: Build
+## Expected Behavior
 
-```bash
-npm run build
+**With Docker:**
+```
+[+] Building 15.2s (15/15) FINISHED
+ => [deps 6/6] RUN npm ci --legacy-peer-deps
+ => [builder 5/8] RUN npm run build
+✅ Build successful
 ```
 
-The build script will:
-1. Run the lightningcss fix (ensures binary is in right place)
-2. Build the Next.js app
-
-### Step 3: Start
-
-```bash
-npm start
+**With Direct Build:**
+```
+> npm install --legacy-peer-deps
+added 1234 packages
+> npm run fix-lightningcss
+✓ Fixed lightningcss binary
+> npm run build
+✓ Build successful
 ```
 
-## What Was Fixed
+## Recommendation
 
-1. **Added postinstall script** to `package.json` - automatically fixes lightningcss after npm install
-2. **Updated build script** to run the fix before building
-3. **Simplified Dockerfile** - cleaner approach to fix lightningcss in Docker builds
-4. **Added build tools** to Docker builder stage for native module compilation
-
-## Testing Locally Before VPS
-
-To test the fix locally (simulating VPS environment):
-
-```bash
-# Remove node_modules
-rm -rf node_modules
-
-# Reinstall
-npm install --legacy-peer-deps --include=optional
-
-# Build
-npm run build
-
-# Should build successfully now
-```
-
-## What Changed
-
-### package.json
-- Added `postinstall` script to fix lightningcss after install
-- Updated `build` script to fix lightningcss before building
-- Added inline `fix-lightningcss` script
-
-### Dockerfile
-- Simplified lightningcss fix logic
-- Added build tools to builder stage
-- More reliable binary copying
-
-## Alternative: If Still Failing
-
-If the above doesn't work, try manually fixing after install:
-
-```bash
-cd /srv/gymapp-fe
-
-# After npm install
-node -e "
-const fs = require('fs');
-const path = require('path');
-const src = path.join(process.cwd(), 'node_modules', 'lightningcss', 'linux-x64-gnu', 'lightningcss.linux-x64-gnu.node');
-const dst = path.join(process.cwd(), 'node_modules', 'lightningcss', 'lightningcss.linux-x64-gnu.node');
-if (fs.existsSync(src) && !fs.existsSync(dst)) {
-  fs.copyFileSync(src, dst);
-  console.log('✓ Fixed lightningcss');
-} else {
-  console.log('⚠ Could not fix (files may not exist)');
-  console.log('Src exists:', fs.existsSync(src));
-  console.log('Dst exists:', fs.existsSync(dst));
-}
-"
-
-# Then build
-npm run build
-```
-
-## Debugging
-
-If build still fails:
-
-```bash
-# Check if lightningcss exists
-ls -la node_modules/lightningcss/
-
-# Check for .node files
-find node_modules/lightningcss -name "*.node" -ls
-
-# Check what lightningcss is trying to load
-cat node_modules/lightningcss/node/index.js | grep -A 5 "require"
-
-# Check architecture
-uname -m
-node -p "process.platform + ' ' + process.arch"
-```
-
-## Why This Happens
-
-Tailwind CSS v4 uses LightningCSS which has native bindings. The native binary is installed in:
-- `node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node`
-
-But the module expects it in:
-- `node_modules/lightningcss/lightningcss.linux-x64-gnu.node`
-
-The fix copies it to the expected location.
-
-## Recommended Approach
-
-**Use Docker** - It's more reliable and handles all edge cases:
-```bash
-docker-compose up -d --build
-```
-
-Your production environment should be as similar as possible between local and VPS, and Docker ensures exactly that.
-
+**Always use Docker on VPS.** It's the proper way to deploy applications.
