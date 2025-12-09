@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # BuildKit is enabled via environment variables for better caching
+      # Disable BuildKit if it's causing issues (uncomment if needed)
+      # DOCKER_BUILDKIT: 0
     container_name: gymapp-frontend
     ports:
       - "3002:3002"

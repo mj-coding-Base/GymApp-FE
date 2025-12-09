@@ -1,4 +1,4 @@
-# Dependencies
+# Dependencies (critical - must exclude)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -6,13 +6,12 @@ yarn-error.log*
 yarn.lock
 package-lock.json
 
-# Build artifacts
+# Build artifacts (critical - must exclude)
 .next/
 out/
 dist/
 build/
 .turbo/
-node_modules/.cache/
 
 # Environment files
 .env
@@ -48,30 +47,27 @@ coverage/
 *.spec.ts
 *.spec.tsx
 
-# Documentation
+# Documentation (not needed in build)
 *.md
 !README.md
 docs/
 
-# Logs
+# Large files that slow down builds
+*.tar.gz
+*.zip
 *.log
-logs/
-
-# OS files
-.DS_Store
-Thumbs.db
+*.map
 
 # Temporary files
 tmp/
 temp/
 *.tmp
 
-# Large files
-*.tar.gz
-*.zip
-*.map
+# OS files
+.DS_Store
+Thumbs.db
 
-# Security
+# Misc
 *.pem
-*.key
-*.cert
+LICENSE
+CHANGELOG.md

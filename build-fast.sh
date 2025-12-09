@@ -43,7 +43,7 @@ if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo ""
     echo "✅ Complete! Containers are starting..."
     echo "📊 Check status with: docker compose ps"
-    echo "📋 View logs with: docker compose logs -f gymapp-fe"
+    echo "📋 View logs with: docker compose logs -f"
 else
     echo ""
     echo "❌ Build failed! Check the output above for errors."
