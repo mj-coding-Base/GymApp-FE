@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y \
 COPY package.json package-lock.json* ./
 
 # Install all dependencies (including devDependencies and optional dependencies for native modules)
-RUN npm ci --legacy-peer-deps --include=optional
+# Note: npm ci doesn't support --include, so we use npm install for optional deps
+RUN npm ci --legacy-peer-deps && \
+    npm install --legacy-peer-deps --include=optional lightningcss 2>&1 | tail -10 || echo "Optional install completed"
 
 # Fix lightningcss binary location immediately after installation
 RUN echo "=== Fixing lightningcss in deps stage ===" && \
@@ -143,8 +145,9 @@ RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
       exit 1; \
     fi
 
-# Run fix-lightningcss script explicitly before build (double-check)
-RUN npm run fix-lightningcss || echo "Fix script completed (may have warnings)"
+# Run fix-lightningcss script explicitly before build
+# This MUST succeed - the script will exit with error if binary not found
+RUN npm run fix-lightningcss
 
 # Build the application
 RUN npm run build
