@@ -4,7 +4,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 yarn.lock
-package-lock.json
+# NOTE: package-lock.json is NEEDED for npm ci - do NOT exclude it!
 
 # Build artifacts (critical - must exclude)
 .next/

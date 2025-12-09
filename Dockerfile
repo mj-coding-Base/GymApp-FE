@@ -32,12 +32,23 @@ RUN npm config set fetch-timeout 300000 && \
 # Install all dependencies with BuildKit cache mount for faster rebuilds
 # Note: npm ci includes optional dependencies by default (no --include flag needed)
 # Note: lightningcss binary will be fixed in builder stage using npm script
+# Use npm ci if package-lock.json exists, otherwise fall back to npm install
 RUN --mount=type=cache,target=/root/.npm \
-    sh -c 'for i in 1 2 3 4 5; do \
-        echo "Attempt $i of 5: Installing dependencies..." && \
-        npm ci --legacy-peer-deps && break || \
-        (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
-    done && \
+    sh -c 'if [ -f "package-lock.json" ]; then \
+        echo "package-lock.json found, using npm ci..." && \
+        for i in 1 2 3 4 5; do \
+            echo "Attempt $i of 5: Installing dependencies with npm ci..." && \
+            npm ci --legacy-peer-deps && break || \
+            (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
+        done; \
+    else \
+        echo "package-lock.json not found, using npm install..." && \
+        for i in 1 2 3 4 5; do \
+            echo "Attempt $i of 5: Installing dependencies with npm install..." && \
+            npm install --legacy-peer-deps && break || \
+            (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
+        done; \
+    fi && \
     if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules)" ]; then \
         echo "ERROR: npm install failed after 5 attempts"; \
         exit 1; \

@@ -134,18 +134,12 @@ const TodayAttendance = () => {
   
   // 🔒 SECURITY: Clear all caches when component unmounts to prevent cross-tenant data leakage
   useEffect(() => {
-    // Capture ref values at effect time to avoid stale closures
-    const todayRecordsMap = todayRecordsMapRef.current;
-    const lastRecordIds = lastRecordIdsRef.current;
-    const notifiedUnpaidClients = notifiedUnpaidClientsRef.current;
-    const customerCache = customerDataCache.current;
-    
     return () => {
       // Clear all caches on unmount (e.g., when user logs out or navigates away)
-      todayRecordsMap.clear();
-      lastRecordIds.clear();
-      notifiedUnpaidClients.clear();
-      customerCache.clear();
+      todayRecordsMapRef.current.clear();
+      lastRecordIdsRef.current.clear();
+      notifiedUnpaidClientsRef.current.clear();
+      customerDataCache.current.clear();
       console.log('[ATTENDANCE] Component unmounting - cleared all caches');
     };
   }, []);
