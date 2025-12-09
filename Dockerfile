@@ -71,20 +71,28 @@ ENV NODE_ENV=production
 # Fix native binaries (lightningcss and @tailwindcss/oxide)
 RUN echo "=== Fixing native binaries in builder stage ===" && \
     echo "Platform: $(uname -m) $(uname -s)" && \
-    # First, ensure @tailwindcss/oxide optional dependencies are installed
-    echo "Installing @tailwindcss/oxide optional dependencies..." && \
-    npm install --no-save --legacy-peer-deps --include=optional @tailwindcss/oxide-linux-x64-gnu 2>&1 | tail -20 || \
-    (echo "Attempting alternative installation..." && \
-     npm install --no-save --legacy-peer-deps --include=optional 2>&1 | tail -20 || true) && \
-    echo "" && \
-    # Verify @tailwindcss/oxide installation
+    # Verify @tailwindcss/oxide installation (should already be installed from deps stage)
     if [ -d "node_modules/@tailwindcss/oxide-linux-x64-gnu" ]; then \
       echo "✅ @tailwindcss/oxide-linux-x64-gnu is installed"; \
     else \
-      echo "⚠️  @tailwindcss/oxide-linux-x64-gnu not found, but continuing..."; \
+      echo "⚠️  @tailwindcss/oxide-linux-x64-gnu not found in node_modules"; \
+      echo "   This should have been installed in the deps stage"; \
+      echo "   Checking if @tailwindcss/oxide exists..."; \
+      ls -la node_modules/@tailwindcss/ 2>/dev/null || echo "   @tailwindcss directory not found"; \
     fi && \
     echo "" && \
-    # Now fix lightningcss
+    # Now fix lightningcss - verify it exists first
+    echo "=== Verifying lightningcss installation ===" && \
+    if [ ! -d "node_modules/lightningcss" ]; then \
+      echo "❌ ERROR: lightningcss not installed!" && \
+      echo "   This is likely because npm install removed it." && \
+      echo "   Checking what's in node_modules..." && \
+      ls -la node_modules/ | grep -E "(lightning|tailwind)" || true && \
+      exit 1; \
+    fi && \
+    echo "✅ lightningcss directory found" && \
+    echo "" && \
+    # Now fix lightningcss binary
     echo "=== Fixing lightningcss binary ===" && \
     echo "Platform: $(uname -m) $(uname -s)" && \
     echo "Checking lightningcss installation..." && \
@@ -131,19 +139,13 @@ RUN echo "=== Fixing native binaries in builder stage ===" && \
         chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
         echo "✓ Strategy 3: Found and copied from: $BINARY_PATH"; \
       else \
-        echo "⚠ Binary not found in any location, trying reinstall..." && \
-        cd node_modules/lightningcss && \
-        npm install --no-save --legacy-peer-deps --include=optional --ignore-scripts 2>&1 | head -20 || true && \
-        cd ../.. && \
-        BINARY_PATH_AFTER=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
-        if [ -n "$BINARY_PATH_AFTER" ] && [ -f "$BINARY_PATH_AFTER" ]; then \
-          cp -v "$BINARY_PATH_AFTER" \
-             node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
-          chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
-          echo "✓ Strategy 3: Reinstalled and fixed lightningcss from: $BINARY_PATH_AFTER"; \
-        else \
-          echo "⚠ Reinstall did not create expected binary"; \
-        fi; \
+        echo "⚠ Binary not found in any location"; \
+        echo "   This should have been installed in the deps stage"; \
+        echo "   Checking package.json for lightningcss dependency..."; \
+        grep -i lightningcss package.json || echo "   lightningcss not in package.json (may be transitive dependency)"; \
+        echo "   Listing all .node files in node_modules..."; \
+        find node_modules -name "*.node" -type f 2>/dev/null | head -10 || echo "   No .node files found"; \
+        exit 1; \
       fi; \
     fi && \
     echo "" && \
