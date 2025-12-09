@@ -24,7 +24,7 @@ COPY package.json package-lock.json* ./
 # Install all dependencies (including devDependencies and optional dependencies for native modules)
 # Note: npm ci doesn't support --include, so we use npm install for optional deps
 RUN npm ci --legacy-peer-deps && \
-    npm install --legacy-peer-deps --include=optional lightningcss 2>&1 | tail -10 || echo "Optional install completed"
+    npm install --legacy-peer-deps --include=optional lightningcss @tailwindcss/oxide-linux-x64-gnu 2>&1 | tail -10 || echo "Optional install completed"
 
 # Fix lightningcss binary location immediately after installation
 RUN echo "=== Fixing lightningcss in deps stage ===" && \
@@ -68,8 +68,24 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Fix lightningcss binary location - comprehensive fix with multiple strategies
-RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
+# Fix native binaries (lightningcss and @tailwindcss/oxide)
+RUN echo "=== Fixing native binaries in builder stage ===" && \
+    echo "Platform: $(uname -m) $(uname -s)" && \
+    # First, ensure @tailwindcss/oxide optional dependencies are installed
+    echo "Installing @tailwindcss/oxide optional dependencies..." && \
+    npm install --no-save --legacy-peer-deps --include=optional @tailwindcss/oxide-linux-x64-gnu 2>&1 | tail -20 || \
+    (echo "Attempting alternative installation..." && \
+     npm install --no-save --legacy-peer-deps --include=optional 2>&1 | tail -20 || true) && \
+    echo "" && \
+    # Verify @tailwindcss/oxide installation
+    if [ -d "node_modules/@tailwindcss/oxide-linux-x64-gnu" ]; then \
+      echo "✅ @tailwindcss/oxide-linux-x64-gnu is installed"; \
+    else \
+      echo "⚠️  @tailwindcss/oxide-linux-x64-gnu not found, but continuing..."; \
+    fi && \
+    echo "" && \
+    # Now fix lightningcss
+    echo "=== Fixing lightningcss binary ===" && \
     echo "Platform: $(uname -m) $(uname -s)" && \
     echo "Checking lightningcss installation..." && \
     if [ ! -d "node_modules/lightningcss" ]; then \
@@ -145,9 +161,10 @@ RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
       exit 1; \
     fi
 
-# Run fix-lightningcss script explicitly before build
-# This MUST succeed - the script will exit with error if binary not found
-RUN npm run fix-lightningcss
+# Run fix scripts explicitly before build
+# This MUST succeed - the scripts will exit with error if binaries not found
+RUN npm run fix-lightningcss && \
+    npm run fix-native-binaries
 
 # Build the application
 RUN npm run build

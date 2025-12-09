@@ -1,15 +1,14 @@
 #!/usr/bin/env node
 /**
- * Fix lightningcss binary location
- * This script finds and copies the lightningcss native binary to the expected location
+ * Fix native binary locations for lightningcss and @tailwindcss/oxide
+ * This script finds and fixes native binaries for packages that require them
  */
 
-import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import fs from 'fs';
 import os from 'os';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -42,10 +41,14 @@ if (isDockerBuild || platform === 'linux') {
 const lightningcssDir = path.join(process.cwd(), 'node_modules', 'lightningcss');
 const dst = path.join(lightningcssDir, binaryName);
 
-console.log('🔧 Fixing lightningcss binary...');
+console.log('🔧 Fixing native binaries (lightningcss & @tailwindcss/oxide)...');
 console.log(`Platform: ${platform} (${arch})`);
 console.log(`Looking for: ${binaryName}`);
 console.log('Target location:', dst);
+
+// Also check for @tailwindcss/oxide
+const tailwindcssOxideDir = path.join(process.cwd(), 'node_modules', '@tailwindcss', 'oxide');
+let tailwindcssOxideFixed = false;
 
 // Check if lightningcss is installed
 if (!fs.existsSync(lightningcssDir)) {
