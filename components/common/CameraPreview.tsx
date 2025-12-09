@@ -45,7 +45,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
     try {
       const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
       return result.state as PermissionState;
-    } catch (err) {
+    } catch {
       // Some browsers don't support permissions API for camera
       return 'prompt';
     }
@@ -71,20 +71,22 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
     return () => {
       stopCamera();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Set video source when stream is available
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch((err) => {
+    const videoElement = videoRef.current;
+    if (videoElement && stream) {
+      videoElement.srcObject = stream;
+      videoElement.play().catch((err) => {
         console.error('Error playing video:', err);
         setError('Failed to start camera preview');
       });
     }
     return () => {
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      if (videoElement) {
+        videoElement.srcObject = null;
       }
     };
   }, [stream]);
@@ -146,7 +148,7 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
       // Update permission state after request
       const newState = await checkCameraPermission();
       setPermissionState(newState);
-    } catch (err) {
+    } catch {
       // Error already handled in startCamera
     } finally {
       setIsRequestingPermission(false);

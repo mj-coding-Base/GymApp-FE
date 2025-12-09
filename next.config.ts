@@ -6,6 +6,18 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // ESLint configuration - allow build to continue with warnings
+  eslint: {
+    // Don't fail build on ESLint warnings (only errors)
+    ignoreDuringBuilds: false,
+  },
+  
+  // TypeScript configuration
+  typescript: {
+    // Don't fail build on TypeScript errors (let ESLint handle it)
+    ignoreBuildErrors: false,
+  },
+  
   // ⚡ PERFORMANCE OPTIMIZATIONS
   
   // Compiler optimizations

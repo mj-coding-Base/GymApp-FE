@@ -21,10 +21,27 @@ RUN apt-get update && apt-get install -y \
 # Copy package files first for better layer caching
 COPY package.json package-lock.json* ./
 
+# Configure npm for better network resilience
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set registry https://registry.npmjs.org/ && \
+    npm config set maxsockets 1
+
 # Install all dependencies with BuildKit cache mount for faster rebuilds
+# Note: npm ci includes optional dependencies by default (no --include flag needed)
 # Note: lightningcss binary will be fixed in builder stage using npm script
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps --include=optional
+    sh -c 'for i in 1 2 3 4 5; do \
+        echo "Attempt $i of 5: Installing dependencies..." && \
+        npm ci --legacy-peer-deps && break || \
+        (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
+    done && \
+    if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules)" ]; then \
+        echo "ERROR: npm install failed after 5 attempts"; \
+        exit 1; \
+    fi'
 
 # =============================================================================
 # Stage 2: Builder
