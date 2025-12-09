@@ -70,11 +70,20 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  // 🔒 SECURITY: Resource limits and optimizations
+  // Limit bundle sizes to prevent resource exhaustion attacks
+  onDemandEntries: {
+    // Period (in ms) where the server will keep pages in the buffer
+    maxInactiveAge: 25 * 1000,
+    // Number of pages that should be kept simultaneously without being disposed
+    pagesBufferLength: 2,
+  },
+
   // Turbopack configuration - only used in development (not in production builds)
   // Turbopack is enabled via --turbopack flag in dev script, not here
   // Removing turbopack config to avoid build issues
   
-  // Optimize headers for caching
+  // 🔒 SECURITY: Enhanced security headers
   async headers() {
     return [
       {
@@ -99,6 +108,18 @@ const nextConfig: NextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:; frame-ancestors 'self';"
           },
         ],
       },

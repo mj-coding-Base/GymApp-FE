@@ -8,6 +8,11 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit
 
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
+  // 🔒 SECURITY: Resource limits to prevent DoS attacks
+  timeout: 30000, // 30 seconds
+  maxContentLength: 10 * 1024 * 1024, // 10MB max response size
+  maxBodyLength: 10 * 1024 * 1024, // 10MB max request body size
+  maxRedirects: 5, // Limit redirects
 });
 
 // Note: Do NOT use a process-global server-side cache for auth values.

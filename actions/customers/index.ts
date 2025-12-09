@@ -15,6 +15,7 @@ import { getGymIdFromToken } from "@/utils/jwt";
 import { deduplicatedRequest } from "@/utils/requestDeduplication";
 import { isAxiosError } from "axios";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/authentication";
 const cacheBuster = Date.now();
 
 interface FetchCustomersParams {
@@ -513,6 +514,7 @@ export const uploadProfilePicture = async (
 
 /**
  * Get profile picture URL (returns blob URL for <img src>)
+ * 🔒 SECURITY: This endpoint requires authentication - token is extracted from session/cookies
  * @param clientId - Customer clientId
  * @returns Promise resolving to blob URL string or null if not found
  */
@@ -525,30 +527,51 @@ export const getProfilePictureUrl = async (clientId: string, gymId?: string): Pr
     // Use fetch API directly for binary data to avoid axios interceptor issues
     const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.payzhe.fit/api/v1";
     const isServer = globalThis.window === undefined;
-    const token = isServer ? null : localStorage.getItem('x-auth-token');
     
-    // 🔒 SECURITY: Extract gymId from token if not provided
-    // This ensures tenant isolation for profile picture access
-    let finalGymId: string | null | undefined = gymId;
-    if (!finalGymId && token && !isServer) {
-      // Only extract from token on client-side (localStorage not available on server)
-      finalGymId = getGymIdFromToken(token);
+    // 🔒 SECURITY: Get authentication token from session (server) or localStorage (client)
+    let token: string | null = null;
+    if (isServer) {
+      // Server-side: Get token from session cookie
+      try {
+        const session = await getSession();
+        token = session?.user?.token ?? null;
+        if (!token && process.env.NODE_ENV !== 'production') {
+          console.warn(`[getProfilePictureUrl] No session token found on server for clientId: ${clientId}`);
+        }
+      } catch (sessionError) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error(`[getProfilePictureUrl] Failed to get session on server:`, sessionError);
+        }
+        token = null;
+      }
+    } else {
+      // Client-side: Get token from localStorage
+      token = localStorage.getItem('x-auth-token');
     }
     
-    // Build URL with gym-id query parameter for tenant isolation
-    let url = `${BASE_URL}/customers/${clientId}/profile-picture`;
-    if (finalGymId) {
-      url += `?gym-id=${encodeURIComponent(finalGymId)}`;
+    // 🔒 SECURITY: Authentication is required for profile picture access
+    // The backend endpoint uses @ValidatedGymId() which requires JWT authentication
+    if (!token) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[getProfilePictureUrl] No authentication token available for clientId: ${clientId}`);
+      }
+      return null; // Return null instead of throwing - profile picture is optional
     }
     
-    const headers: HeadersInit = {};
-    if (token) {
-      headers['x-auth-token'] = token;
-    }
+    // 🔒 SECURITY: Backend extracts gymId from JWT token, so we don't need to send it
+    // The @ValidatedGymId() decorator extracts gymId from the authenticated token
+    const url = `${BASE_URL}/customers/${clientId}/profile-picture`;
+    
+    // 🔒 SECURITY: Always send authentication token in header
+    const headers: HeadersInit = {
+      'x-auth-token': token,
+    };
     
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      // Don't cache profile pictures - they may change
+      cache: 'no-store',
     });
 
     if (!response.ok) {

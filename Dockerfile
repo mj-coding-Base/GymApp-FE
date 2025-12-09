@@ -189,6 +189,7 @@ RUN groupadd --system --gid 1001 nodejs && \
 # Set production environment
 ENV NODE_ENV=production
 ENV PORT=3002
+ENV HOSTNAME=0.0.0.0
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Expose port
@@ -211,23 +212,40 @@ RUN if [ ! -f "./server.js" ]; then \
     echo "✓ server.js found, build successful"
 
 # Create startup script to handle errors gracefully
-RUN echo '#!/bin/sh\n\
-set -e\n\
-echo "=== Starting Next.js Application ==="\n\
-echo "Working directory: $(pwd)"\n\
-echo "Port: ${PORT:-3002}"\n\
-echo "Node version: $(node --version)"\n\
-echo "Checking for server.js..."\n\
-if [ ! -f "./server.js" ]; then\n\
-  echo "ERROR: server.js not found!"\n\
-  echo "Directory contents:"\n\
-  ls -la\n\
-  exit 1\n\
-fi\n\
-echo "✓ server.js found\n\
-echo "Starting server on port ${PORT:-3002}..."\n\
-exec node server.js\n\
-' > /app/start.sh && chmod +x /app/start.sh && chown nextjs:nodejs /app/start.sh
+RUN cat > /app/start.sh << 'EOF' && chmod +x /app/start.sh && chown nextjs:nodejs /app/start.sh
+#!/bin/sh
+set -e
+echo "=== Starting Next.js Application ==="
+echo "Working directory: $(pwd)"
+echo "Port: ${PORT:-3002}"
+echo "Hostname: ${HOSTNAME:-0.0.0.0}"
+echo "Node version: $(node --version)"
+echo "NODE_ENV: ${NODE_ENV:-production}"
+echo ""
+echo "Checking for server.js..."
+if [ ! -f "./server.js" ]; then
+  echo "ERROR: server.js not found!"
+  echo "Directory contents:"
+  ls -la
+  echo ""
+  echo "Checking for .next directory:"
+  ls -la .next/ 2>/dev/null || echo ".next directory not found"
+  exit 1
+fi
+echo "✓ server.js found"
+echo ""
+echo "Verifying required directories exist..."
+[ -d "./.next/static" ] && echo "✓ .next/static exists" || echo "⚠ .next/static missing"
+[ -d "./public" ] && echo "✓ public exists" || echo "⚠ public missing"
+[ -d "./node_modules" ] && echo "✓ node_modules exists" || echo "⚠ node_modules missing"
+echo ""
+echo "Starting server on ${HOSTNAME:-0.0.0.0}:${PORT:-3002}..."
+# Ensure HOSTNAME and PORT are exported
+export HOSTNAME=${HOSTNAME:-0.0.0.0}
+export PORT=${PORT:-3002}
+export NODE_ENV=${NODE_ENV:-production}
+exec node server.js
+EOF
 
 # Switch to non-root user
 USER nextjs
