@@ -17,6 +17,11 @@ export default function DashboardClient({ userName }: DashboardClientProps) {
   
   // Initialize with cached data, but validate gymId first
   const [data, setData] = useState<DashboardData | null>(() => {
+    // 🔒 SECURITY: Only access localStorage on client side (not during SSR)
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    
     // 🔒 SECURITY: Validate cache belongs to current gym before using
     const currentGymId = getGymIdFromToken(localStorage.getItem('x-auth-token'));
     if (!currentGymId) {

@@ -14,8 +14,16 @@ import { Session } from "@/types/auth";
 import { getGymIdFromToken, getMemberIdFromToken } from "@/utils/jwt";
 import axios from "@/utils/axios";
 
-const secretKey = process.env.JWT_SECRET || "secret123";
-const key = new TextEncoder().encode(secretKey);
+// 🔒 SECURITY: JWT_SECRET must be set in production - no fallback allowed
+const secretKey = process.env.JWT_SECRET;
+if (!secretKey) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  // Development fallback (should never be used in production)
+  console.warn('⚠️ SECURITY WARNING: JWT_SECRET not set. Using development fallback. This is INSECURE for production!');
+}
+const key = new TextEncoder().encode(secretKey || "dev-secret-change-in-production");
 
 // Encrypt and decrypt functions
 export async function encrypt(payload: any) {

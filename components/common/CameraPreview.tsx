@@ -9,7 +9,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Camera, RotateCcw, X } from 'lucide-react';
+import { Camera, RotateCcw, X, Video } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 
@@ -18,6 +18,8 @@ interface CameraPreviewProps {
   onClose: () => void;
   onCapture: (file: File) => void;
 }
+
+type PermissionState = 'granted' | 'denied' | 'prompt' | 'checking' | null;
 
 export const CameraPreview: React.FC<CameraPreviewProps> = ({
   open,
@@ -28,16 +30,40 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [permissionState, setPermissionState] = useState<PermissionState>(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Check camera permission status
+  const checkCameraPermission = async (): Promise<PermissionState> => {
+    if (!navigator.permissions || !navigator.permissions.query) {
+      // Fallback: try to access camera to determine permission
+      return 'prompt';
+    }
+    
+    try {
+      const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+      return result.state as PermissionState;
+    } catch (err) {
+      // Some browsers don't support permissions API for camera
+      return 'prompt';
+    }
+  };
 
   // Start camera when dialog opens
   useEffect(() => {
     if (open) {
-      startCamera();
+      checkCameraPermission().then(state => {
+        setPermissionState(state);
+        if (state === 'granted' || state === 'prompt') {
+          startCamera();
+        }
+      });
     } else {
       stopCamera();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Cleanup on unmount
@@ -74,13 +100,56 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
       setCapturedImage(null);
       setCapturedBlob(null);
       
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera access is not supported in this browser.');
+        setPermissionState('denied');
+        return;
+      }
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' }, // Use front camera
       });
       setStream(mediaStream);
+      setPermissionState('granted');
+      setError(null);
     } catch (err) {
       console.error('Error accessing camera:', err);
-      setError('Unable to access camera. Please check permissions.');
+      
+      // Handle different error types
+      const error = err as { name?: string; message?: string };
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        setError('Camera permission was denied. Please allow camera access and try again.');
+        setPermissionState('denied');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        setError('No camera found on this device.');
+        setPermissionState('denied');
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        setError('Camera is already in use by another application.');
+        setPermissionState('denied');
+      } else {
+        setError('Unable to access camera. Please check permissions and try again.');
+        setPermissionState('denied');
+      }
+    }
+  };
+
+  // Manual permission request
+  const requestCameraPermission = async () => {
+    setIsRequestingPermission(true);
+    setError(null);
+    
+    try {
+      // Try to access camera - this will trigger permission prompt if needed
+      await startCamera();
+      
+      // Update permission state after request
+      const newState = await checkCameraPermission();
+      setPermissionState(newState);
+    } catch (err) {
+      // Error already handled in startCamera
+    } finally {
+      setIsRequestingPermission(false);
     }
   };
 
@@ -168,6 +237,24 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
             {error}
+            {permissionState === 'denied' && (
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={requestCameraPermission}
+                  disabled={isRequestingPermission}
+                  className="w-full text-xs"
+                >
+                  <Video className="w-3.5 h-3.5 mr-1.5" />
+                  {isRequestingPermission ? 'Requesting Permission...' : 'Request Camera Permission'}
+                </Button>
+                <p className="text-xs mt-2 text-red-600">
+                  If permission was denied, please enable it in your browser settings and refresh the page.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -238,15 +325,27 @@ export const CameraPreview: React.FC<CameraPreviewProps> = ({
               >
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={captureImage}
-                disabled={!stream}
-                className="bg-[#378644] hover:bg-[#2d7038] flex items-center gap-1.5 text-xs sm:text-sm px-3 py-2 h-9"
-              >
-                <Camera className="w-3.5 h-3.5" />
-                Capture
-              </Button>
+              {permissionState === 'denied' && !stream ? (
+                <Button
+                  type="button"
+                  onClick={requestCameraPermission}
+                  disabled={isRequestingPermission}
+                  className="bg-[#378644] hover:bg-[#2d7038] flex items-center gap-1.5 text-xs sm:text-sm px-3 py-2 h-9"
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  {isRequestingPermission ? 'Requesting...' : 'Request Permission'}
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={captureImage}
+                  disabled={!stream}
+                  className="bg-[#378644] hover:bg-[#2d7038] flex items-center gap-1.5 text-xs sm:text-sm px-3 py-2 h-9"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Capture
+                </Button>
+              )}
             </>
           )}
         </DialogFooter>
