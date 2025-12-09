@@ -43,6 +43,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# PM2
+logs/
+*.log
+.pm2/
+
 # icons
 /actions/icons/
 /app/create-icon/
