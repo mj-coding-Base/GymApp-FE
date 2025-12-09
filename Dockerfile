@@ -1,6 +1,7 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
 # ────────────────────────────────────────────────────────────────
 # Optimized production Dockerfile for Next.js 15.3.2
+# Uses BuildKit cache mounts for faster rebuilds
 # ────────────────────────────────────────────────────────────────
 
 # =============================================================================
@@ -10,7 +11,10 @@ FROM node:20-slim AS deps
 WORKDIR /app
 
 # Install necessary build tools for native dependencies
-RUN apt-get update && apt-get install -y \
+# Use BuildKit cache mount for apt cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
@@ -21,7 +25,9 @@ RUN apt-get update && apt-get install -y \
 COPY package.json package-lock.json* ./
 
 # Install all dependencies (including devDependencies and optional dependencies for native modules)
-RUN npm ci --legacy-peer-deps --include=optional
+# Use BuildKit cache mount for npm cache
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps --include=optional
 
 # Fix lightningcss binary location immediately after installation
 RUN echo "=== Fixing lightningcss in deps stage ===" && \
@@ -47,7 +53,10 @@ FROM node:20-slim AS builder
 WORKDIR /app
 
 # Install build tools for native dependencies (if needed for recompile)
-RUN apt-get update && apt-get install -y \
+# Use BuildKit cache mount for apt cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
@@ -58,8 +67,19 @@ RUN apt-get update && apt-get install -y \
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy source code
-COPY . .
+# Copy package files first for better layer caching
+COPY package.json package-lock.json* ./
+COPY tsconfig.json next.config.* ./
+COPY tailwind.config.* postcss.config.* ./
+
+# Copy source code (only what's needed)
+COPY public ./public
+COPY src ./src
+COPY app ./app
+COPY components ./components
+COPY lib ./lib
+COPY styles ./styles
+COPY scripts ./scripts
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -146,7 +166,9 @@ RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
 RUN npm run fix-lightningcss || echo "Fix script completed (may have warnings)"
 
 # Build the application
-RUN npm run build
+# Use BuildKit cache mount for Next.js cache
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # =============================================================================
 # Stage 3: Production Runtime
@@ -155,7 +177,10 @@ FROM node:20-slim AS runner
 WORKDIR /app
 
 # Install ca-certificates for HTTPS requests
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Use BuildKit cache mount for apt cache
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
 RUN groupadd --system --gid 1001 nodejs && \
