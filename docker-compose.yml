@@ -1,49 +1,22 @@
-# Removed version field as it's obsolete in newer Docker Compose versions
+version: '3.8'
 
 services:
-  gymapp-fe:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-      # Disable BuildKit if it's causing issues (uncomment if needed)
-      # DOCKER_BUILDKIT: 0
-    container_name: gymapp-frontend
+    container_name: gymapp-fe
+    restart: unless-stopped
     ports:
-      - "3002:3002"
+      - "${APP_PORT:-3002}:${PORT:-3002}"
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
-      - PORT=3002
-      - NEXT_TELEMETRY_DISABLED=1
-      - HOSTNAME=0.0.0.0  # Bind to all interfaces, not just localhost
-      # Add your environment variables here
-      # - DATABASE_URL=your_database_url
-      # - API_URL=your_api_url
-    # Add init system to handle signals properly
-    init: true
-    restart: unless-stopped
-    # Add stop grace period to allow graceful shutdown
-    stop_grace_period: 30s
+      - PORT=${PORT:-3002}
     healthcheck:
-      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 10s
-    # Resource limits - increased memory to prevent OOM kills (exit code 137)
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 3G  # Increased from 2G to prevent OOM
-        reservations:
-          cpus: '0.5'
-          memory: 512M  # Reduced reservation to allow more flexibility
-    # Security options
-    security_opt:
-      - no-new-privileges:true
-    # Logging configuration
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      start_period: 40s

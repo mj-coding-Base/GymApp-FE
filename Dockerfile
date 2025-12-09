@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1.4
+
+# syntax=docker/dockerfile:1
 # ────────────────────────────────────────────────────────────────
 # Optimized production Dockerfile for Next.js 15.3.2
-# Uses BuildKit for faster builds with cache mounts
 # ────────────────────────────────────────────────────────────────
 
 # =============================================================================
@@ -18,41 +18,28 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files first for better layer caching
+# Copy package files
 COPY package.json package-lock.json* ./
 
-# Configure npm for better network resilience
-RUN npm config set fetch-timeout 300000 && \
-    npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 120000 && \
-    npm config set registry https://registry.npmjs.org/ && \
-    npm config set maxsockets 1
+# Install all dependencies (including devDependencies and optional dependencies for native modules)
+RUN npm ci --legacy-peer-deps --include=optional
 
-# Install all dependencies with BuildKit cache mount for faster rebuilds
-# Note: npm ci includes optional dependencies by default (no --include flag needed)
-# Note: lightningcss binary will be fixed in builder stage using npm script
-# Use npm ci if package-lock.json exists, otherwise fall back to npm install
-RUN --mount=type=cache,target=/root/.npm \
-    sh -c 'if [ -f "package-lock.json" ]; then \
-        echo "package-lock.json found, using npm ci..." && \
-        for i in 1 2 3 4 5; do \
-            echo "Attempt $i of 5: Installing dependencies with npm ci..." && \
-            npm ci --legacy-peer-deps && break || \
-            (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
-        done; \
-    else \
-        echo "package-lock.json not found, using npm install..." && \
-        for i in 1 2 3 4 5; do \
-            echo "Attempt $i of 5: Installing dependencies with npm install..." && \
-            npm install --legacy-peer-deps && break || \
-            (echo "Attempt $i failed, waiting 10 seconds before retry..." && sleep 10); \
-        done; \
-    fi && \
-    if [ ! -d "node_modules" ] || [ -z "$(ls -A node_modules)" ]; then \
-        echo "ERROR: npm install failed after 5 attempts"; \
-        exit 1; \
-    fi'
+# Fix lightningcss binary location immediately after installation
+RUN echo "=== Fixing lightningcss in deps stage ===" && \
+    if [ -d "node_modules/lightningcss" ]; then \
+      echo "Checking lightningcss structure..." && \
+      find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || echo "No binaries found yet" && \
+      BINARY_PATH=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+      if [ -n "$BINARY_PATH" ] && [ -f "$BINARY_PATH" ]; then \
+        cp -v "$BINARY_PATH" \
+           node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        echo "✓ Fixed lightningcss binary in deps stage from: $BINARY_PATH"; \
+      else \
+        echo "⚠ Binary not found in deps stage (will be fixed in builder stage)"; \
+      fi && \
+      ls -la node_modules/lightningcss/*.node 2>/dev/null || echo "Binary not in expected location yet"; \
+    fi
 
 # =============================================================================
 # Stage 2: Builder
@@ -72,23 +59,94 @@ RUN apt-get update && apt-get install -y \
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy package files (for scripts)
-COPY package.json package-lock.json* ./
-
 # Copy source code
-# Using .dockerignore to exclude unnecessary files (faster than explicit COPY)
 COPY . .
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Fix lightningcss binary location (simplified - use npm script)
-# The fix-lightningcss script in package.json handles this more efficiently
+# Fix lightningcss binary location - comprehensive fix with multiple strategies
+RUN echo "=== Fixing lightningcss binary in builder stage ===" && \
+    echo "Platform: $(uname -m) $(uname -s)" && \
+    echo "Checking lightningcss installation..." && \
+    if [ ! -d "node_modules/lightningcss" ]; then \
+      echo "❌ ERROR: lightningcss not installed!" && exit 1; \
+    fi && \
+    echo "LightningCSS directory structure:" && \
+    ls -la node_modules/lightningcss/ 2>/dev/null | head -20 || true && \
+    echo "" && \
+    echo "Searching for .node files:" && \
+    find node_modules/lightningcss -name "*.node" -type f -ls 2>/dev/null || echo "No .node files found initially" && \
+    echo "" && \
+    # Strategy 1: Copy from subdirectory to parent if it exists
+    if [ -f "node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      cp -v node_modules/lightningcss/linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      echo "✓ Strategy 1: Copied from linux-x64-gnu subdirectory"; \
+    fi && \
+    # Strategy 2: Check nested node_modules location (lightningcss installs it here)
+    if [ -f "node_modules/lightningcss/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node" ]; then \
+      cp -v node_modules/lightningcss/node_modules/lightningcss-linux-x64-gnu/lightningcss.linux-x64-gnu.node \
+         node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      echo "✓ Strategy 2: Copied from nested node_modules location"; \
+    fi && \
+    # Strategy 2b: Check other alternative locations
+    for dir in "node_modules/lightningcss/"*; do \
+      if [ -d "$dir" ] && [ -f "$dir/lightningcss.linux-x64-gnu.node" ]; then \
+        if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+          cp -v "$dir/lightningcss.linux-x64-gnu.node" \
+             "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" && \
+          chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          echo "✓ Found binary in alternative location: $dir"; \
+        fi; \
+      fi; \
+    done && \
+    # Strategy 3: Try to find in any nested lightningcss-linux-x64-gnu package
+    if [ ! -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+      BINARY_PATH=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+      if [ -n "$BINARY_PATH" ] && [ -f "$BINARY_PATH" ]; then \
+        cp -v "$BINARY_PATH" \
+           node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+        echo "✓ Strategy 3: Found and copied from: $BINARY_PATH"; \
+      else \
+        echo "⚠ Binary not found in any location, trying reinstall..." && \
+        cd node_modules/lightningcss && \
+        npm install --no-save --legacy-peer-deps --include=optional --ignore-scripts 2>&1 | head -20 || true && \
+        cd ../.. && \
+        BINARY_PATH_AFTER=$(find node_modules/lightningcss -name "lightningcss.linux-x64-gnu.node" -type f 2>/dev/null | head -1) && \
+        if [ -n "$BINARY_PATH_AFTER" ] && [ -f "$BINARY_PATH_AFTER" ]; then \
+          cp -v "$BINARY_PATH_AFTER" \
+             node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          chmod +x node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+          echo "✓ Strategy 3: Reinstalled and fixed lightningcss from: $BINARY_PATH_AFTER"; \
+        else \
+          echo "⚠ Reinstall did not create expected binary"; \
+        fi; \
+      fi; \
+    fi && \
+    echo "" && \
+    echo "=== Final verification ===" && \
+    if [ -f "node_modules/lightningcss/lightningcss.linux-x64-gnu.node" ]; then \
+      ls -lh node_modules/lightningcss/lightningcss.linux-x64-gnu.node && \
+      file node_modules/lightningcss/lightningcss.linux-x64-gnu.node || true && \
+      echo "✓ lightningcss binary verified at expected location"; \
+    else \
+      echo "❌ ERROR: lightningcss binary still not found!" && \
+      echo "Full directory tree:" && \
+      find node_modules/lightningcss -type f -name "*.node" -o -type d -name "*x64*" 2>/dev/null | head -30 || true && \
+      echo "All .node files in lightningcss:" && \
+      find node_modules/lightningcss -name "*.node" -ls 2>/dev/null || true && \
+      exit 1; \
+    fi
+
+# Run fix-lightningcss script explicitly before build (double-check)
 RUN npm run fix-lightningcss || echo "Fix script completed (may have warnings)"
 
 # Build the application
-# Note: build script already runs fix-lightningcss, but we run it explicitly for safety
 RUN npm run build
 
 # =============================================================================
@@ -117,42 +175,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Verify server.js exists before switching user
-RUN if [ ! -f "./server.js" ]; then \
-      echo "ERROR: server.js not found! Standalone build may have failed." && \
-      echo "Contents of current directory:" && \
-      ls -la && \
-      echo "Contents of .next directory:" && \
-      ls -la .next/ 2>/dev/null || echo ".next directory not found" && \
-      exit 1; \
-    fi && \
-    echo "✓ server.js found, build successful"
-
-# Create startup script to handle errors gracefully
-RUN echo '#!/bin/sh\n\
-set -e\n\
-echo "=== Starting Next.js Application ==="\n\
-echo "Working directory: $(pwd)"\n\
-echo "Port: ${PORT:-3002}"\n\
-echo "Node version: $(node --version)"\n\
-echo "Checking for server.js..."\n\
-if [ ! -f "./server.js" ]; then\n\
-  echo "ERROR: server.js not found!"\n\
-  echo "Directory contents:"\n\
-  ls -la\n\
-  exit 1\n\
-fi\n\
-echo "✓ server.js found\n\
-echo "Starting server on port ${PORT:-3002}..."\n\
-exec node server.js\n\
-' > /app/start.sh && chmod +x /app/start.sh && chown nextjs:nodejs /app/start.sh
+# Note: Runtime dependencies are included in standalone output
 
 # Switch to non-root user
 USER nextjs
 
-# Health check - wait longer for startup
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: process.env.PORT || 3002, path: '/', method: 'GET', timeout: 5000 }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.on('timeout', () => { req.destroy(); process.exit(1); }); req.end();"
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "const http = require('http'); const options = { hostname: 'localhost', port: 3002, path: '/', method: 'GET' }; const req = http.request(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.end();"
 
-# Start the application using startup script
-CMD ["/app/start.sh"]
+# Start the application
+CMD ["node", "server.js"]
