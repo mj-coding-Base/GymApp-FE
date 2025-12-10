@@ -4,10 +4,10 @@
  * Fixes: lightningcss, @tailwindcss/oxide, and other native dependencies
  */
 
-import fs from 'fs';
-import path from 'path';
 import { execSync } from 'child_process';
+import fs from 'fs';
 import os from 'os';
+import path from 'path';
 
 const platform = os.platform();
 const arch = os.arch();

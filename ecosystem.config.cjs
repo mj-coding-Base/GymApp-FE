@@ -47,9 +47,10 @@ module.exports = {
       restart_delay: 4000, // Delay between restarts (ms)
       
       // Graceful shutdown
-      kill_timeout: 5000, // Time to wait for graceful shutdown
-      listen_timeout: 10000, // Time to wait for app to start listening
+      kill_timeout: 10000, // Time to wait for graceful shutdown (increased for port cleanup)
+      listen_timeout: 15000, // Time to wait for app to start listening
       shutdown_with_message: true,
+      wait_ready: true, // Wait for app to be ready before considering it started
       
       // Source map support
       source_map_support: true,

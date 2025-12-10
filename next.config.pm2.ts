@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
+/**
+ * Next.js config optimized for PM2 deployment (not Docker)
+ * This version removes 'standalone' output which can cause CSS issues with PM2
+ */
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   
-  // Enable standalone output for Docker
-  // NOTE: Commented out for PM2 deployment - standalone mode can cause CSS issues with PM2
-  // Uncomment this line if deploying with Docker
-  // output: 'standalone',
+  // REMOVED: output: 'standalone' - This is for Docker, not PM2
+  // When using PM2, Next.js serves static files normally
   
   // ⚡ PERFORMANCE OPTIMIZATIONS
   
@@ -21,8 +23,7 @@ const nextConfig: NextConfig = {
   // Transpile packages that need special handling
   transpilePackages: ['jspdf', 'jspdf-autotable'],
   
-  // Always use webpack for builds (Turbopack is only for development with --turbopack flag)
-  // Explicitly defining webpack ensures Next.js doesn't try to use Turbopack during builds
+  // Always use webpack for builds
   webpack: (config: any, { isServer }: any) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -72,20 +73,13 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // 🔒 SECURITY: Resource limits and optimizations
-  // Limit bundle sizes to prevent resource exhaustion attacks
+  // Resource limits
   onDemandEntries: {
-    // Period (in ms) where the server will keep pages in the buffer
     maxInactiveAge: 25 * 1000,
-    // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 2,
   },
-
-  // Turbopack configuration - only used in development (not in production builds)
-  // Turbopack is enabled via --turbopack flag in dev script, not here
-  // Removing turbopack config to avoid build issues
   
-  // 🔒 SECURITY: Enhanced security headers
+  // Enhanced security headers
   async headers() {
     return [
       {
@@ -148,3 +142,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
