@@ -63,12 +63,24 @@ fi
 
 # Check if app is already running
 if pm2 list | grep -q "$APP_NAME"; then
-    echo -e "${GREEN}🔄 Reloading existing PM2 process...${NC}"
-    pm2 reload "$APP_NAME" --update-env
-else
-    echo -e "${GREEN}▶️  Starting new PM2 process...${NC}"
-    pm2 start ecosystem.config.cjs --env production
+    echo -e "${GREEN}🛑 Stopping existing PM2 process...${NC}"
+    pm2 stop "$APP_NAME" 2>/dev/null || true
+    pm2 delete "$APP_NAME" 2>/dev/null || true
+    sleep 2
 fi
+
+# Check if port is in use
+if command -v lsof &> /dev/null; then
+    PORT_PID=$(lsof -ti:3002 2>/dev/null || true)
+    if [ -n "$PORT_PID" ]; then
+        echo -e "${YELLOW}⚠️  Port 3002 is in use (PID: $PORT_PID), killing it...${NC}"
+        kill -9 $PORT_PID 2>/dev/null || true
+        sleep 2
+    fi
+fi
+
+echo -e "${GREEN}▶️  Starting new PM2 process...${NC}"
+pm2 start ecosystem.config.cjs --env production
 
 # Save PM2 process list
 echo -e "${GREEN}💾 Saving PM2 process list...${NC}"

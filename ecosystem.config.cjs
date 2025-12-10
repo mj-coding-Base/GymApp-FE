@@ -33,10 +33,11 @@ module.exports = {
       watch: false, // Don't watch files in production
       max_memory_restart: '1G', // Restart if memory exceeds 1GB
       
-      // Logging
-      error_file: './logs/pm2-error.log',
-      out_file: './logs/pm2-out.log',
-      log_file: './logs/pm2-combined.log',
+      // Logging - Use PM2 default location to avoid permission issues
+      // Logs will be in ~/.pm2/logs/ by default
+      // error_file: './logs/pm2-error.log',
+      // out_file: './logs/pm2-out.log',
+      // log_file: './logs/pm2-combined.log',
       time: true, // Add timestamp to logs
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
