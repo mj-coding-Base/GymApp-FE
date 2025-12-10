@@ -82,14 +82,14 @@ If you can't free port 3002, change it:
 ```bash
 cd /srv/gymapp-fe
 nano .env
-# Change: PORT=3002 to PORT=3001
+# Change: PORT=3002 to PORT=3002
 ```
 
 2. Update `ecosystem.config.cjs`:
 ```javascript
 env_production: {
   NODE_ENV: 'production',
-  PORT: 3001,  // Changed from 3002
+  PORT: 3002,  // Changed from 3002
 },
 ```
 

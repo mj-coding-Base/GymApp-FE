@@ -22,7 +22,7 @@ This script will:
 4. Start PM2 fresh
 
 ### Option 2: Change Port (Quick Workaround)
-If you can't free port 3002, change to port 3001:
+If you can't free port 3002, change to port 3002:
 
 ```bash
 cd /srv/gymapp-fe
@@ -91,12 +91,12 @@ pm2 status
 # Check if app is listening
 netstat -tulpn | grep 3002
 # OR if you changed port:
-netstat -tulpn | grep 3001
+netstat -tulpn | grep 3002
 
 # Test the app
 curl http://localhost:3002
 # OR if you changed port:
-curl http://localhost:3001
+curl http://localhost:3002
 
 # Check logs
 pm2 logs gymapp-fe --lines 30

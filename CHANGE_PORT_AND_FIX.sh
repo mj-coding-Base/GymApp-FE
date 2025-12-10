@@ -1,10 +1,10 @@
 #!/bin/bash
-# Change port to 3001 and fix deployment
+# Change port to 3002 and fix deployment
 # Run this on your VPS: ./CHANGE_PORT_AND_FIX.sh
 
 set -e
 
-echo "🔄 Changing port from 3002 to 3001 and fixing deployment..."
+echo "🔄 Changing port from 3002 to 3002 and fixing deployment..."
 echo ""
 
 cd /srv/gymapp-fe
@@ -25,9 +25,9 @@ pkill -9 node 2>/dev/null || true
 sleep 3
 
 # Step 3: Update port in ecosystem.config.cjs
-echo "3️⃣  Updating port to 3001..."
+echo "3️⃣  Updating port to 3002..."
 if grep -q "PORT: 3002" ecosystem.config.cjs; then
-    sed -i 's/PORT: 3002/PORT: 3001/g' ecosystem.config.cjs
+    sed -i 's/PORT: 3002/PORT: 3002/g' ecosystem.config.cjs
     echo "   ✅ Updated ecosystem.config.cjs"
 else
     echo "   ⚠️  Port already changed or not found"
@@ -37,17 +37,17 @@ fi
 echo "4️⃣  Updating .env file..."
 if [ -f ".env" ]; then
     if grep -q "PORT=3002" .env; then
-        sed -i 's/PORT=3002/PORT=3001/g' .env
+        sed -i 's/PORT=3002/PORT=3002/g' .env
         echo "   ✅ Updated .env"
     else
         if ! grep -q "PORT=" .env; then
-            echo "PORT=3001" >> .env
-            echo "   ✅ Added PORT=3001 to .env"
+            echo "PORT=3002" >> .env
+            echo "   ✅ Added PORT=3002 to .env"
         fi
     fi
 else
-    echo "PORT=3001" > .env
-    echo "   ✅ Created .env with PORT=3001"
+    echo "PORT=3002" > .env
+    echo "   ✅ Created .env with PORT=3002"
 fi
 
 # Step 5: Re-enable auto-restart in ecosystem.config.cjs
@@ -65,7 +65,7 @@ else
 fi
 
 # Step 7: Start PM2 with new port
-echo "7️⃣  Starting PM2 on port 3001..."
+echo "7️⃣  Starting PM2 on port 3002..."
 pm2 start ecosystem.config.cjs --env production
 pm2 save
 
@@ -81,16 +81,16 @@ else
 fi
 
 # Check if app is listening on new port
-if netstat -tulpn 2>/dev/null | grep -q ":3001 " || lsof -ti:3001 >/dev/null 2>&1; then
-    echo "   ✅ App is listening on port 3001"
+if netstat -tulpn 2>/dev/null | grep -q ":3002 " || lsof -ti:3002 >/dev/null 2>&1; then
+    echo "   ✅ App is listening on port 3002"
 else
     echo "   ⚠️  App might not be listening. Check logs:"
     pm2 logs gymapp-fe --lines 30 --nostream
 fi
 
 # Test local connection
-if curl -f -s http://localhost:3001 >/dev/null 2>&1; then
-    echo "   ✅ App responds on http://localhost:3001"
+if curl -f -s http://localhost:3002 >/dev/null 2>&1; then
+    echo "   ✅ App responds on http://localhost:3002"
 else
     echo "   ⚠️  App not responding. Check logs:"
     pm2 logs gymapp-fe --lines 30 --nostream
@@ -98,18 +98,18 @@ fi
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✅ Port changed to 3001!"
+echo "✅ Port changed to 3002!"
 echo ""
 echo "📊 PM2 Status:"
 pm2 status
 
 echo ""
-echo "🌐 Your app is now on: http://localhost:3001"
+echo "🌐 Your app is now on: http://localhost:3002"
 echo ""
 echo "📋 IMPORTANT: Update Nginx configuration!"
-echo "   Change proxy_pass to: http://localhost:3001"
+echo "   Change proxy_pass to: http://localhost:3002"
 echo "   Then reload Nginx: sudo systemctl reload nginx"
 echo ""
 echo "📋 Test locally:"
-echo "   curl http://localhost:3001"
+echo "   curl http://localhost:3002"
 

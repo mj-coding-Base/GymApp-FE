@@ -104,11 +104,11 @@ cd /srv/gymapp-fe
 
 # Edit .env
 nano .env
-# Change PORT=3002 to PORT=3001
+# Change PORT=3002 to PORT=3002
 
 # Edit ecosystem.config.cjs
 nano ecosystem.config.cjs
-# Change PORT: 3002 to PORT: 3001 in both env and env_production
+# Change PORT: 3002 to PORT: 3002 in both env and env_production
 
 # Start with new port
 pm2 delete gymapp-fe
