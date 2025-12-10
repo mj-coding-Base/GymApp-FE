@@ -27,13 +27,13 @@ sleep 3
 # Verify port is free
 if command -v lsof &> /dev/null; then
     if lsof -ti:3002 >/dev/null 2>&1; then
-        echo "❌ Port 3002 still in use. Changing to port 3004..."
+        echo "❌ Port 3002 still in use. Changing to port 3001..."
         # Update port in ecosystem.config.cjs
-        sed -i 's/PORT: 3002/PORT: 3004/g' ecosystem.config.cjs
+        sed -i 's/PORT: 3002/PORT: 3001/g' ecosystem.config.cjs
         if [ -f ".env" ]; then
-            sed -i 's/PORT=3002/PORT=3004/g' .env || echo "PORT=3004" >> .env
+            sed -i 's/PORT=3002/PORT=3001/g' .env || echo "PORT=3001" >> .env
         fi
-        echo "✅ Port changed to 3004"
+        echo "✅ Port changed to 3001"
     else
         echo "✅ Port 3002 is free"
     fi

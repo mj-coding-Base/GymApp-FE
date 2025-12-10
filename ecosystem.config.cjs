@@ -21,7 +21,7 @@ module.exports = {
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3002,
+        PORT: 3001, // Changed from 3002 to avoid persistent port conflict
       },
       
       // Process management
